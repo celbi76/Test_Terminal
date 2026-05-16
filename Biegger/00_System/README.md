@@ -1,36 +1,34 @@
 ---
-title: "Second Brain – Systemübersicht"
+title: Second Brain – Systemübersicht
+tags: [system, meta, para, zettelkasten, claude-ai]
 erstellt: 2026-05-16
+aktualisiert: 2026-05-16
 typ: system
-tags: [system, übersicht, methodik, PARA, zettelkasten, claude-ai]
 ---
 
 # Second Brain – Systemübersicht
 
 > *"Your mind is for having ideas, not holding them."* – David Allen
 
-## Was ist dieses System?
-
-Dieses Second Brain ist ein persönliches Wissensmanagementsystem, das drei bewährte Methoden kombiniert:
-
-1. **PARA-Methode** (Tiago Forte) – für die Ordnerstruktur und Informationsorganisation
-2. **Zettelkasten-Methode** (Niklas Luhmann) – für atomares Denken und Wissensvernetzung
-3. **Claude AI-Integration** – für intelligente Verarbeitung, Zusammenfassung und Ideengenerierung
-
-Ziel ist es, ein externes Gehirn zu schaffen, das Wissen nicht nur speichert, sondern **aktiv denkt** – durch Verbindungen, Querverweise und regelmäßige Reflexion.
+Willkommen in deinem persönlichen Wissensmanagementsystem. Dieses System kombiniert drei bewährte Methoden zu einem leistungsstarken Ganzen: **PARA**, **Zettelkasten** und **KI-gestützte Wissensverarbeitung mit Claude**.
 
 ---
 
-## Die PARA-Struktur
+## Die drei Säulen dieses Systems
 
-| Ordner | Bedeutung | Inhalt |
-|--------|-----------|--------|
-| `01_Inbox` | Eingang | Alles Ungefilterte, Flüchtige, noch nicht Verarbeitete |
-| `02_Projekte` | Projekte | Aktive Vorhaben mit Deadline und klarem Ergebnis |
-| `03_Bereiche` | Bereiche | Dauerhafte Verantwortungsbereiche ohne festes Ende |
-| `04_Ressourcen` | Ressourcen | Themensammlungen und Referenzmaterial |
-| `05_Archiv` | Archiv | Abgeschlossene Projekte, inaktive Ressourcen |
-| `06_Zettelkasten` | Zettelkasten | Atomare Wissensnotizen, vernetzt und dauerhaft |
+### 1. PARA-Methode (Tiago Forte)
+
+PARA steht für **P**rojekte, **A**reas (Bereiche), **R**essourcen und **A**rchiv. Es ist ein Organisationssystem, das auf Handlungsrelevanz basiert – nicht auf Themen oder Kategorien.
+
+| Ordner | Inhalt | Zeitlicher Horizont |
+|--------|--------|---------------------|
+| `01_Inbox` | Ungefilterte Erfassung | Sofort → täglich verarbeiten |
+| `02_Projekte` | Aktive Vorhaben mit klarem Ziel | Wochen bis Monate |
+| `03_Bereiche` | Verantwortungsbereiche ohne Enddatum | Dauerhaft |
+| `04_Ressourcen` | Referenzmaterial nach Thema | Bei Bedarf |
+| `05_Archiv` | Abgeschlossenes, inaktives Material | Dauerhaft, selten abgerufen |
+
+**Der entscheidende Unterschied zu klassischen Systemen:** Du sortierst nicht nach Thema, sondern nach *Handlungsrelevanz*. Ein Artikel über Ernährung gehört in ein Projekt (wenn du gerade eine Diät planst), in einen Bereich (wenn Gesundheit ein dauerhafter Verantwortungsbereich ist) oder in Ressourcen (als Referenz für später).
 
 ### Schlüsselfragen für die Ablage
 
@@ -38,114 +36,160 @@ Ziel ist es, ein externes Gehirn zu schaffen, das Wissen nicht nur speichert, so
 - **Ist es ein dauerhafter Lebensbereich?** → `03_Bereiche`
 - **Ist es ein Thema, das mich interessiert?** → `04_Ressourcen`
 - **Ist es eine destillierte Erkenntnis?** → `06_Zettelkasten`
-- **Weiß ich noch nicht wohin?** → `01_Inbox`
+- **Weiss ich noch nicht wohin?** → `01_Inbox` ← immer korrekt
+
+### 2. Zettelkasten-Methode (Niklas Luhmann)
+
+Der Zettelkasten ist kein Ablagesystem, sondern ein **Denkpartner**. Jede Notiz ist:
+
+- **Atomar** – ein einziger, vollständig ausgedrückter Gedanke
+- **Autonom** – verständlich ohne Kontext anderer Notizen
+- **Vernetzt** – explizit verknüpft mit verwandten Gedanken
+
+Der Zettelkasten lebt in `06_Zettelkasten/` und folgt dem Prinzip: **Schreibe für dein zukünftiges Ich**, das den Ursprungskontext vergessen hat.
+
+**Zettel-Typen in diesem System:**
+
+| Typ | Symbol | Beschreibung |
+|-----|--------|-------------|
+| Flüchtige Notiz | F | Rohe Ideen aus der Inbox – temporär, werden verarbeitet |
+| Literaturnotiz | L | Was du aus einer Quelle gelernt hast – in eigenen Worten |
+| Permanente Notiz | P | Dein eigener Gedanke, deine eigene Einsicht – das Herzstück |
+| MOC | M | Übersichtskarten, die verwandte Zettel zusammenführen |
+
+**Verlinkungsstrategie – frage dich immer:**
+1. *Welche bestehenden Notizen beleuchten diesen Gedanken aus einem anderen Winkel?*
+2. *Was widerspricht diesem Gedanken?*
+3. *Was setzt dieser Gedanke voraus?*
+4. *Was folgt logisch aus diesem Gedanken?*
+
+### 3. Claude AI Integration
+
+Claude ist dein eingebetteter Denkpartner. Er hilft dir:
+
+- Rohe Notizen in atomare Zettel umzuwandeln
+- Verbindungen zwischen scheinbar unzusammenhängenden Ideen zu finden
+- Komplexe Texte zu verarbeiten und zu destillieren
+- Wöchentliche Reviews zu strukturieren
+- Schreibblockaden zu überwinden
+- Eigene Annahmen kritisch zu hinterfragen
+
+Alle Claude-Prompts findest du in [[Claude_Prompts]].
 
 ---
 
-## Die Zettelkasten-Methode
-
-Der Zettelkasten ist das **Herzstück** dieses Systems. Hier entstehen atomare Notizen, die:
-
-- **Einen einzigen Gedanken** enthalten (nicht mehr, nicht weniger)
-- **In eigenen Worten** verfasst sind (kein Copy-Paste)
-- **Aktiv verlinkt** sind mit anderen Zetteln
-- **Dauerhaft gültig** bleiben (Ideen haben kein Ablaufdatum)
-
-### Zettel-Typen
+## Workflow: Wie das System zusammenarbeitet
 
 ```
-🌱 Fleeting Note  → Schnelle Gedanken aus der Inbox
-📚 Literature Note → Erkenntnisse aus Quellen
-🧠 Permanent Note  → Eigenständige, vernetzte Idee
-🗺️ MOC (Map of Content) → Überblick über ein Themengebiet
+ERFASSEN         VERARBEITEN        DESTILLIEREN       AUSDRÜCKEN
+    |                  |                  |                  |
+Inbox  ──────────► PARA-Ordner ──────► Zettelkasten ──────► Output
+    |               (täglich)          (wöchentlich)      (Projekte)
+    |                  |                  |
+    └── Claude ────────┴───── Claude ─────┘
+        beim Sortieren         beim Verknüpfen
 ```
 
-### Verlinkungsstrategie
+### Täglicher Workflow (10–15 Minuten)
 
-Wenn du einen neuen Zettel erstellst, stelle dir immer diese Fragen:
-1. *Welche meiner bestehenden Notizen beziehen sich auf dieses Thema?*
-2. *Welche Notizen widersprechen diesem Gedanken?*
-3. *Welche Notizen ergänzen diesen Gedanken?*
-4. *Wohin führt dieser Gedanke?*
+1. **Morgens:** Tagesnotiz öffnen (Template: [[Templates/Tagesnotiz]]), Tagesplan skizzieren
+2. **Tagsüber:** Alles in die `01_Inbox` werfen – ohne Nachdenken
+3. **Abends:** Inbox verarbeiten (verarbeiten, nicht nur lesen)
+   - Was gehört wohin? (PARA entscheiden)
+   - Was wird ein Zettel? (Zettelkasten)
+   - Claude-Fragen für komplexe Stücke notieren
+
+### Wöchentlicher Workflow (30–45 Minuten)
+
+1. Alle Tagesnotizen der Woche durchsehen
+2. Zettelkasten-Verbindungen prüfen und ergänzen
+3. Projekte reviewen (Fortschritt? Blockaden? Abzuschliessen?)
+4. Bereiche checken (Alles im Lot? Nachholbedarf?)
+5. MOC-Index aktualisieren: [[MOC_Index]]
+6. Claude Weekly Review Prompt anwenden (siehe [[Claude_Prompts]])
+
+### Monatlicher Workflow (1–2 Stunden)
+
+1. Projekte: Abschliessen oder archivieren
+2. Ressourcen: Veraltetes archivieren
+3. Zettelkasten: Neue MOCs erstellen wo verdichtet genug
+4. System-Review: Was funktioniert? Was reibt? Was soll sich ändern?
 
 ---
 
-## Claude AI-Integration
+## Ordnerstruktur
 
-Claude ist dein **Denkpartner** in diesem System. Nutze KI für:
-
-- **Verarbeitung**: Rohe Notizen zu Zetteln destillieren
-- **Verbindung**: Querverbindungen zwischen Themen entdecken
-- **Zusammenfassung**: Lange Quellen auf das Wesentliche reduzieren
-- **Kritik**: Eigene Ideen hinterfragen und schärfen
-- **Schreiben**: Entwürfe verbessern und strukturieren
-
-Alle nützlichen Claude-Prompts findest du in [[Claude_Prompts]].
+```
+Biegger/
+├── 00_System/              ← Meta-Ebene (du bist hier)
+│   ├── README.md           ← Diese Datei
+│   ├── Claude_Prompts.md   ← KI-Prompts Bibliothek
+│   └── Templates/
+│       ├── Tagesnotiz.md   ← Tägliche Notiz
+│       ├── Zettel.md       ← Atomare Notiz
+│       ├── Projekt.md      ← Projektvorlage
+│       └── Meeting.md      ← Besprechungsnotiz
+│
+├── 01_Inbox/               ← Alles rein, kein Nachdenken
+├── 02_Projekte/            ← Aktive Vorhaben
+├── 03_Bereiche/            ← Dauerhafte Verantwortungsbereiche
+├── 04_Ressourcen/          ← Referenzmaterial nach Thema
+├── 05_Archiv/              ← Abgeschlossenes Material
+├── 06_Zettelkasten/        ← Dein Denknetz
+└── MOC_Index.md            ← Startseite / Dashboard
+```
 
 ---
 
-## Der tägliche Workflow
+## Tagging-Konvention
 
-### Morgenroutine (10 Minuten)
-1. Tagesnotiz aus Template erstellen (`00_System/Templates/Tagesnotiz`)
-2. Inbox durchsehen – was kam gestern rein?
-3. Prioritäten für heute festlegen
+Konsistente Tags machen das System durchsuchbar. Halte dich an diese Konventionen:
 
-### Laufe den Tag über
-- Alles in die **Inbox** – ohne Nachdenken, ohne Sortieren
-- Gedanken, Links, Zitate, Ideen → einfach rein
+```
+Status-Tags:
+  #status/roh          → Frisch erfasst, noch nicht verarbeitet
+  #status/verarbeitet  → In Zettel oder PARA-Ordner überführt
+  #status/archiv       → Nicht mehr aktiv, aber aufbewahrt
 
-### Abendroutine (15 Minuten)
-1. Inbox verarbeiten (oder wöchentlich)
-2. Tagesnotiz abschließen
-3. Was ist heute zu einem Zettel geworden?
+Typ-Tags:
+  #typ/zettel          → Atomare permanente Notiz
+  #typ/literaturnotiz  → Notiz zu einer externen Quelle
+  #typ/moc             → Map of Content / Überblickskarte
+  #typ/projekt         → Projektnotiz
+  #typ/meeting         → Besprechungsprotokoll
+  #typ/tagesnotiz      → Tägliche Reflexion
 
-### Wöchentliche Reflexion (30 Minuten)
-- Inbox leeren und sortieren
-- Neue Zettel verlinken
-- Projekte reviewen
-- Mit Claude: Wochenzusammenfassung und Erkenntnisse
+Inhalts-Tags (nach eigenen Bereichen anpassen):
+  #lernen              → Lernbezogenes
+  #arbeit              → Berufliches
+  #idee                → Ideen und Einfälle
+  #frage               → Offene Fragen, noch ungeklärt
+  #einsicht            → Wichtige Erkenntnisse, Aha-Momente
+```
 
 ---
 
-## Obsidian-Einstellungen für dieses System
+## Empfohlene Obsidian-Plugins
 
-### Empfohlene Plugins
-- **Templater** – für dynamische Templates
-- **Dataview** – für automatische Listen und Abfragen
-- **Calendar** – für tägliche Notizen
-- **Graph View** – für Wissensvisualisierung
-- **QuickAdd** – für schnelle Erfassung
-- **Kanban** – für Projektboards
-
-### Tagging-Konvention
-
-```
-#status/roh         → Noch nicht verarbeitet
-#status/verarbeitet → In Zettel umgewandelt
-#status/archiv      → Nicht mehr aktiv
-
-#typ/zettel         → Atomare Notiz
-#typ/projekt        → Projektnotiz
-#typ/bereich        → Bereichsnotiz
-#typ/ressource      → Ressourcennotiz
-#typ/tagesnotiz     → Tägliche Reflexion
-
-#kontext/arbeit     → Berufliches
-#kontext/privat     → Persönliches
-#kontext/lernen     → Lernmaterial
-```
+| Plugin | Zweck |
+|--------|-------|
+| **Templater** | Dynamische Templates mit Datum, Variablen |
+| **Dataview** | Automatische Listen, Abfragen, Dashboards |
+| **Calendar** | Tägliche Notizen im Kalenderformat |
+| **Graph View** | Wissensvisualisierung als Netz |
+| **QuickAdd** | Schnelle Erfassung in die Inbox |
+| **Kanban** | Projektboards für visuelle Planung |
 
 ---
 
 ## Regeln für ein gesundes Second Brain
 
 1. **Alles rein, nichts löschen** – die Inbox ist heilig, das Archiv auch
-2. **Eigene Worte** – verstehen, nicht kopieren
+2. **Eigene Worte** – Verstehen, nicht kopieren. Immer paraphrasieren.
 3. **Verlinken beim Schreiben** – nicht als nachträgliche Aufgabe
-4. **Regelmäßig reviewen** – wöchentlich, nicht täglich
-5. **Perfektion ist der Feind des Guten** – eine schlechte Notiz ist besser als keine
-6. **Claude fragen, wenn blockiert** – KI als Denkwerkzeug, nicht als Ersatz
+4. **Regelmässig reviewen** – wöchentlich ist besser als täglich oder nie
+5. **Perfektion ist der Feind des Guten** – eine unvollkommene Notiz ist besser als keine
+6. **Claude fragen, wenn blockiert** – KI als Denkwerkzeug, nicht als Denkersatz
 
 ---
 
@@ -153,11 +197,13 @@ Alle nützlichen Claude-Prompts findest du in [[Claude_Prompts]].
 
 - [[MOC_Index]] – Hauptdashboard und Einstiegspunkt
 - [[Claude_Prompts]] – KI-Prompts für alle Situationen
-- [[00_System/Templates/Tagesnotiz]] – Vorlage für Tagesnotizen
-- [[00_System/Templates/Zettel]] – Vorlage für atomare Notizen
-- [[00_System/Templates/Projekt]] – Vorlage für Projekte
-- [[00_System/Templates/Meeting]] – Vorlage für Meetings
+- [[Templates/Tagesnotiz]] – Vorlage für Tagesnotizen
+- [[Templates/Zettel]] – Vorlage für atomare Notizen
+- [[Templates/Projekt]] – Vorlage für Projekte
+- [[Templates/Meeting]] – Vorlage für Meetings
 
 ---
+
+#system #meta #para #zettelkasten #readme
 
 *Zuletzt aktualisiert: 2026-05-16*
