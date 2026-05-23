@@ -459,53 +459,18 @@ function confirmPoolRelease(deptId) {
 
 // ── OR PAGE ──────────────────────────────────────────────────
 
+let orSelectedDate = new Date().toISOString().split('T')[0];
+
 function renderORPage() {
-  renderORGrid();
-  renderORTimeline();
+  renderORKPIs();
+  buildORTimelineGrid();
+  // Sync date picker
+  const picker = document.getElementById('or-date-picker');
+  if (picker && !picker.value) picker.value = orSelectedDate;
 }
 
-function renderORGrid() {
-  const container = document.getElementById('or-room-grid');
-  if (!container) return;
-
-  const today   = new Date().toISOString().split('T')[0];
-  const todayOps= AppState.orProcedures.filter(p => p.date === today && !p.is_notfall_spur);
-
-  container.innerHTML = OR_ROOMS.map(room => {
-    const procs       = todayOps.filter(p => p.or_room === room.id);
-    const endLabel    = room.extendedEnd || '16:00';
-    const isNotfall   = room.notfall;
-    const totalMin    = procs.reduce((s, p) => s + p.duration_min, 0);
-    const capacityMin = (room.extendedEnd ? parseInt(room.extendedEnd) : 16) * 60 - 7 * 60;
-    const usagePct    = Math.min(100, Math.round((totalMin / capacityMin) * 100));
-    const usageColor  = usagePct >= 90 ? '#E63946' : usagePct >= 70 ? '#F7941D' : '#2DC653';
-
-    return `<div class="or-room-card${isNotfall ? ' or-room-notfall' : ''}">
-      <div class="or-room-header">
-        <span class="or-room-label">${room.label}</span>
-        ${isNotfall ? '<span class="badge badge-red" style="font-size:10px">Notfall-Spur</span>' : ''}
-        ${room.extendedEnd ? `<span class="badge badge-yellow" style="font-size:10px">bis ${room.extendedEnd}</span>` : ''}
-      </div>
-      <div class="or-room-time">07:00 – ${endLabel}</div>
-      <div class="or-usage-bar">
-        <div class="or-usage-fill" style="width:${usagePct}%;background:${usageColor}"></div>
-      </div>
-      <div class="or-room-stats">
-        <span style="font-size:11px;color:${usageColor};font-weight:700">${usagePct}% belegt</span>
-        <span style="font-size:11px;color:#718096">${procs.length} Eingriffe</span>
-      </div>
-      ${isNotfall ? `<div style="font-size:10px;color:#E63946;margin-top:4px;font-weight:600">Notfall-Spur 20:00–07:00 aktiv</div>` : ''}
-      <div class="or-room-procs">
-        ${procs.map(p => `<div class="or-room-proc" title="${p.procedure} · ${p.surgeon}">
-          <span style="font-weight:600;color:${p.postop_destination==='IPS'?'#E63946':p.postop_destination==='IMC'?'#F7941D':'#2980B9'}">${p.time}</span>
-          <span style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.procedure}</span>
-          <span class="badge ${p.dringlichkeit==='Notfall'?'badge-red':p.dringlichkeit==='Dringlich'?'badge-yellow':'badge-blue'}" style="font-size:9px">${p.dringlichkeit}</span>
-        </div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
-
-  // KPIs
+function renderORKPIs() {
+  const today       = new Date().toISOString().split('T')[0];
   const tomorrowStr = new Date(new Date().setDate(new Date().getDate()+1)).toISOString().split('T')[0];
   setEl('or-today-count',    AppState.orProcedures.filter(p => p.date===today && !p.is_notfall_spur).length);
   setEl('or-tomorrow-count', AppState.orProcedures.filter(p => p.date===tomorrowStr && p.status==='planned' && !p.is_notfall_spur).length);
@@ -513,49 +478,233 @@ function renderORGrid() {
   setEl('or-imc-count',      AppState.orProcedures.filter(p => p.date>=today && p.postop_destination==='IMC' && p.status==='planned').length);
 }
 
-function renderORTimeline() {
-  const container = document.getElementById('or-timeline');
+function timeStrToMin(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function buildORTimelineGrid() {
+  const container = document.getElementById('or-timeline-grid');
   if (!container) return;
-  const today   = new Date().toISOString().split('T')[0];
-  const grouped = {};
-  AppState.orProcedures.filter(p => !p.is_notfall_spur).forEach(p => {
-    if (!grouped[p.date]) grouped[p.date] = [];
-    grouped[p.date].push(p);
-  });
 
-  container.innerHTML = Object.entries(grouped).map(([date, procs]) => {
-    const d        = new Date(date);
-    const tomorrow = new Date(new Date().setDate(new Date().getDate()+1)).toISOString().split('T')[0];
-    const dayLabel = date===today ? 'Heute' : date===tomorrow ? 'Morgen'
-      : d.toLocaleDateString('de-CH', { weekday:'long', day:'numeric', month:'long' });
-    const ipsCount = procs.filter(p => p.postop_destination==='IPS' && p.status!=='completed').length;
-    const imcCount = procs.filter(p => p.postop_destination==='IMC' && p.status!=='completed').length;
+  const PX_PER_MIN = 1.0;
+  const START_HOUR = 7;
+  const END_HOUR   = 20;
+  const TOTAL_MINS = (END_HOUR - START_HOUR) * 60; // 780min = 780px
+  const gridH      = TOTAL_MINS * PX_PER_MIN;
 
-    const items = procs.map(p => {
-      const destClass = p.postop_destination==='IPS' ? 'ips' : p.postop_destination==='IMC' ? 'imc' : '';
-      const h = Math.floor(p.duration_min/60), m = p.duration_min%60;
-      const durStr = h>0 ? `${h}h${m>0?' '+m+'min':''}` : m+'min';
-      return `<div class="or-item ${p.status==='completed'?'completed':destClass}">
-        <span class="or-time">${p.time}</span>
-        <span class="or-room">Saal ${p.or_room}</span>
-        <div>
-          <div class="or-procedure">${p.procedure}</div>
-          <div style="font-size:11px;color:#718096">${p.age_years!==null?`Kind, ${p.age_years}J · `:''}${p.surgeon}</div>
-        </div>
-        <span class="or-duration">${durStr}</span>
-        <span class="or-dest ${destClass}">${p.postop_destination}</span>
-        <span class="badge ${p.dringlichkeit==='Notfall'?'badge-red':p.dringlichkeit==='Dringlich'?'badge-yellow':'badge-blue'}" style="font-size:10px">${p.dringlichkeit}</span>
-        ${p.status==='completed'?'<span class="badge badge-green" style="font-size:10px">✓</span>':'<span class="badge badge-blue" style="font-size:10px">Geplant</span>'}
-      </div>`;
+  // Time axis HTML
+  let timeAxis = '<div class="or-time-axis">';
+  for (let h = START_HOUR; h <= END_HOUR; h++) {
+    const y = (h - START_HOUR) * 60 * PX_PER_MIN;
+    timeAxis += `<div class="or-time-tick" style="top:${y}px">${String(h).padStart(2,'0')}:00</div>`;
+  }
+  timeAxis += '</div>';
+
+  // Room columns
+  const procs = AppState.orProcedures.filter(p => p.date === orSelectedDate && !p.is_notfall_spur);
+
+  let roomCols = OR_ROOMS.map(room => {
+    const roomProcs = procs.filter(p => p.or_room === room.id);
+    const isExtended = !!room.extendedEnd;
+    const isNotfall  = room.notfall;
+    const endHour    = room.extendedEnd ? parseInt(room.extendedEnd) : 16;
+    const activeH    = (endHour - START_HOUR) * 60 * PX_PER_MIN;
+    const inactiveH  = gridH - activeH;
+
+    // Notfall-Spur zone (for Saal 3: from 20:00 zone, shown differently)
+    const notfallZone = isNotfall
+      ? `<div class="or-notfall-zone" style="top:${(20-START_HOUR)*60}px;height:${(END_HOUR-20)*60}px" title="Notfall-Spur 20:00-07:00"></div>`
+      : '';
+
+    // Inactive zone (after room end time)
+    const inactiveZone = inactiveH > 0
+      ? `<div class="or-inactive-zone" style="top:${activeH}px;height:${Math.min(inactiveH, gridH-activeH)}px"></div>`
+      : '';
+
+    // Grid lines every 30 min
+    let gridLines = '';
+    for (let m = 0; m <= TOTAL_MINS; m += 30) {
+      gridLines += `<div class="or-grid-line${m%60===0?' or-grid-line-hour':''}" style="top:${m*PX_PER_MIN}px"></div>`;
+    }
+
+    // Procedure blocks
+    const blocks = roomProcs.map(proc => {
+      const startMin = timeStrToMin(proc.time);
+      const y  = (startMin - START_HOUR * 60) * PX_PER_MIN;
+      const h  = Math.max(proc.duration_min * PX_PER_MIN, 20);
+      const destColor = { IPS:'#E63946', IMC:'#F7941D', AWR:'#F0C040', Abteilung:'#00A79D' }[proc.postop_destination] || '#718096';
+      const textColor = proc.postop_destination === 'AWR' ? '#333' : '#fff';
+      const durH = Math.floor(proc.duration_min/60), durM = proc.duration_min%60;
+      const durStr = durH>0 ? `${durH}h${durM>0?' '+durM+'\'':''}` : `${durM}'`;
+      return `
+        <div class="or-proc-block" style="top:${y}px;height:${h}px;background:${destColor};color:${textColor}"
+             data-proc-id="${proc.id}" onclick="openEditProcedure('${proc.id}')" title="${proc.procedure} - ${proc.surgeon}">
+          <div class="or-proc-time">${proc.time}</div>
+          <div class="or-proc-name">${proc.procedure}</div>
+          ${h >= 40 ? `<div class="or-proc-dest">${proc.postop_destination} - ${durStr}</div>` : ''}
+          <div class="or-proc-edit-hint"><i class="bi bi-pencil"></i></div>
+        </div>`;
     }).join('');
 
-    return `<div class="or-date-group">
-      <div class="or-date-label">${dayLabel} · ${procs.length} Eingriffe
-        ${date>=today?`<span class="badge badge-red" style="margin-left:8px">IPS +${ipsCount}</span><span class="badge badge-yellow" style="margin-left:4px">IMC +${imcCount}</span>`:''}
-      </div>
-      <div class="or-timeline-list">${items}</div>
-    </div>`;
+    const badgeClass = isNotfall ? 'badge-red' : isExtended ? 'badge-yellow' : 'badge-blue';
+    const badgeLabel = isNotfall ? 'NF-Spur' : isExtended ? `bis ${room.extendedEnd}` : 'bis 16:00';
+
+    return `
+      <div class="or-room-col">
+        <div class="or-room-col-header" style="border-top-color:${isNotfall?'#E63946':isExtended?'#F7941D':'#00A79D'}">
+          <strong>${room.label}</strong>
+          <span class="badge ${badgeClass}" style="font-size:9px">${badgeLabel}</span>
+        </div>
+        <div class="or-room-col-body" style="height:${gridH}px;position:relative">
+          ${gridLines}${notfallZone}${inactiveZone}${blocks}
+        </div>
+      </div>`;
   }).join('');
+
+  container.innerHTML = `
+    <div class="or-grid-wrapper">
+      ${timeAxis}
+      <div class="or-rooms-wrapper">${roomCols}</div>
+    </div>`;
+}
+
+function orPrevDay() {
+  const d = new Date(orSelectedDate); d.setDate(d.getDate()-1);
+  orSelectedDate = d.toISOString().split('T')[0];
+  document.getElementById('or-date-picker').value = orSelectedDate;
+  buildORTimelineGrid();
+}
+
+function orNextDay() {
+  const d = new Date(orSelectedDate); d.setDate(d.getDate()+1);
+  orSelectedDate = d.toISOString().split('T')[0];
+  document.getElementById('or-date-picker').value = orSelectedDate;
+  buildORTimelineGrid();
+}
+
+function openEditProcedure(procId) {
+  const proc = AppState.orProcedures.find(p => p.id === procId);
+  if (!proc) return;
+  const modal = document.getElementById('or-edit-modal-overlay');
+  if (!modal) return;
+  modal.dataset.procId = procId;
+
+  setInputVal('oredit-patient',      proc.patient_name || '');
+  setInputVal('oredit-birthdate',    proc.birth_date   || '');
+  setInputVal('oredit-gender',       proc.gender       || '');
+  setInputVal('oredit-weight',       proc.weight       || '');
+  setInputVal('oredit-height',       proc.height       || '');
+  setInputVal('oredit-asa',          proc.asa_class    || 'II');
+  setInputVal('oredit-procedure',    proc.procedure    || '');
+  setInputVal('oredit-surgeon',      proc.surgeon      || '');
+  setInputVal('oredit-duration',     proc.duration_min || '');
+  setInputVal('oredit-date',         proc.date         || orSelectedDate);
+  setInputVal('oredit-time',         proc.time         || '');
+  setInputVal('oredit-room',         proc.or_room      || '');
+  setInputVal('oredit-postop',       proc.postop_destination || 'AWR');
+  setInputVal('oredit-anesthesia',   proc.anesthesia   || 'Allgemeinanästhesie');
+  setInputVal('oredit-dringlichkeit',proc.dringlichkeit|| 'Elektiv');
+  setInputVal('oredit-instruments',  proc.instruments  || '');
+  setInputVal('oredit-equipment',    proc.equipment    || '');
+  setInputVal('oredit-notes',        proc.notes        || '');
+
+  modal.classList.add('open');
+}
+
+function submitEditProcedure() {
+  const modal  = document.getElementById('or-edit-modal-overlay');
+  const procId = modal?.dataset.procId;
+  if (!procId) return;
+  const proc = { ...AppState.orProcedures.find(p => p.id === procId) };
+  proc.patient_name        = getInputVal('oredit-patient');
+  proc.birth_date          = getInputVal('oredit-birthdate');
+  proc.gender              = getInputVal('oredit-gender');
+  proc.weight              = parseFloat(getInputVal('oredit-weight')) || null;
+  proc.height              = parseFloat(getInputVal('oredit-height')) || null;
+  proc.asa_class           = getInputVal('oredit-asa');
+  proc.procedure           = getInputVal('oredit-procedure');
+  proc.surgeon             = getInputVal('oredit-surgeon');
+  proc.duration_min        = parseInt(getInputVal('oredit-duration')) || proc.duration_min;
+  proc.date                = getInputVal('oredit-date');
+  proc.time                = getInputVal('oredit-time');
+  proc.or_room             = parseInt(getInputVal('oredit-room')) || proc.or_room;
+  proc.postop_destination  = getInputVal('oredit-postop');
+  proc.anesthesia          = getInputVal('oredit-anesthesia');
+  proc.dringlichkeit       = getInputVal('oredit-dringlichkeit');
+  proc.instruments         = getInputVal('oredit-instruments');
+  proc.equipment           = getInputVal('oredit-equipment');
+  proc.notes               = getInputVal('oredit-notes');
+  AppState.saveCustomProcedure(proc);
+  modal.classList.remove('open');
+  buildORTimelineGrid();
+  renderORKPIs();
+  showToast(`Eingriff "${proc.procedure}" gespeichert.`);
+}
+
+function deleteEditProcedure() {
+  const modal  = document.getElementById('or-edit-modal-overlay');
+  const procId = modal?.dataset.procId;
+  if (!procId) return;
+  const proc = AppState.orProcedures.find(p => p.id === procId);
+  if (!confirm(`Eingriff "${proc?.procedure}" wirklich löschen?`)) return;
+  AppState.deleteCustomProcedure(procId);
+  modal.classList.remove('open');
+  buildORTimelineGrid();
+  renderORKPIs();
+  showToast('Eingriff gelöscht.');
+}
+
+function openEmergencyForm() {
+  const modal = document.getElementById('or-emergency-modal-overlay');
+  if (!modal) return;
+  ['emerg-patient','emerg-birthdate','emerg-weight','emerg-height','emerg-procedure',
+   'emerg-surgeon','emerg-duration','emerg-instruments','emerg-equipment','emerg-notes'].forEach(id => setInputVal(id, ''));
+  setInputVal('emerg-gender', 'M');
+  setInputVal('emerg-asa', 'III');
+  setInputVal('emerg-postop', 'IPS');
+  setInputVal('emerg-anesthesia', 'Allgemeinanästhesie');
+  setInputVal('emerg-level', 'Dringlich (S1)');
+  setInputVal('emerg-room', '3');
+  const now = new Date();
+  setInputVal('emerg-date', orSelectedDate);
+  setInputVal('emerg-time', `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`);
+  modal.classList.add('open');
+}
+
+function submitEmergencyProcedure() {
+  const id = `OR-NF-${Date.now()}`;
+  const proc = {
+    id,
+    patient_name:         getInputVal('emerg-patient'),
+    birth_date:           getInputVal('emerg-birthdate'),
+    gender:               getInputVal('emerg-gender'),
+    weight:               parseFloat(getInputVal('emerg-weight')) || null,
+    height:               parseFloat(getInputVal('emerg-height')) || null,
+    asa_class:            getInputVal('emerg-asa'),
+    procedure:            getInputVal('emerg-procedure'),
+    surgeon:              getInputVal('emerg-surgeon'),
+    duration_min:         parseInt(getInputVal('emerg-duration')) || 60,
+    date:                 getInputVal('emerg-date'),
+    time:                 getInputVal('emerg-time'),
+    or_room:              parseInt(getInputVal('emerg-room')) || 3,
+    postop_destination:   getInputVal('emerg-postop'),
+    postop_duration_days: 1,
+    anesthesia:           getInputVal('emerg-anesthesia'),
+    dringlichkeit:        getInputVal('emerg-level'),
+    instruments:          getInputVal('emerg-instruments'),
+    equipment:            getInputVal('emerg-equipment'),
+    notes:                getInputVal('emerg-notes'),
+    emergency_level:      getInputVal('emerg-level'),
+    status:               'planned',
+    is_notfall_spur:      false,
+  };
+  AppState.saveCustomProcedure(proc);
+  document.getElementById('or-emergency-modal-overlay')?.classList.remove('open');
+  orSelectedDate = proc.date;
+  buildORTimelineGrid();
+  renderORKPIs();
+  showToast(`Notfall "${proc.procedure}" angemeldet.`);
 }
 
 // ── HISTORICAL PAGE ───────────────────────────────────────────
@@ -676,6 +825,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('hist-dept-select')?.addEventListener('change', renderHistoricalPage);
   document.getElementById('hist-metric-select')?.addEventListener('change', renderHistoricalPage);
+
+  // OR date picker
+  const picker = document.getElementById('or-date-picker');
+  if (picker) {
+    picker.value = orSelectedDate;
+    picker.addEventListener('change', () => { orSelectedDate = picker.value; buildORTimelineGrid(); });
+  }
+
+  // OR modal close on overlay click
+  document.getElementById('or-edit-modal-overlay')?.addEventListener('click', e => {
+    if (e.target.id === 'or-edit-modal-overlay')
+      e.target.classList.remove('open');
+  });
+  document.getElementById('or-emergency-modal-overlay')?.addEventListener('click', e => {
+    if (e.target.id === 'or-emergency-modal-overlay')
+      e.target.classList.remove('open');
+  });
 });
 
 // ── DATA ENTRY MODAL ─────────────────────────────────────────

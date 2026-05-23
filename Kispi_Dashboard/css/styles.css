@@ -1469,3 +1469,135 @@ input:focus, select:focus, textarea:focus {
 #comp-modal-overlay .modal-box {
   max-width: 560px;
 }
+
+/* ── OR Timeline Grid ─────────────────────────────────────── */
+
+.or-grid-wrapper {
+  display: flex;
+  min-width: 700px;
+}
+
+.or-time-axis {
+  width: 52px;
+  flex-shrink: 0;
+  position: relative;
+  height: 780px;
+  border-right: 1px solid var(--border);
+}
+
+.or-time-tick {
+  position: absolute;
+  right: 6px;
+  font-size: 10px;
+  color: var(--text-light);
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.or-rooms-wrapper {
+  display: flex;
+  flex: 1;
+  gap: 0;
+}
+
+.or-room-col {
+  flex: 1;
+  min-width: 110px;
+  border-right: 1px solid var(--border);
+}
+
+.or-room-col:last-child { border-right: none; }
+
+.or-room-col-header {
+  padding: 8px 6px;
+  font-size: 12px;
+  text-align: center;
+  background: var(--kispi-bg);
+  border-bottom: 2px solid var(--border);
+  border-top: 3px solid transparent;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.or-room-col-body {
+  position: relative;
+  overflow: hidden;
+}
+
+.or-grid-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: rgba(0,0,0,0.06);
+  pointer-events: none;
+}
+
+.or-grid-line-hour {
+  background: rgba(0,0,0,0.12);
+}
+
+.or-inactive-zone {
+  position: absolute;
+  left: 0; right: 0;
+  background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 8px);
+  pointer-events: none;
+}
+
+.or-notfall-zone {
+  position: absolute;
+  left: 0; right: 0;
+  background: rgba(230,57,70,0.07);
+  border-top: 1px dashed rgba(230,57,70,0.4);
+  pointer-events: none;
+}
+
+.or-proc-block {
+  position: absolute;
+  left: 2px; right: 2px;
+  border-radius: 4px;
+  padding: 3px 5px;
+  cursor: pointer;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.3;
+  z-index: 5;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.or-proc-block:hover {
+  opacity: 0.9;
+  transform: scaleX(1.02);
+  z-index: 10;
+}
+
+.or-proc-time { font-weight: 700; font-size: 10px; }
+.or-proc-name { font-weight: 600; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.or-proc-dest { font-size: 9px; opacity: 0.9; }
+.or-proc-edit-hint {
+  position: absolute; top: 3px; right: 4px;
+  font-size: 10px; opacity: 0.7;
+}
+
+/* ── btn-danger ───────────────────────────────────────────── */
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background var(--transition);
+}
+.btn-danger:hover { background: #c0303b; }
