@@ -205,8 +205,12 @@ function renderStationGrid() {
           <div class="stat-label">Betten</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value" style="color:${epaColor(d.epa_average)}">${d.epa_average}</div>
-          <div class="stat-label">EPA-AC</div>
+          ${d.epa_average !== null
+            ? `<div class="stat-value" style="color:${epaColor(d.epa_average)}">${d.epa_average}</div>
+               <div class="stat-label">EPA-AC</div>`
+            : `<div class="stat-value" style="color:#F7941D">${d.nems_average ?? '—'}</div>
+               <div class="stat-label">NEMS Ø</div>`
+          }
         </div>
         <div class="stat-item">
           <div class="stat-value" style="color:${d.staff_coverage_pct >= 90 ? '#2DC653' : '#E63946'}">${d.staff_actual_total}/${d.staff_target_total}</div>
@@ -292,12 +296,19 @@ function renderStationsPage() {
     `).join('');
 
     const coverageColor = d.staff_coverage_pct >= 95 ? '#2DC653' : d.staff_coverage_pct >= 80 ? '#F7941D' : '#E63946';
-    const nemsSection   = isICU && d.nems_average
+    const isIPS         = dept.id === 'ips';
+    const showNems      = (isICU || dept.type === 'imc') && d.nems_average;
+    const nemsSection   = showNems
       ? `<div class="divider"></div>
-         <div class="flex-center gap-8">
-           <span class="text-sm text-muted">NEMS Ø</span>
-           <span class="font-bold" style="font-size:16px">${d.nems_average}</span>
-           <span class="text-sm text-muted">/ Patient</span>
+         <div class="flex-center gap-8" style="justify-content:space-between">
+           <span class="text-sm text-muted font-bold" style="text-transform:uppercase;letter-spacing:0.5px">NEMS Score</span>
+           <div class="flex-center gap-8">
+             <span class="font-bold" style="font-size:20px;color:#F7941D">${d.nems_average}</span>
+             <span class="text-sm text-muted">Ø / Patient</span>
+             <span class="badge ${d.nems_average >= 25 ? 'badge-red' : d.nems_average >= 18 ? 'badge-yellow' : 'badge-green'}" style="font-size:10px">
+               ${d.nems_average >= 25 ? 'Hoch' : d.nems_average >= 18 ? 'Mittel' : 'Gering'}
+             </span>
+           </div>
          </div>`
       : '';
 
@@ -333,15 +344,22 @@ function renderStationsPage() {
 
         <div class="bed-grid mb-12">${beds.join('')}</div>
 
-        <div class="text-sm text-muted mb-12" style="font-weight:600;text-transform:uppercase;letter-spacing:0.5px">EPA-AC Verteilung</div>
-        <div class="epa-bar">${epaBars || `<div class="epa-seg" style="flex:1;background:#E2E8F0"></div>`}</div>
-        <div class="epa-legend mb-12">
-          ${d.epa_distribution.map((count, i) => count > 0
-            ? `<div class="epa-legend-item"><div class="epa-dot" style="background:${EPA_LEVELS[i].color}"></div>L${i+1}: ${count}</div>`
-            : ''
-          ).join('')}
-          <div class="epa-legend-item" style="margin-left:auto;font-weight:700;color:${epaColor(d.epa_average)}">Ø ${d.epa_average}</div>
-        </div>
+        ${isIPS
+          ? `<div class="empty-state" style="padding:12px;background:#FEF3E2;border-radius:8px;text-align:center;margin-bottom:12px">
+               <span style="font-size:11px;color:#B45309;font-weight:600">IPS wird mit NEMS bewertet — kein EPA-AC Kids V2.0</span>
+             </div>`
+          : `<div class="text-sm text-muted mb-12" style="font-weight:600;text-transform:uppercase;letter-spacing:0.5px">
+               EPA-AC Kids V2.0${dept.type === 'imc' ? ' + NEMS' : ''}
+             </div>
+             <div class="epa-bar">${epaBars || `<div class="epa-seg" style="flex:1;background:#E2E8F0"></div>`}</div>
+             <div class="epa-legend mb-12">
+               ${d.epa_distribution.map((count, i) => count > 0
+                 ? `<div class="epa-legend-item"><div class="epa-dot" style="background:${EPA_LEVELS[i].color}"></div>S${i+1}: ${count}</div>`
+                 : ''
+               ).join('')}
+               ${d.epa_average !== null ? `<div class="epa-legend-item" style="margin-left:auto;font-weight:700;color:${epaColor(d.epa_average)}">Ø ${d.epa_average}</div>` : ''}
+             </div>`
+        }
 
         ${nemsSection}
         <div class="divider"></div>
@@ -596,11 +614,14 @@ function prefillFromCurrentData() {
     setInputVal(`entry-epa-${i+1}`, count);
   });
 
-  const dept = DEPARTMENTS.find(x => x.id === selectedDept);
-  const isICU = dept?.type === 'icu' || dept?.type === 'nicu';
-  const nemsRow = document.getElementById('nems-row');
-  if (nemsRow) nemsRow.style.display = isICU ? '' : 'none';
-  if (isICU && existing.nems_average) setInputVal('entry-nems', existing.nems_average);
+  const dept    = DEPARTMENTS.find(x => x.id === selectedDept);
+  const isIPS   = dept?.id === 'ips';
+  const showNems = isIPS || dept?.type === 'imc';
+  const nemsRow  = document.getElementById('nems-row');
+  const epaSection = document.getElementById('epa-section');
+  if (nemsRow)   nemsRow.style.display   = showNems ? '' : 'none';
+  if (epaSection) epaSection.style.display = isIPS ? 'none' : '';
+  if (showNems && existing.nems_average) setInputVal('entry-nems', existing.nems_average);
 }
 
 function submitDataEntry() {

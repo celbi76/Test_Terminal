@@ -125,15 +125,16 @@ function buildEpaDistribChart(canvasId, shiftData) {
 
   if (charts[canvasId]) charts[canvasId].destroy();
 
+  // IPS wird mit NEMS bewertet — aus EPA-AC Kids V2.0 Auswertung ausgeschlossen
   const totals = [0,0,0,0,0];
-  shiftData.forEach(d => {
+  shiftData.filter(d => d.department_id !== 'ips').forEach(d => {
     d.epa_distribution.forEach((count, i) => { totals[i] += count; });
   });
 
   charts[canvasId] = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: ['EPA 1\nSelbstpflegend', 'EPA 2\nTeilassistenz', 'EPA 3\nVollassistenz', 'EPA 4\nIntensiv', 'EPA 5\nMaximal'],
+      labels: ['Stufe 1\nGering', 'Stufe 2\nTeilweise', 'Stufe 3\nVollständig', 'Stufe 4\nKomplex', 'Stufe 5\nIntensiv'],
       datasets: [{
         label: 'Patienten',
         data: totals,
