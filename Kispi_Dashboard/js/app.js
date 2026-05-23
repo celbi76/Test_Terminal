@@ -289,7 +289,9 @@ function renderStationsPage() {
       const d     = AppState.currentShiftData.find(x => x.department_id === dept.id);
       if (!d) return '';
       const isIPS     = dept.id === 'ips';
-      const showNems  = (dept.type === 'icu' || dept.type === 'nicu' || dept.type === 'imc') && d.nems_average;
+      const isIMC     = dept.type === 'imc';
+      const showNems  = (dept.type === 'icu' || dept.type === 'nicu' || isIMC) && d.nems_average;
+      const hidesBarthel = isIPS || isIMC;
       const ts        = new Date(d.timestamp).toLocaleTimeString('de-CH', { hour:'2-digit', minute:'2-digit' });
       const shift     = SHIFTS.find(s => s.id === d.shift);
       const coverageColor = d.staff_coverage_pct >= 95 ? '#2DC653' : d.staff_coverage_pct >= 80 ? '#F7941D' : '#E63946';
@@ -300,8 +302,8 @@ function renderStationsPage() {
         return `<div class="bed-icon ${cls}" title="Bett ${i+1}: ${cls==='occupied'?'belegt':cls==='closed'?'geschlossen':'frei'}"></div>`;
       }).join('');
 
-      // Barthel section
-      const barthelSection = !isIPS ? (() => {
+      // Barthel section — nur für Abteilungen ohne NEMS (nicht IPS, nicht IMC)
+      const barthelSection = !hidesBarthel ? (() => {
         const total = d.beds_occupied || 1;
         const bars  = d.barthel_distrib.map((count, i) => {
           const w = count / total * 100;
@@ -311,16 +313,14 @@ function renderStationsPage() {
           ? `<div class="epa-legend-item"><div class="epa-dot" style="background:${BARTHEL_LEVELS[i].color}"></div>${BARTHEL_LEVELS[i].range}: ${count}</div>`
           : '').join('');
         return `
-          <div class="text-sm text-muted mb-12" style="font-weight:600;text-transform:uppercase;letter-spacing:0.5px">
-            Barthel-Index${dept.type==='imc'?' + NEMS':''}
-          </div>
+          <div class="text-sm text-muted mb-12" style="font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Barthel-Index</div>
           <div class="epa-bar">${bars || '<div class="epa-seg" style="flex:1;background:#E2E8F0"></div>'}</div>
           <div class="epa-legend mb-12">${legend}
             ${d.barthel_avg_score !== null ? `<div class="epa-legend-item" style="margin-left:auto;font-weight:700;color:${barthelColor(d.barthel_avg_score)}">Ø ${d.barthel_avg_score} Pkt.</div>` : ''}
           </div>`;
       })()
       : `<div style="padding:10px;background:#FEF3E2;border-radius:8px;text-align:center;margin-bottom:12px;font-size:11px;color:#B45309;font-weight:600">
-          IPS: NEMS-Scoring (kein Barthel-Index)
+          ${isIMC ? 'IMC' : 'IPS'}: Komplexität via NEMS-Score
         </div>`;
 
       // NEMS section
@@ -983,7 +983,9 @@ function prefillFromCurrentData() {
   const existing  = AppState.currentShiftData.find(d => d.department_id === selectedDept);
   const dept      = DEPARTMENTS.find(x => x.id === selectedDept);
   const isIPS     = dept?.id === 'ips';
-  const showNems  = isIPS || dept?.type === 'imc';
+  const isIMC     = dept?.type === 'imc';
+  const showNems  = isIPS || isIMC;
+  const hideBarthel = isIPS || isIMC;
   if (!existing) return;
   setInputVal('entry-beds-total',       existing.beds_total);
   setInputVal('entry-beds-operational', existing.beds_operational);
@@ -992,8 +994,8 @@ function prefillFromCurrentData() {
   if (showNems && existing.nems_average) setInputVal('entry-nems', existing.nems_average);
   const nemsRow    = document.getElementById('nems-row');
   const barthelSec = document.getElementById('barthel-section');
-  if (nemsRow)    nemsRow.style.display    = showNems ? '' : 'none';
-  if (barthelSec) barthelSec.style.display = isIPS   ? 'none' : '';
+  if (nemsRow)    nemsRow.style.display    = showNems   ? '' : 'none';
+  if (barthelSec) barthelSec.style.display = hideBarthel ? 'none' : '';
 }
 
 function openDataEntry()  { document.getElementById('modal-overlay')?.classList.add('open'); }
@@ -1003,13 +1005,14 @@ function submitDataEntry() {
   if (!selectedDept)  { alert('Bitte Abteilung wählen.'); return; }
   if (!selectedShift) { alert('Bitte Schicht wählen.');   return; }
 
-  const dept    = DEPARTMENTS.find(x => x.id === selectedDept);
-  const isIPS   = dept?.id === 'ips';
-  const showNems= isIPS || dept?.type === 'imc';
-  const roles   = getStaffRoles(dept.type);
+  const dept       = DEPARTMENTS.find(x => x.id === selectedDept);
+  const isIPS      = dept?.id === 'ips';
+  const isIMC      = dept?.type === 'imc';
+  const showNems   = isIPS || isIMC;
+  const roles      = getStaffRoles(dept.type);
 
   const barthelDistrib = [1,2,3,4].map(i => parseInt(getInputVal(`entry-b${i}`)) || 0);
-  const avgScore       = isIPS ? null : calcBarthelAvg(barthelDistrib);
+  const avgScore       = (isIPS || isIMC) ? null : calcBarthelAvg(barthelDistrib);
 
   const staff_actual_by_role = {}, staff_target_by_role = {};
   let staffActualTotal = 0, staffTargetTotal = 0;
