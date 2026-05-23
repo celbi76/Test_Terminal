@@ -1150,6 +1150,7 @@ input:focus, select:focus, textarea:focus {
 /* ── Utility ──────────────────────────────────────────────── */
 
 .mb-12 { margin-bottom: 12px; }
+.mb-12 { margin-bottom: 12px; }
 .mb-16 { margin-bottom: 16px; }
 .mb-20 { margin-bottom: 20px; }
 .flex { display: flex; }
