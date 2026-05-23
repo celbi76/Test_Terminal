@@ -423,10 +423,10 @@ function buildNurseRatioChart(canvasId, shiftData) {
   if (charts[canvasId]) charts[canvasId].destroy();
 
   const deptLabels = shiftData.map(d => DEPARTMENTS.find(x => x.id === d.department_id)?.name || d.department_id);
-  const ratios     = shiftData.map(d => d.staff_actual_total > 0
-    ? parseFloat((d.beds_occupied / d.staff_actual_total).toFixed(1))
-    : 0
-  );
+  const ratios     = shiftData.map(d => {
+    const qn = ['exp_int','exp_nf','pfn_hf'].reduce((s, id) => s + (d.staff_actual_by_role?.[id] || 0), 0);
+    return qn > 0 ? parseFloat((d.beds_occupied / qn).toFixed(1)) : 0;
+  });
   const colors     = ratios.map((r, i) => {
     const dept = DEPARTMENTS.find(x => x.id === shiftData[i].department_id);
     const isICU = dept?.type === 'icu' || dept?.type === 'nicu';
@@ -439,7 +439,7 @@ function buildNurseRatioChart(canvasId, shiftData) {
     data: {
       labels: deptLabels,
       datasets: [{
-        label: 'Patienten / Pflegeperson',
+        label: 'Patienten / Dipl. Pflegefachperson',
         data: ratios,
         backgroundColor: colors,
         borderRadius: 5,
@@ -451,7 +451,7 @@ function buildNurseRatioChart(canvasId, shiftData) {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ` 1 Pflegeperson : ${ctx.parsed.y} Patienten` } },
+        tooltip: { callbacks: { label: ctx => ` 1 Dipl. PFP/Experte : ${ctx.parsed.y} Patienten` } },
       },
       scales: {
         y: {

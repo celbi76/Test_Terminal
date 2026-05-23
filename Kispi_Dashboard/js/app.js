@@ -424,7 +424,7 @@ function renderStaffingPage() {
       <th>Abteilung</th>
       ${allRoles.map(r => `<th title="${r.label}">${ROLE_SHORT[r.id] || r.label}</th>`).join('')}
       <th>IST Total</th><th>SOLL Total</th><th>Abdeckung</th>
-      <th>Betr. Betten</th><th>Pat./Pflegeperson</th><th>Pool-Status</th>
+      <th>Betr. Betten</th><th>Nurse-to-Patient Ratio</th><th>Pool-Status</th>
     </tr>`;
   }
 
@@ -433,7 +433,8 @@ function renderStaffingPage() {
   if (tbody) {
     tbody.innerHTML = all.map(d => {
       const dept   = DEPARTMENTS.find(x => x.id === d.department_id);
-      const ratio  = d.staff_actual_total > 0 ? `1 : ${(d.beds_occupied / d.staff_actual_total).toFixed(1)}` : '—';
+      const qualNurses = ['exp_int','exp_nf','pfn_hf'].reduce((s, id) => s + (d.staff_actual_by_role?.[id] || 0), 0);
+      const ratio  = qualNurses > 0 ? `1 : ${(d.beds_occupied / qualNurses).toFixed(1)}` : '—';
       const cColor = d.staff_coverage_pct >= 95 ? '#2DC653' : d.staff_coverage_pct >= 80 ? '#F7941D' : '#E63946';
       const roleCells = allRoles.map(r => {
         const v = d.staff_actual_by_role?.[r.id];
