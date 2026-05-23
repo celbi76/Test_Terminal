@@ -591,6 +591,8 @@ const AppState = {
       if (i >= 0) this.orProcedures[i] = cp; else this.orProcedures.push(cp);
     });
     this.orProcedures.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    // Merge manually-submitted shift history into historicalData
+    this._mergeShiftHistory();
     this.buildAlerts();
     return this;
   },
@@ -605,6 +607,8 @@ const AppState = {
       if (i >= 0) this.orProcedures[i] = cp; else this.orProcedures.push(cp);
     });
     this.orProcedures.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    this.historicalData   = generateHistoricalData();
+    this._mergeShiftHistory();
     this.anticipated      = generateAnticipatedOccupancy();
     this.lastRefresh      = new Date();
     this.buildAlerts();
@@ -629,11 +633,49 @@ const AppState = {
   },
 
   submitShiftEntry(entry) {
-    const idx = this.currentShiftData.findIndex(d => d.department_id === entry.department_id);
-    if (idx >= 0) {
-      this.currentShiftData[idx] = { ...this.currentShiftData[idx], ...entry, timestamp: new Date().toISOString() };
+    // Persist to shift history regardless of date
+    this.saveShiftEntry(entry);
+
+    // Only update live dashboard for today's entries
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    if (entry.date === todayStr) {
+      const idx = this.currentShiftData.findIndex(d => d.department_id === entry.department_id);
+      if (idx >= 0) {
+        this.currentShiftData[idx] = { ...this.currentShiftData[idx], ...entry, timestamp: new Date().toISOString() };
+      }
     }
+
+    // Always merge into historicalData so charts reflect real data immediately
+    this._mergeShiftHistory();
     this.buildAlerts();
+  },
+
+  // ── Shift History (localStorage) ────────────────────────────
+
+  getShiftHistory() {
+    try { return JSON.parse(localStorage.getItem('kispi_shift_history') || '[]'); } catch { return []; }
+  },
+
+  saveShiftEntry(entry) {
+    const list = this.getShiftHistory();
+    const key  = `${entry.date}-${entry.shift}-${entry.department_id}`;
+    const i    = list.findIndex(e => `${e.date}-${e.shift}-${e.department_id}` === key);
+    const record = { ...entry, saved_at: new Date().toISOString() };
+    if (i >= 0) list[i] = record; else list.push(record);
+    localStorage.setItem('kispi_shift_history', JSON.stringify(list));
+  },
+
+  _mergeShiftHistory() {
+    this.getShiftHistory().forEach(entry => {
+      const i = this.historicalData.findIndex(
+        r => r.date === entry.date && r.department_id === entry.department_id
+      );
+      const merged = { ...entry, is_manual: true };
+      if (i >= 0) this.historicalData[i] = { ...this.historicalData[i], ...merged };
+      else        this.historicalData.push(merged);
+    });
+    this.historicalData.sort((a, b) => a.date.localeCompare(b.date));
   },
 
   getKPIs() {
