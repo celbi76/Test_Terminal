@@ -676,7 +676,8 @@ function openEmergencyForm() {
   const modal = document.getElementById('or-emergency-modal-overlay');
   if (!modal) return;
   ['emerg-patient','emerg-birthdate','emerg-weight','emerg-height','emerg-procedure',
-   'emerg-surgeon','emerg-duration','emerg-instruments','emerg-equipment','emerg-notes'].forEach(id => setInputVal(id, ''));
+   'emerg-surgeon','emerg-duration','emerg-instruments','emerg-equipment','emerg-notes',
+   'emerg-anesthesia-notes'].forEach(id => setInputVal(id, ''));
   setInputVal('emerg-gender', 'M');
   setInputVal('emerg-asa', 'III');
   setInputVal('emerg-postop', 'IPS');
@@ -708,6 +709,7 @@ function submitEmergencyProcedure() {
     postop_destination:   getInputVal('emerg-postop'),
     postop_duration_days: 1,
     anesthesia:           getInputVal('emerg-anesthesia'),
+    anesthesia_notes:     getInputVal('emerg-anesthesia-notes'),
     dringlichkeit:        getInputVal('emerg-level'),
     instruments:          getInputVal('emerg-instruments'),
     equipment:            getInputVal('emerg-equipment'),
