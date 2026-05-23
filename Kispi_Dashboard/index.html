@@ -386,40 +386,32 @@
         </div>
       </div>
 
-      <!-- OR Room Grid -->
+      <!-- Date selector + Timeline Grid -->
       <div class="card mb-20">
         <div class="card-header">
           <i class="bi bi-grid" style="color:var(--kispi-teal)"></i>
-          <h3>OP-Säle — Tagesübersicht (IKM-Kapazitätenplanung)</h3>
-          <div class="flex-center gap-8" style="margin-left:auto;font-size:11px">
-            <span style="width:10px;height:10px;background:#27AE60;border-radius:2px;display:inline-block"></span> Standard (07:00–16:00)
-            <span style="width:10px;height:10px;background:#F7941D;border-radius:2px;display:inline-block;margin-left:6px"></span> Verlängert (bis 20:00)
-            <span style="width:10px;height:10px;background:#E63946;border-radius:2px;display:inline-block;margin-left:6px"></span> Notfall-Spur
+          <h3>OP-Säle — Tagesplan</h3>
+          <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+            <button class="btn-icon" onclick="orPrevDay()"><i class="bi bi-chevron-left"></i></button>
+            <input type="date" id="or-date-picker" style="border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px">
+            <button class="btn-icon" onclick="orNextDay()"><i class="bi bi-chevron-right"></i></button>
+            <button class="btn-danger" onclick="openEmergencyForm()">
+              <i class="bi bi-plus-circle-fill"></i> Notfall anmelden
+            </button>
           </div>
         </div>
-        <div class="card-body">
-          <div class="or-room-grid" id="or-room-grid"><!-- JS --></div>
-          <div style="margin-top:12px;font-size:11px;color:var(--text-light);padding:8px;background:#FEF3E2;border-radius:6px;border-left:3px solid #F7941D">
-            <strong>Saal 3:</strong> Notfall-Spur täglich 20:00–07:00 (24h-Betrieb).
-            <strong>Säle 5+6:</strong> verlängert Mo–Fr bis 20:00.
-            Planung über IKM (Integratives Kapazitäten Management) — keine digitale Schnittstelle.
-          </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <div id="or-timeline-grid"><!-- JS --></div>
         </div>
-      </div>
-
-      <!-- OR Timeline -->
-      <div class="card">
-        <div class="card-header">
-          <i class="bi bi-scissors" style="color:var(--kispi-teal)"></i>
-          <h3>OP-Programm &amp; postoperative Verlegungsplanung</h3>
-          <div class="flex-center gap-8" style="margin-left:auto;font-size:12px">
-            <span style="width:12px;height:12px;background:var(--danger);border-radius:2px;display:inline-block"></span> IPS
-            <span style="width:12px;height:12px;background:var(--warning);border-radius:2px;display:inline-block;margin-left:6px"></span> IMC
-            <span style="width:12px;height:12px;background:var(--kispi-teal);border-radius:2px;display:inline-block;margin-left:6px"></span> Abteilung
-          </div>
-        </div>
-        <div class="card-body">
-          <div id="or-timeline"><!-- JS --></div>
+        <div style="padding:8px 16px 12px;font-size:11px;color:var(--text-light);background:#FEF3E2;border-top:1px solid var(--border)">
+          <strong>Saal 3:</strong> Notfall-Spur täglich 20:00–07:00.
+          <strong>Säle 5+6:</strong> verlängert Mo–Fr bis 20:00. Planung via IKM.
+          <span style="margin-left:12px">
+            <span style="display:inline-block;width:10px;height:10px;background:#E63946;border-radius:2px"></span> IPS
+            <span style="display:inline-block;width:10px;height:10px;background:#F7941D;border-radius:2px;margin-left:6px"></span> IMC
+            <span style="display:inline-block;width:10px;height:10px;background:#F0C040;border-radius:2px;margin-left:6px"></span> AWR
+            <span style="display:inline-block;width:10px;height:10px;background:#00A79D;border-radius:2px;margin-left:6px"></span> Abteilung
+          </span>
         </div>
       </div>
     </section>
@@ -718,6 +710,131 @@
     <div class="modal-footer">
       <button class="btn-secondary" id="comp-cancel-btn">Abbrechen</button>
       <button class="btn-primary" id="comp-save-btn"><i class="bi bi-check-lg"></i> Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: EINGRIFF BEARBEITEN
+══════════════════════════════════════════════════════════ -->
+<div id="or-edit-modal-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px">
+    <div class="modal-header">
+      <i class="bi bi-pencil-square" style="font-size:20px;color:var(--kispi-teal)"></i>
+      <h2>Eingriff bearbeiten</h2>
+      <button class="modal-close" onclick="document.getElementById('or-edit-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Datum</label><input type="date" id="oredit-date"></div>
+        <div class="form-group"><label>Uhrzeit</label><input type="time" id="oredit-time"></div>
+        <div class="form-group"><label>Saal</label>
+          <select id="oredit-room">
+            <option value="1">Saal 1</option><option value="2">Saal 2</option>
+            <option value="3">Saal 3</option><option value="4">Saal 4</option>
+            <option value="5">Saal 5</option><option value="6">Saal 6</option>
+          </select>
+        </div>
+        <div class="form-group"><label>OP-Dauer (Min.)</label><input type="number" id="oredit-duration" min="5" max="600"></div>
+        <div class="form-group"><label>Name Patient</label><input type="text" id="oredit-patient" placeholder="Nachname, Vorname"></div>
+        <div class="form-group"><label>Geburtsdatum</label><input type="date" id="oredit-birthdate"></div>
+        <div class="form-group"><label>Geschlecht</label>
+          <select id="oredit-gender"><option value="M">Männlich</option><option value="F">Weiblich</option><option value="D">Divers</option></select>
+        </div>
+        <div class="form-group"><label>Gewicht (kg)</label><input type="number" id="oredit-weight" min="0" max="200" step="0.1"></div>
+        <div class="form-group"><label>Grösse (cm)</label><input type="number" id="oredit-height" min="30" max="220"></div>
+        <div class="form-group"><label>ASA-Klasse</label>
+          <select id="oredit-asa"><option>I</option><option>II</option><option>III</option><option>IV</option><option>V</option></select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geplanter Eingriff</label><input type="text" id="oredit-procedure"></div>
+        <div class="form-group"><label>Operateur</label><input type="text" id="oredit-surgeon"></div>
+        <div class="form-group"><label>Anästhesieform</label>
+          <select id="oredit-anesthesia">
+            <option>Allgemeinanästhesie</option><option>Regionalanästhesie</option>
+            <option>Lokalanästhesie</option><option>Kombiniert</option><option>Spinalanästhesie</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Postop. Verlegung</label>
+          <select id="oredit-postop">
+            <option>IPS</option><option>IMC</option><option>AWR</option><option>Abteilung</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Dringlichkeit</label>
+          <select id="oredit-dringlichkeit">
+            <option>Elektiv</option><option>Dringlich</option><option>Notfall</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Instrumentarium</label><input type="text" id="oredit-instruments" placeholder="Spezialinstrumente, Sets..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geräte</label><input type="text" id="oredit-equipment" placeholder="C-Bogen, Mikroskop, Laser..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Bemerkungen</label><textarea id="oredit-notes" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('or-edit-modal-overlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn-danger" onclick="deleteEditProcedure()" style="margin-right:auto"><i class="bi bi-trash"></i> Löschen</button>
+      <button class="btn-primary" onclick="submitEditProcedure()"><i class="bi bi-check-lg"></i> Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: NOTFALL ANMELDEN
+══════════════════════════════════════════════════════════ -->
+<div id="or-emergency-modal-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px">
+    <div class="modal-header">
+      <i class="bi bi-plus-circle-fill" style="font-size:20px;color:var(--danger)"></i>
+      <h2>Notfall anmelden</h2>
+      <button class="modal-close" onclick="document.getElementById('or-emergency-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Datum</label><input type="date" id="emerg-date"></div>
+        <div class="form-group"><label>Uhrzeit</label><input type="time" id="emerg-time"></div>
+        <div class="form-group"><label>Saal</label>
+          <select id="emerg-room">
+            <option value="1">Saal 1</option><option value="2">Saal 2</option>
+            <option value="3" selected>Saal 3</option><option value="4">Saal 4</option>
+            <option value="5">Saal 5</option><option value="6">Saal 6</option>
+          </select>
+        </div>
+        <div class="form-group"><label>OP-Dauer (Min.)</label><input type="number" id="emerg-duration" min="5" max="600" placeholder="z.B. 60"></div>
+        <div class="form-group"><label>Name Patient</label><input type="text" id="emerg-patient" placeholder="Nachname, Vorname"></div>
+        <div class="form-group"><label>Geburtsdatum</label><input type="date" id="emerg-birthdate"></div>
+        <div class="form-group"><label>Geschlecht</label>
+          <select id="emerg-gender"><option value="M">Männlich</option><option value="F">Weiblich</option><option value="D">Divers</option></select>
+        </div>
+        <div class="form-group"><label>Gewicht (kg)</label><input type="number" id="emerg-weight" min="0" max="200" step="0.1"></div>
+        <div class="form-group"><label>Grösse (cm)</label><input type="number" id="emerg-height" min="30" max="220"></div>
+        <div class="form-group"><label>ASA-Klasse</label>
+          <select id="emerg-asa"><option>I</option><option>II</option><option selected>III</option><option>IV</option><option>V</option></select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geplanter Eingriff</label><input type="text" id="emerg-procedure" placeholder="Diagnose / Operationsbezeichnung"></div>
+        <div class="form-group"><label>Operateur</label><input type="text" id="emerg-surgeon"></div>
+        <div class="form-group"><label>Anästhesieform</label>
+          <select id="emerg-anesthesia">
+            <option>Allgemeinanästhesie</option><option>Regionalanästhesie</option>
+            <option>Lokalanästhesie</option><option>Kombiniert</option><option>Spinalanästhesie</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Postop. Verlegung</label>
+          <select id="emerg-postop">
+            <option selected>IPS</option><option>IMC</option><option>AWR</option><option>Abteilung</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Notfallstufe</label>
+          <select id="emerg-level">
+            <option>Sofort (S0)</option><option selected>Dringlich (S1)</option><option>Nicht-dringlich (S2)</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Instrumentarium</label><input type="text" id="emerg-instruments" placeholder="Spezialinstrumente, Sets..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geräte</label><input type="text" id="emerg-equipment" placeholder="C-Bogen, Mikroskop, Laser..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Bemerkungen</label><textarea id="emerg-notes" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('or-emergency-modal-overlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn-danger" onclick="submitEmergencyProcedure()"><i class="bi bi-plus-circle-fill"></i> Notfall anmelden</button>
     </div>
   </div>
 </div>

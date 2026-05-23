@@ -491,6 +491,17 @@ function generateORProcedures() {
                               : dayOffset === 0 && startH < new Date().getHours() ? 'completed'
                               : 'planned',
           is_notfall_spur:      false,
+          patient_name:         '',
+          birth_date:           '',
+          gender:               '',
+          weight:               null,
+          height:               null,
+          asa_class:            'II',
+          anesthesia:           'Allgemeinanästhesie',
+          instruments:          '',
+          equipment:            '',
+          emergency_level:      '',
+          notes:                '',
         });
 
         curMin += duration + randomInt(15, 30);
@@ -550,6 +561,13 @@ function generateAnticipatedOccupancy() {
   return days;
 }
 
+// ── OP-Zusatzkonstanten ──────────────────────────────────────
+
+const POSTOP_DESTINATIONS = ['IPS', 'IMC', 'AWR', 'Abteilung'];
+const ASA_CLASSES = ['I', 'II', 'III', 'IV', 'V'];
+const ANESTHESIA_TYPES = ['Allgemeinanästhesie', 'Regionalanästhesie', 'Lokalanästhesie', 'Kombiniert', 'Spinalanästhesie'];
+const EMERGENCY_LEVELS = ['Sofort (S0)', 'Dringlich (S1)', 'Nicht-dringlich (S2)'];
+
 // ── Globaler App-State ───────────────────────────────────────
 
 const AppState = {
@@ -566,6 +584,13 @@ const AppState = {
     this.orProcedures     = generateORProcedures();
     this.anticipated      = generateAnticipatedOccupancy();
     this.lastRefresh      = new Date();
+    // Merge custom/modified procedures from localStorage
+    const custom = this.getCustomProcedures();
+    custom.forEach(cp => {
+      const i = this.orProcedures.findIndex(p => p.id === cp.id);
+      if (i >= 0) this.orProcedures[i] = cp; else this.orProcedures.push(cp);
+    });
+    this.orProcedures.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
     this.buildAlerts();
     return this;
   },
@@ -573,6 +598,13 @@ const AppState = {
   refresh() {
     this.currentShiftData = generateCurrentShiftData();
     this.orProcedures     = generateORProcedures();
+    // Merge custom/modified procedures from localStorage
+    const custom = this.getCustomProcedures();
+    custom.forEach(cp => {
+      const i = this.orProcedures.findIndex(p => p.id === cp.id);
+      if (i >= 0) this.orProcedures[i] = cp; else this.orProcedures.push(cp);
+    });
+    this.orProcedures.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
     this.anticipated      = generateAnticipatedOccupancy();
     this.lastRefresh      = new Date();
     this.buildAlerts();
@@ -649,6 +681,27 @@ const AppState = {
       pool_releases:  pool_rels,
       alerts_count:   this.alerts.length,
     };
+  },
+
+  getCustomProcedures() {
+    try { return JSON.parse(localStorage.getItem('kispi_or_custom') || '[]'); } catch { return []; }
+  },
+
+  saveCustomProcedure(proc) {
+    const list = this.getCustomProcedures();
+    const idx  = list.findIndex(p => p.id === proc.id);
+    if (idx >= 0) list[idx] = proc; else list.push(proc);
+    localStorage.setItem('kispi_or_custom', JSON.stringify(list));
+    // Also update in-memory
+    const i = this.orProcedures.findIndex(p => p.id === proc.id);
+    if (i >= 0) this.orProcedures[i] = proc; else this.orProcedures.push(proc);
+    this.orProcedures.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  },
+
+  deleteCustomProcedure(id) {
+    const list = this.getCustomProcedures().filter(p => p.id !== id);
+    localStorage.setItem('kispi_or_custom', JSON.stringify(list));
+    this.orProcedures = this.orProcedures.filter(p => p.id !== id);
   },
 
   getCompetencies() {
