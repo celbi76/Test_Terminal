@@ -544,32 +544,37 @@ function renderORPage() {
 }
 
 function renderORKPIs() {
-  const now  = new Date();
+  const now   = new Date();
   const today = localDateStr();
-  const tom   = new Date(now); tom.setDate(now.getDate() + 1);
-  const tomorrowStr = localDateStr(tom);
+  const dow   = now.getDay(); // 0=Sun, 6=Sat
 
-  // Laufende Woche: Mon – Sun
-  const dow  = now.getDay(); // 0=Sun
-  const mon  = new Date(now); mon.setDate(now.getDate() + (dow === 0 ? -6 : 1 - dow));
-  const sun  = new Date(mon); sun.setDate(mon.getDate() + 6);
-  const weekStart = localDateStr(mon);
-  const weekEnd   = localDateStr(sun);
-  const weekLabel = `${mon.getDate()}.${mon.getMonth()+1}. – ${sun.getDate()}.${sun.getMonth()+1}.`;
+  // "Morgen": skip to Monday if tomorrow falls on a weekend
+  const tomOffset = dow === 5 ? 3 : dow === 6 ? 2 : 1; // Fri→+3(Mon), Sat→+2(Mon), else +1
+  const tom = new Date(now); tom.setDate(now.getDate() + tomOffset);
+  const tomorrowStr = localDateStr(tom);
+  const tomorrowLabel = tomOffset > 1
+    ? `Mo, ${tom.getDate()}.${tom.getMonth()+1}.`
+    : 'Morgen';
+
+  // IPS/IMC: rolling 7-day window so weekends always show next week's planned transfers
+  const win7 = new Date(now); win7.setDate(now.getDate() + 7);
+  const win7Str   = localDateStr(win7);
+  const weekLabel = `${now.getDate()}.${now.getMonth()+1}. – ${win7.getDate()}.${win7.getMonth()+1}.`;
 
   const all = AppState.orProcedures;
 
-  // ── Row 1: Programm-Übersicht & Woche ───────────────────────
+  // ── Row 1: Programm-Übersicht & 7-Tage-Horizont ─────────────
   setEl('or-today-count',    all.filter(p => p.date===today && !p.is_notfall_spur).length);
+  setEl('or-tomorrow-label', tomorrowLabel);
   setEl('or-tomorrow-count', all.filter(p => p.date===tomorrowStr && p.status==='planned' && !p.is_notfall_spur).length);
-  setEl('or-ips-count',      all.filter(p => p.date>=weekStart && p.date<=weekEnd && p.postop_destination==='IPS' && p.status==='planned').length);
-  setEl('or-imc-count',      all.filter(p => p.date>=weekStart && p.date<=weekEnd && p.postop_destination==='IMC' && p.status==='planned').length);
+  setEl('or-ips-count',      all.filter(p => p.date>=today && p.date<=win7Str && p.postop_destination==='IPS' && p.status==='planned').length);
+  setEl('or-imc-count',      all.filter(p => p.date>=today && p.date<=win7Str && p.postop_destination==='IMC' && p.status==='planned').length);
   setEl('or-ips-week-label', weekLabel);
   setEl('or-imc-week-label', weekLabel);
 
   // ── Row 2: Postop-Verlegungen für das angezeigte Datum ──────
-  const selDate  = orSelectedDate;
-  const selLabel = new Date(selDate + 'T12:00:00').toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' });
+  const selDate    = orSelectedDate;
+  const selLabel   = new Date(selDate + 'T12:00:00').toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' });
   const selPlanned = all.filter(p => p.date===selDate && p.status==='planned' && !p.is_notfall_spur);
   setEl('or-dest-ips-count', selPlanned.filter(p => p.postop_destination==='IPS').length);
   setEl('or-dest-imc-count', selPlanned.filter(p => p.postop_destination==='IMC').length);
@@ -751,7 +756,7 @@ function initORDragDrop() {
       const relMin  = Math.max(0, Math.round(Math.max(e.clientY - colRect.top - dragOffsetY, 0) / PX_PER_MIN / SNAP_MIN) * SNAP_MIN);
       const absMin  = (START_MIN + relMin) % (24 * 60);
       proc.time    = `${String(Math.floor(absMin/60)).padStart(2,'0')}:${String(absMin%60).padStart(2,'0')}`;
-      proc.or_room = col.dataset.roomId;
+      proc.or_room = parseInt(col.dataset.roomId, 10);
 
       AppState.saveCustomProcedure(proc);
       dragProcId = null;
