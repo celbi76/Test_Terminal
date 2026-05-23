@@ -616,6 +616,12 @@ function buildORTimelineGrid() {
     </div>`;
 }
 
+function orGoToday() {
+  orSelectedDate = new Date().toISOString().split('T')[0];
+  document.getElementById('or-date-picker').value = orSelectedDate;
+  buildORTimelineGrid();
+}
+
 function orPrevDay() {
   const d = new Date(orSelectedDate); d.setDate(d.getDate()-1);
   orSelectedDate = d.toISOString().split('T')[0];
