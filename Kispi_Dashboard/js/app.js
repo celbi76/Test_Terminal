@@ -656,11 +656,12 @@ function buildORTimelineGrid() {
       const durStr = durH>0 ? `${durH}h${durM>0?' '+durM+'\'':''}` : `${durM}'`;
       return `
         <div class="or-proc-block" style="top:${y}px;height:${h}px;background:${destColor};color:${textColor}"
+             draggable="true"
              data-proc-id="${proc.id}" onclick="openEditProcedure('${proc.id}')" title="${proc.procedure} – ${proc.surgeon}">
           <div class="or-proc-time">${proc.time}</div>
           <div class="or-proc-name">${proc.procedure}</div>
           ${h >= 40 ? `<div class="or-proc-dest">${proc.postop_destination} · ${durStr}</div>` : ''}
-          <div class="or-proc-edit-hint"><i class="bi bi-pencil"></i></div>
+          <div class="or-proc-edit-hint"><i class="bi bi-pencil"></i> <i class="bi bi-grip-vertical" style="opacity:.6"></i></div>
         </div>`;
     }).join('');
 
@@ -672,8 +673,9 @@ function buildORTimelineGrid() {
         <div class="or-room-col-header" style="border-top-color:${isNotfall?'#E63946':isExtended?'#F7941D':'#00A79D'}">
           <strong>${room.label}</strong>
           <span class="badge ${badgeClass}" style="font-size:9px">${badgeLabel}</span>
+          <span class="or-drop-time-hint"></span>
         </div>
-        <div class="or-room-col-body" style="height:${gridH}px;position:relative">
+        <div class="or-room-col-body" data-room-id="${room.id}" style="height:${gridH}px;position:relative">
           ${gridLines}${zones}${blocks}
         </div>
       </div>`;
@@ -684,7 +686,78 @@ function buildORTimelineGrid() {
       ${timeAxis}
       <div class="or-rooms-wrapper">${roomCols}</div>
     </div>`;
+  initORDragDrop();
   renderORKPIs();
+}
+
+function initORDragDrop() {
+  const PX_PER_MIN = 1.0;
+  const START_MIN  = 7 * 60;
+  const SNAP_MIN   = 15;
+  let dragProcId   = null;
+  let dragOffsetY  = 0;
+
+  document.querySelectorAll('.or-proc-block').forEach(block => {
+    block.addEventListener('dragstart', e => {
+      dragProcId  = block.dataset.procId;
+      dragOffsetY = e.clientY - block.getBoundingClientRect().top;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragProcId);
+      // Defer so drag ghost captures full block first
+      requestAnimationFrame(() => block.classList.add('or-proc-dragging'));
+    });
+    block.addEventListener('dragend', () => {
+      block.classList.remove('or-proc-dragging');
+      document.querySelectorAll('.or-room-col-body.or-drop-over')
+              .forEach(b => b.classList.remove('or-drop-over'));
+      dragProcId = null;
+    });
+  });
+
+  document.querySelectorAll('.or-room-col-body').forEach(col => {
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.or-room-col-body.or-drop-over')
+              .forEach(b => b.classList.remove('or-drop-over'));
+      col.classList.add('or-drop-over');
+
+      // Show snapped time indicator in column header
+      const colRect = col.getBoundingClientRect();
+      const relMin  = Math.max(0, Math.round(Math.max(e.clientY - colRect.top - dragOffsetY, 0) / PX_PER_MIN / SNAP_MIN) * SNAP_MIN);
+      const absMin  = (START_MIN + relMin) % (24 * 60);
+      const label   = `${String(Math.floor(absMin/60)).padStart(2,'0')}:${String(absMin%60).padStart(2,'0')}`;
+      const hint    = col.parentElement.querySelector('.or-drop-time-hint');
+      if (hint) hint.textContent = label;
+    });
+    col.addEventListener('dragleave', e => {
+      if (!col.contains(e.relatedTarget)) {
+        col.classList.remove('or-drop-over');
+        const hint = col.parentElement.querySelector('.or-drop-time-hint');
+        if (hint) hint.textContent = '';
+      }
+    });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('or-drop-over');
+      const hint = col.parentElement.querySelector('.or-drop-time-hint');
+      if (hint) hint.textContent = '';
+      if (!dragProcId) return;
+
+      const proc = AppState.orProcedures.find(p => p.id === dragProcId);
+      if (!proc) return;
+
+      const colRect = col.getBoundingClientRect();
+      const relMin  = Math.max(0, Math.round(Math.max(e.clientY - colRect.top - dragOffsetY, 0) / PX_PER_MIN / SNAP_MIN) * SNAP_MIN);
+      const absMin  = (START_MIN + relMin) % (24 * 60);
+      proc.time    = `${String(Math.floor(absMin/60)).padStart(2,'0')}:${String(absMin%60).padStart(2,'0')}`;
+      proc.or_room = col.dataset.roomId;
+
+      AppState.saveCustomProcedure(proc);
+      dragProcId = null;
+      buildORTimelineGrid();
+    });
+  });
 }
 
 function orGoToday() {
