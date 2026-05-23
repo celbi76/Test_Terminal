@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20260523c">
 </head>
 <body>
 
@@ -288,19 +288,7 @@
         </div>
         <div class="card-body" style="padding:0;overflow-x:auto">
           <table class="staffing-table">
-            <thead>
-              <tr>
-                <th>Abteilung</th>
-                <th>Dipl. PFP</th>
-                <th>PA</th>
-                <th>Ausb.</th>
-                <th>IST Total</th>
-                <th>SOLL Total</th>
-                <th>Abdeckung</th>
-                <th>Pat./Pflegeperson</th>
-                <th>Pool-Status</th>
-              </tr>
-            </thead>
+            <thead id="staffing-thead"><!-- JS --></thead>
             <tbody id="staffing-tbody"><!-- JS --></tbody>
             <tfoot id="staffing-tfoot"><!-- JS --></tfoot>
           </table>
@@ -843,9 +831,9 @@
 </div>
 
 <!-- Scripts -->
-<script src="js/data.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/app.js"></script>
+<script src="js/data.js?v=20260523c"></script>
+<script src="js/charts.js?v=20260523c"></script>
+<script src="js/app.js?v=20260523c"></script>
 
 </body>
 </html>
