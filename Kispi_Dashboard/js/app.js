@@ -290,7 +290,7 @@ function renderStationsPage() {
       if (!d) return '';
       const isIPS     = dept.id === 'ips';
       const isIMC     = dept.type === 'imc';
-      const showNems  = (dept.type === 'icu' || dept.type === 'nicu' || isIMC) && d.nems_average;
+      const showNems  = (dept.type === 'icu' || isIMC) && d.nems_average;
       const hidesBarthel = isIPS || isIMC;
       const ts        = new Date(d.timestamp).toLocaleTimeString('de-CH', { hour:'2-digit', minute:'2-digit' });
       const shift     = SHIFTS.find(s => s.id === d.shift);
