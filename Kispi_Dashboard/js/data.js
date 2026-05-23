@@ -307,8 +307,8 @@ function generateCurrentShiftData() {
         : null;
     }
 
-    // NEMS: IPS und IMC
-    const showNems = isICU || isIMC;
+    // NEMS: nur IPS und IMC (Neo/NICU wird mit Barthel-Index bewertet)
+    const showNems = dept.type === 'icu' || isIMC;
     const nemsAvg  = showNems
       ? (isIPS ? randomFloat(16, 34, 1) : randomFloat(10, 22, 1))
       : null;
