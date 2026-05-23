@@ -487,68 +487,85 @@ function buildORTimelineGrid() {
   const container = document.getElementById('or-timeline-grid');
   if (!container) return;
 
-  const PX_PER_MIN = 1.0;
-  const START_HOUR = 7;
-  const END_HOUR   = 20;
-  const TOTAL_MINS = (END_HOUR - START_HOUR) * 60; // 780min = 780px
-  const gridH      = TOTAL_MINS * PX_PER_MIN;
+  // 24-hour grid: 07:00 today → 07:00 next day
+  // Saal 3 (Notfall) shows full 24h; other rooms show inactive zone after their end time
+  const PX_PER_MIN  = 1.0;
+  const START_MIN   = 7 * 60;       // 420 min (07:00)
+  const TOTAL_MINS  = 24 * 60;      // 1440 min = 1440px
+  const gridH       = TOTAL_MINS * PX_PER_MIN;
+  const NF_START_MIN = 20 * 60;     // 20:00 → Notfall-Spur begins
 
-  // Time axis HTML
+  // Time axis: 07:00 through 07:00 next day (25 labels)
   let timeAxis = '<div class="or-time-axis">';
-  for (let h = START_HOUR; h <= END_HOUR; h++) {
-    const y = (h - START_HOUR) * 60 * PX_PER_MIN;
-    timeAxis += `<div class="or-time-tick" style="top:${y}px">${String(h).padStart(2,'0')}:00</div>`;
+  for (let offset = 0; offset <= TOTAL_MINS; offset += 60) {
+    const y        = offset * PX_PER_MIN;
+    const absH     = (START_MIN + offset) / 60;  // absolute hour (7..31)
+    const displayH = absH % 24;
+    const label    = `${String(displayH).padStart(2,'0')}:00`;
+    const isMidnight = displayH === 0;
+    timeAxis += `<div class="or-time-tick${isMidnight?' or-time-tick-midnight':''}" style="top:${y}px">${label}</div>`;
   }
   timeAxis += '</div>';
 
-  // Room columns
+  // Procedures for the selected date (include notfall-spur only for Saal 3 display)
   const procs = AppState.orProcedures.filter(p => p.date === orSelectedDate && !p.is_notfall_spur);
 
   let roomCols = OR_ROOMS.map(room => {
-    const roomProcs = procs.filter(p => p.or_room === room.id);
+    const roomProcs  = procs.filter(p => p.or_room === room.id);
     const isExtended = !!room.extendedEnd;
     const isNotfall  = room.notfall;
-    const endHour    = room.extendedEnd ? parseInt(room.extendedEnd) : 16;
-    const activeH    = (endHour - START_HOUR) * 60 * PX_PER_MIN;
-    const inactiveH  = gridH - activeH;
 
-    // Notfall-Spur zone (for Saal 3: from 20:00 zone, shown differently)
-    const notfallZone = isNotfall
-      ? `<div class="or-notfall-zone" style="top:${(20-START_HOUR)*60}px;height:${(END_HOUR-20)*60}px" title="Notfall-Spur 20:00-07:00"></div>`
-      : '';
+    // Active end in absolute minutes
+    const endH    = room.extendedEnd ? parseInt(room.extendedEnd) : 16;
+    const endMin  = endH * 60;
+    const activeH = (endMin - START_MIN) * PX_PER_MIN;  // px from top where active zone ends
 
-    // Inactive zone (after room end time)
-    const inactiveZone = inactiveH > 0
-      ? `<div class="or-inactive-zone" style="top:${activeH}px;height:${Math.min(inactiveH, gridH-activeH)}px"></div>`
-      : '';
+    // For Saal 3: show inactive zone 16:00-20:00, then notfall zone 20:00-07:00
+    // For other rooms: show inactive zone from their end until 07:00 next day
+    let zones = '';
+    if (isNotfall) {
+      // 16:00–20:00 inactive (between standard ops and notfall-spur)
+      const midpointPx = (NF_START_MIN - START_MIN) * PX_PER_MIN;
+      zones += `<div class="or-inactive-zone" style="top:${activeH}px;height:${midpointPx - activeH}px"></div>`;
+      // 20:00–07:00 Notfall-Spur zone
+      zones += `<div class="or-notfall-zone" style="top:${midpointPx}px;height:${gridH - midpointPx}px">
+        <div class="or-notfall-zone-label">Notfall-Spur<br>20:00–07:00</div>
+      </div>`;
+    } else {
+      zones += `<div class="or-inactive-zone" style="top:${activeH}px;height:${gridH - activeH}px"></div>`;
+    }
 
-    // Grid lines every 30 min
+    // Grid lines every 30 min (full 24h)
     let gridLines = '';
     for (let m = 0; m <= TOTAL_MINS; m += 30) {
-      gridLines += `<div class="or-grid-line${m%60===0?' or-grid-line-hour':''}" style="top:${m*PX_PER_MIN}px"></div>`;
+      const isMidnightLine = (START_MIN + m) % (24 * 60) === 0;
+      gridLines += `<div class="or-grid-line${m%60===0?' or-grid-line-hour':''}${isMidnightLine?' or-grid-line-midnight':''}" style="top:${m*PX_PER_MIN}px"></div>`;
     }
 
     // Procedure blocks
     const blocks = roomProcs.map(proc => {
-      const startMin = timeStrToMin(proc.time);
-      const y  = (startMin - START_HOUR * 60) * PX_PER_MIN;
-      const h  = Math.max(proc.duration_min * PX_PER_MIN, 20);
+      const procMin  = timeStrToMin(proc.time);
+      // Procedures after midnight belong to the next day in the same slot:
+      // if procMin < START_MIN it's post-midnight (add 24h offset)
+      const relMin   = procMin >= START_MIN ? procMin - START_MIN : procMin + (24 * 60 - START_MIN);
+      const y        = relMin * PX_PER_MIN;
+      const h        = Math.max(proc.duration_min * PX_PER_MIN, 20);
       const destColor = { IPS:'#E63946', IMC:'#F7941D', AWR:'#F0C040', Abteilung:'#00A79D' }[proc.postop_destination] || '#718096';
       const textColor = proc.postop_destination === 'AWR' ? '#333' : '#fff';
       const durH = Math.floor(proc.duration_min/60), durM = proc.duration_min%60;
       const durStr = durH>0 ? `${durH}h${durM>0?' '+durM+'\'':''}` : `${durM}'`;
       return `
         <div class="or-proc-block" style="top:${y}px;height:${h}px;background:${destColor};color:${textColor}"
-             data-proc-id="${proc.id}" onclick="openEditProcedure('${proc.id}')" title="${proc.procedure} - ${proc.surgeon}">
+             data-proc-id="${proc.id}" onclick="openEditProcedure('${proc.id}')" title="${proc.procedure} – ${proc.surgeon}">
           <div class="or-proc-time">${proc.time}</div>
           <div class="or-proc-name">${proc.procedure}</div>
-          ${h >= 40 ? `<div class="or-proc-dest">${proc.postop_destination} - ${durStr}</div>` : ''}
+          ${h >= 40 ? `<div class="or-proc-dest">${proc.postop_destination} · ${durStr}</div>` : ''}
           <div class="or-proc-edit-hint"><i class="bi bi-pencil"></i></div>
         </div>`;
     }).join('');
 
     const badgeClass = isNotfall ? 'badge-red' : isExtended ? 'badge-yellow' : 'badge-blue';
-    const badgeLabel = isNotfall ? 'NF-Spur' : isExtended ? `bis ${room.extendedEnd}` : 'bis 16:00';
+    const badgeLabel = isNotfall ? '24h Notfall' : isExtended ? `bis ${room.extendedEnd}` : 'bis 16:00';
 
     return `
       <div class="or-room-col">
@@ -557,7 +574,7 @@ function buildORTimelineGrid() {
           <span class="badge ${badgeClass}" style="font-size:9px">${badgeLabel}</span>
         </div>
         <div class="or-room-col-body" style="height:${gridH}px;position:relative">
-          ${gridLines}${notfallZone}${inactiveZone}${blocks}
+          ${gridLines}${zones}${blocks}
         </div>
       </div>`;
   }).join('');
