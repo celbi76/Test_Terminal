@@ -710,6 +710,14 @@ body {
 
 .staffing-table tr:hover td { background: var(--kispi-light); }
 
+.staffing-total-row td {
+  background: var(--kispi-bg);
+  border-top: 2px solid var(--kispi-teal);
+  border-bottom: none;
+  font-size: 13px;
+  padding: 11px 14px;
+}
+
 .coverage-bar-wrap {
   display: flex;
   align-items: center;
