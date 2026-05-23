@@ -4,8 +4,8 @@
 
 // Bettenkapazität:
 // Spezialabteilungen: IPS 25 | IMC 12 | Neo 16 | Notfall 20 = 73
-// Bettenabteilungen: Onko 30 + Chir 45 + MedA 35 + MedB 35 + Neuro 35 = 180
-// Gesamt: 253
+// Bettenabteilungen: Onko 30 + Chir 50 + MedA 40 + MedB 40 + Neuro 40 = 200
+// Gesamt: 273
 
 const DEPARTMENTS = [
   { id: 'ips',    name: 'IPS',        fullName: 'Intensivpflegestation',      beds: 25, type: 'icu',       floor: 'K1', color: '#E63946', gruppe: 'spezial' },
@@ -13,10 +13,10 @@ const DEPARTMENTS = [
   { id: 'neo',    name: 'Neo',        fullName: 'Neonatologie',                beds: 16, type: 'nicu',      floor: '1',  color: '#9B59B6', gruppe: 'spezial' },
   { id: 'notfall',name: 'Notfall',    fullName: 'Notfallstation',              beds: 20, type: 'emergency', floor: 'EG', color: '#FF6B35', gruppe: 'spezial' },
   { id: 'onko',   name: 'Onkologie',  fullName: 'Onkologie / Hämatologie',     beds: 30, type: 'ward',      floor: '2',  color: '#2980B9', gruppe: 'betten' },
-  { id: 'chir',   name: 'Chirurgie',  fullName: 'Chirurgie',                   beds: 45, type: 'ward',      floor: '3',  color: '#27AE60', gruppe: 'betten' },
-  { id: 'med_a',  name: 'Medizin A',  fullName: 'Medizin A (Allgemein)',        beds: 35, type: 'ward',      floor: '4',  color: '#16A085', gruppe: 'betten' },
-  { id: 'med_b',  name: 'Medizin B',  fullName: 'Medizin B (Spezial)',          beds: 35, type: 'ward',      floor: '5',  color: '#1E8BC3', gruppe: 'betten' },
-  { id: 'neuro',  name: 'Neurologie', fullName: 'Neurologie / Neuropädiatrie', beds: 35, type: 'ward',      floor: '6',  color: '#8E44AD', gruppe: 'betten' },
+  { id: 'chir',   name: 'Chirurgie',  fullName: 'Chirurgie',                   beds: 50, type: 'ward',      floor: '3',  color: '#27AE60', gruppe: 'betten' },
+  { id: 'med_a',  name: 'Medizin A',  fullName: 'Medizin A (Allgemein)',        beds: 40, type: 'ward',      floor: '4',  color: '#16A085', gruppe: 'betten' },
+  { id: 'med_b',  name: 'Medizin B',  fullName: 'Medizin B (Spezial)',          beds: 40, type: 'ward',      floor: '5',  color: '#1E8BC3', gruppe: 'betten' },
+  { id: 'neuro',  name: 'Neurologie', fullName: 'Neurologie / Neuropädiatrie', beds: 40, type: 'ward',      floor: '6',  color: '#8E44AD', gruppe: 'betten' },
 ];
 
 const DEPT_GROUPS = [
