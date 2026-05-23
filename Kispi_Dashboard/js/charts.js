@@ -117,28 +117,28 @@ function buildOccupancyTrendChart(canvasId, historicalData) {
   });
 }
 
-// ── EPA-AC Verteilung (Bar) ──────────────────────────────────
+// ── Barthel-Index Verteilung (Bar) ──────────────────────────
 
-function buildEpaDistribChart(canvasId, shiftData) {
+function buildBarthelChart(canvasId, shiftData) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
 
   if (charts[canvasId]) charts[canvasId].destroy();
 
-  // IPS wird mit NEMS bewertet — aus EPA-AC Kids V2.0 Auswertung ausgeschlossen
-  const totals = [0,0,0,0,0];
-  shiftData.filter(d => d.department_id !== 'ips').forEach(d => {
-    d.epa_distribution.forEach((count, i) => { totals[i] += count; });
+  // IPS wird mit NEMS bewertet — aus Barthel-Auswertung ausgeschlossen
+  const totals = [0, 0, 0, 0];
+  shiftData.filter(d => d.department_id !== 'ips' && d.barthel_distrib).forEach(d => {
+    d.barthel_distrib.forEach((count, i) => { totals[i] += count; });
   });
 
   charts[canvasId] = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: ['Stufe 1\nGering', 'Stufe 2\nTeilweise', 'Stufe 3\nVollständig', 'Stufe 4\nKomplex', 'Stufe 5\nIntensiv'],
+      labels: ['0–30\nVollständig', '35–80\nÜberwiegend', '85–95\nPunktuell', '100\nSelbständig'],
       datasets: [{
         label: 'Patienten',
         data: totals,
-        backgroundColor: EPA_LEVELS.map(l => l.color),
+        backgroundColor: BARTHEL_LEVELS.map(l => l.color),
         borderRadius: 5,
         borderSkipped: false,
       }],
@@ -150,6 +150,7 @@ function buildEpaDistribChart(canvasId, shiftData) {
         legend: { display: false },
         tooltip: {
           callbacks: {
+            title: ctx => BARTHEL_LEVELS[ctx[0].dataIndex].label,
             label: ctx => ` ${ctx.parsed.y} Patient${ctx.parsed.y !== 1 ? 'en' : ''}`,
           },
         },
@@ -338,7 +339,7 @@ function buildHistoricalTrendChart(canvasId, historicalData, deptId, metric, day
     data: {
       labels,
       datasets: [{
-        label: metric === 'occupancy_pct' ? 'Belegung %' : metric === 'epa_average' ? 'Ø EPA-AC' : 'Personal IST',
+        label: metric === 'occupancy_pct' ? 'Belegung %' : metric === 'barthel_avg' ? 'Ø Barthel' : 'Personal IST',
         data,
         borderColor: CHART_COLORS.teal,
         backgroundColor: 'rgba(0,167,157,0.08)',

@@ -2,68 +2,246 @@
 // KISPI DASHBOARD — Datenkonfiguration & Datengenerierung
 // ============================================================
 
-// Bettenkapazität: IPS 25 | IMC/Neo = Intensiv | Normalbetten gesamt 200
-// Normalbetten: Notfall 20 + Onko 30 + Chir 45 + Med A 35 + Med B 35 + Neuro 35 = 200
+// Bettenkapazität:
+// Spezialabteilungen: IPS 25 | IMC 12 | Neo 16 | Notfall 20 = 73
+// Bettenabteilungen: Onko 30 + Chir 45 + MedA 35 + MedB 35 + Neuro 35 = 180
+// Gesamt: 253
+
 const DEPARTMENTS = [
-  { id: 'ips',    name: 'IPS',        fullName: 'Intensivpflegestation',      beds: 25, type: 'icu',       floor: 'K1',  color: '#E63946' },
-  { id: 'imc',    name: 'IMC',        fullName: 'Intermediate Care',           beds: 12, type: 'imc',       floor: 'K1',  color: '#F7941D' },
-  { id: 'notfall',name: 'Notfall',    fullName: 'Notfallstation',              beds: 20, type: 'emergency', floor: 'EG',  color: '#FF6B35' },
-  { id: 'neo',    name: 'Neo',        fullName: 'Neonatologie',                beds: 16, type: 'nicu',      floor: '1',   color: '#9B59B6' },
-  { id: 'onko',   name: 'Onkologie',  fullName: 'Onkologie / Hämatologie',     beds: 30, type: 'ward',      floor: '2',   color: '#2980B9' },
-  { id: 'chir',   name: 'Chirurgie',  fullName: 'Chirurgie',                   beds: 45, type: 'ward',      floor: '3',   color: '#27AE60' },
-  { id: 'med_a',  name: 'Medizin A',  fullName: 'Medizin A (Allgemein)',        beds: 35, type: 'ward',      floor: '4',   color: '#16A085' },
-  { id: 'med_b',  name: 'Medizin B',  fullName: 'Medizin B (Spezial)',          beds: 35, type: 'ward',      floor: '5',   color: '#1E8BC3' },
-  { id: 'neuro',  name: 'Neurologie', fullName: 'Neurologie / Neuropädiatrie', beds: 35, type: 'ward',      floor: '6',   color: '#8E44AD' },
+  { id: 'ips',    name: 'IPS',        fullName: 'Intensivpflegestation',      beds: 25, type: 'icu',       floor: 'K1', color: '#E63946', gruppe: 'spezial' },
+  { id: 'imc',    name: 'IMC',        fullName: 'Intermediate Care',           beds: 12, type: 'imc',       floor: 'K1', color: '#F7941D', gruppe: 'spezial' },
+  { id: 'neo',    name: 'Neo',        fullName: 'Neonatologie',                beds: 16, type: 'nicu',      floor: '1',  color: '#9B59B6', gruppe: 'spezial' },
+  { id: 'notfall',name: 'Notfall',    fullName: 'Notfallstation',              beds: 20, type: 'emergency', floor: 'EG', color: '#FF6B35', gruppe: 'spezial' },
+  { id: 'onko',   name: 'Onkologie',  fullName: 'Onkologie / Hämatologie',     beds: 30, type: 'ward',      floor: '2',  color: '#2980B9', gruppe: 'betten' },
+  { id: 'chir',   name: 'Chirurgie',  fullName: 'Chirurgie',                   beds: 45, type: 'ward',      floor: '3',  color: '#27AE60', gruppe: 'betten' },
+  { id: 'med_a',  name: 'Medizin A',  fullName: 'Medizin A (Allgemein)',        beds: 35, type: 'ward',      floor: '4',  color: '#16A085', gruppe: 'betten' },
+  { id: 'med_b',  name: 'Medizin B',  fullName: 'Medizin B (Spezial)',          beds: 35, type: 'ward',      floor: '5',  color: '#1E8BC3', gruppe: 'betten' },
+  { id: 'neuro',  name: 'Neurologie', fullName: 'Neurologie / Neuropädiatrie', beds: 35, type: 'ward',      floor: '6',  color: '#8E44AD', gruppe: 'betten' },
+];
+
+const DEPT_GROUPS = [
+  { id: 'spezial', label: 'Spezialabteilungen', depts: ['ips', 'imc', 'neo', 'notfall'] },
+  { id: 'betten',  label: 'Bettenabteilungen',  depts: ['onko', 'chir', 'med_a', 'med_b', 'neuro'] },
 ];
 
 const SHIFTS = [
-  { id: 'F', label: 'Frühdienst',  time: '07:00–14:00', icon: '🌅' },
-  { id: 'S', label: 'Spätdienst',  time: '14:00–22:00', icon: '🌆' },
-  { id: 'N', label: 'Nachtdienst', time: '22:00–07:00', icon: '🌙' },
+  { id: 'F', label: 'Frühdienst',  time: '07:00–16:00', icon: '🌅' },
+  { id: 'S', label: 'Spätdienst',  time: '15:30–23:15', icon: '🌆' },
+  { id: 'N', label: 'Nachtdienst', time: '22:45–07:15', icon: '🌙' },
 ];
 
-// EPA-AC Kids Version 2.0 — Pädiatrisch validiertes Pflegeaufwand-Assessment
-// Quelle: Universitätskinderspital Zürich / LEP AG
-// IPS und IMC werden mit NEMS bewertet, nicht mit EPA-AC Kids
-const EPA_LEVELS = [
-  { level: 1, label: 'Stufe 1 – Gering',     shortLabel: 'Gering',    color: '#2DC653', ratio: '1:8',   weight: 1.0,
-    desc: 'Kind/Jugendliche·r weitgehend selbständig, minimale Pflegeunterstützung' },
-  { level: 2, label: 'Stufe 2 – Teilweise',  shortLabel: 'Teilweise', color: '#7BC67E', ratio: '1:5',   weight: 1.6,
-    desc: 'Teilassistenz, entwicklungsgerechte Unterstützung bei Alltagsaktivitäten' },
-  { level: 3, label: 'Stufe 3 – Vollständig',shortLabel: 'Vollständig',color: '#F7941D', ratio: '1:3',   weight: 2.8,
-    desc: 'Vollassistenz, Kind vollständig pflegeabhängig, inkl. Familiensupport' },
-  { level: 4, label: 'Stufe 4 – Komplex',    shortLabel: 'Komplex',   color: '#E67E22', ratio: '1:1.5', weight: 4.5,
-    desc: 'Erhöhter/komplexer Pflegebedarf, multidisziplinäre Interventionen' },
-  { level: 5, label: 'Stufe 5 – Intensiv',   shortLabel: 'Intensiv',  color: '#E63946', ratio: '2:1',   weight: 7.0,
-    desc: 'Maximaler Pflegebedarf, hochintensive Betreuung (prä-IPS / krisenhafte Situation)' },
+// Barthel-Index — Pflegeaufwand-Assessment (4 Kategorien)
+// IPS wird mit NEMS bewertet, nicht mit Barthel
+const BARTHEL_LEVELS = [
+  { level: 1, range: '0–30',   label: 'Vollständig hilfsbedürftig', color: '#E63946', minScore: 0,   maxScore: 30  },
+  { level: 2, range: '35–80',  label: 'Überwiegend hilfsbedürftig', color: '#F7941D', minScore: 35,  maxScore: 80  },
+  { level: 3, range: '85–95',  label: 'Punktuell hilfsbedürftig',   color: '#7BC67E', minScore: 85,  maxScore: 95  },
+  { level: 4, range: '100',    label: 'Selbständig',                color: '#2DC653', minScore: 100, maxScore: 100 },
 ];
 
-// NEMS Score (Nine Equivalents of nursing Manpower use Score) — ICU only
+// NEMS Score (Nine Equivalents of nursing Manpower use Score) — ICU/IMC only
 const NEMS_ITEMS = [
-  { id: 'monitoring',     label: 'Basis-Monitoring',            score: 1.2 },
-  { id: 'lab',            label: 'Laboruntersuchungen',          score: 4.5 },
-  { id: 'ventilation',    label: 'Mechanische Beatmung',         score: 5.2 },
-  { id: 'ventsupp',       label: 'Ventilationsunterstützung',    score: 1.4 },
-  { id: 'vaso_single',    label: 'Vasoaktive Medikamente (1)',   score: 1.7 },
-  { id: 'vaso_multi',     label: 'Vasoaktive Medikamente (>1)',  score: 10.9 },
-  { id: 'dialysis',       label: 'Nierenersatztherapie',         score: 7.7 },
-  { id: 'interv_icu',     label: 'Interventionen (ICU)',         score: 1.8 },
-  { id: 'interv_ext',     label: 'Interventionen (extern)',      score: 4.5 },
+  { id: 'monitoring',   label: 'Basis-Monitoring',           score: 1.2 },
+  { id: 'lab',          label: 'Laboruntersuchungen',         score: 4.5 },
+  { id: 'ventilation',  label: 'Mechanische Beatmung',        score: 5.2 },
+  { id: 'ventsupp',     label: 'Ventilationsunterstützung',   score: 1.4 },
+  { id: 'vaso_single',  label: 'Vasoaktive Medikamente (1)',  score: 1.7 },
+  { id: 'vaso_multi',   label: 'Vasoaktive Medikamente (>1)', score: 10.9 },
+  { id: 'dialysis',     label: 'Nierenersatztherapie',        score: 7.7 },
+  { id: 'interv_icu',   label: 'Interventionen (ICU)',        score: 1.8 },
+  { id: 'interv_ext',   label: 'Interventionen (extern)',     score: 4.5 },
 ];
 
-// Skill-Grade-Mix Targets (% per role)
-const SKILL_MIX_TARGET = {
-  pflegefachpersonen: 60,
-  pflegeassistenz:    25,
-  auszubildende:      15,
+// Berufsrollen nach Abteilungstyp
+const STAFF_ROLES_BY_TYPE = {
+  ward: [
+    { id: 'pfn_hf',   label: 'Dipl. Pflegefachperson HF' },
+    { id: 'stud_hf1', label: 'Student·in HF 1. Jahr' },
+    { id: 'stud_hf2', label: 'Student·in HF 2. Jahr' },
+    { id: 'stud_hf3', label: 'Student·in HF 3. Jahr' },
+    { id: 'fage_efz', label: 'FaGe EFZ' },
+    { id: 'lern_fa1', label: 'Lernende FaGe 1. Jahr' },
+    { id: 'lern_fa2', label: 'Lernende FaGe 2. Jahr' },
+    { id: 'pfh_ags',  label: 'Pflegehilfe / AGS' },
+  ],
+  emergency: [
+    { id: 'exp_nf',   label: 'Dipl. Experte/in NDS HF Notfall' },
+    { id: 'stud_nf',  label: 'Student·in NDS Notfall' },
+    { id: 'pfn_hf',   label: 'Dipl. Pflegefachperson HF' },
+    { id: 'fage_efz', label: 'FaGe EFZ' },
+    { id: 'pfh_ags',  label: 'Pflegehilfe / AGS' },
+    { id: 'disp_mpa', label: 'Disponent / MPA' },
+  ],
+  icu: [
+    { id: 'exp_int',  label: 'Dipl. Experte/in NDS HF Intensiv' },
+    { id: 'stud_int', label: 'Student·in NDS Intensiv' },
+    { id: 'pfn_hf',   label: 'Dipl. Pflegefachperson HF' },
+    { id: 'fage_efz', label: 'FaGe EFZ' },
+    { id: 'pfh_ags',  label: 'Pflegehilfe / AGS' },
+    { id: 'disp_mpa', label: 'Disponent / MPA' },
+  ],
 };
 
-// Pool & Threshold Configuration
+STAFF_ROLES_BY_TYPE.imc  = STAFF_ROLES_BY_TYPE.icu;
+STAFF_ROLES_BY_TYPE.nicu = STAFF_ROLES_BY_TYPE.icu;
+
+function getRoleType(dept) {
+  if (dept.type === 'ward')      return 'ward';
+  if (dept.type === 'emergency') return 'emergency';
+  return 'icu';
+}
+
+// Kompetenzen der Berufsgruppen (editierbar via localStorage)
+const DEFAULT_COMPETENCIES = {
+  pfn_hf: {
+    label: 'Dipl. Pflegefachperson HF',
+    items: [
+      'Selbstständige Durchführung aller pflegerischen Massnahmen',
+      'Medikamentenvorbereitung und -verabreichung inkl. i.v. Medikamente',
+      'Betreuung und Beratung von Patienten und Angehörigen',
+      'Wundversorgung und Verbandwechsel',
+      'Überwachung und Interpretation von Vitalparametern',
+      'Dokumentation und Pflegeplanung gemäss LEP',
+      'Anleitung und Supervision von Lernenden und Assistenzen',
+      'Teilnahme an interdisziplinären Visiten',
+    ],
+  },
+  stud_hf1: {
+    label: 'Student·in HF 1. Jahr',
+    items: [
+      'Grundpflege unter Aufsicht (Körperpflege, Lagerung, Mobilisation)',
+      'Vitalzeichenmessung und -dokumentation',
+      'Mitarbeit bei einfachen pflegerischen Massnahmen',
+      'Vorbereitung des Pflegematerials',
+      'Beobachtung des Patientenzustands und Meldung an Bezugsperson',
+    ],
+  },
+  stud_hf2: {
+    label: 'Student·in HF 2. Jahr',
+    items: [
+      'Selbstständige Grundpflege (Körperpflege, Lagerung)',
+      'Wundversorgung einfacher Art unter Aufsicht',
+      'Subkutane Injektionen unter Aufsicht',
+      'Pflegeplanung erstellen und anpassen',
+      'Angehörigenberatung unter Aufsicht',
+    ],
+  },
+  stud_hf3: {
+    label: 'Student·in HF 3. Jahr',
+    items: [
+      'Selbstständige Durchführung der meisten Pflegemassnahmen',
+      'Medikamentenvorbereitung unter Aufsicht',
+      'Venenpunktion und Blutentnahme unter Aufsicht',
+      'Eigenständige Pflegeplanung und -dokumentation',
+      'Anleitung von Lernenden FaGe',
+    ],
+  },
+  fage_efz: {
+    label: 'FaGe EFZ',
+    items: [
+      'Grundpflege selbstständig (Körperpflege, Betten, Lagerung)',
+      'Mobilisation und Transfer von Patienten',
+      'Vitalzeichenmessung und -dokumentation',
+      'Essensverteilung und Unterstützung bei der Nahrungsaufnahme',
+      'Einfache Verbandwechsel nach Anweisung',
+    ],
+  },
+  lern_fa1: {
+    label: 'Lernende FaGe 1. Jahr',
+    items: [
+      'Unterstützung bei der Grundpflege unter Aufsicht',
+      'Betten machen und Zimmer aufbereiten',
+      'Essensverteilung unter Aufsicht',
+      'Materialbeschaffung und Lagerhaltung',
+    ],
+  },
+  lern_fa2: {
+    label: 'Lernende FaGe 2. Jahr',
+    items: [
+      'Grundpflege einfacherer Art unter Aufsicht',
+      'Mobilisation unter Aufsicht',
+      'Vitalzeichenmessung unter Aufsicht',
+      'Essensverteilung selbstständig',
+    ],
+  },
+  pfh_ags: {
+    label: 'Pflegehilfe / AGS',
+    items: [
+      'Unterstützung bei einfachsten Pflegemassnahmen',
+      'Betten beziehen und Zimmer reinigen',
+      'Essensverteilung und Getränke reichen',
+      'Materialtransport und Botengänge',
+    ],
+  },
+  exp_nf: {
+    label: 'Dipl. Experte/in NDS HF Notfall',
+    items: [
+      'Ersteinschätzung (Triage) nach Manchester Triage System',
+      'Initiierung und Durchführung notfallmedizinischer Massnahmen',
+      'Kardiopulmonale Reanimation und erweiterte Massnahmen (ACLS)',
+      'Venöser Zugang, Blutentnahme, i.v. Medikamente selbstständig',
+      'EKG-Ableitung und Erstinterpretation',
+      'Koordination der Patientenversorgung im Schockraum',
+      'Anleitung und Supervision des Notfallteams',
+    ],
+  },
+  stud_nf: {
+    label: 'Student·in NDS Notfall',
+    items: [
+      'Triage unter Aufsicht durchführen',
+      'Venöser Zugang unter Aufsicht',
+      'Vitalzeichenmessung und Monitoring',
+      'Mitarbeit bei notfallmedizinischen Massnahmen',
+    ],
+  },
+  exp_int: {
+    label: 'Dipl. Experte/in NDS HF Intensiv',
+    items: [
+      'Überwachung und Pflege beatmeter Patienten',
+      'Bedienung und Überwachung von Beatmungsgeräten',
+      'Hämodynamisches Monitoring (ZVK, Arterie, PAK)',
+      'Titration vasoaktiver Substanzen',
+      'Kontinuierliche Nierenersatztherapie (CRRT)',
+      'Angehörigenbetreuung in Ausnahmesituationen',
+      'Führen und Koordinieren von Schichtteams',
+    ],
+  },
+  stud_int: {
+    label: 'Student·in NDS Intensiv',
+    items: [
+      'Monitoring und Überwachung unter Aufsicht',
+      'Pflegerische Grundversorgung von Intensivpatienten',
+      'Medikamentenvorbereitung unter Aufsicht',
+      'Beatmungsüberwachung unter Anleitung',
+    ],
+  },
+  disp_mpa: {
+    label: 'Disponent / MPA',
+    items: [
+      'Telefonische und persönliche Patientenanmeldung',
+      'Administrative Aufnahme und Patientenregistrierung',
+      'Koordination von Terminen und Ressourcen',
+      'Kommunikation mit externen Stellen (Rettungsdienst, Hausarzt)',
+      'Empfang und Betreuung von Angehörigen',
+    ],
+  },
+};
+
+// OP-Säle Konfiguration
+const OR_ROOMS = [
+  { id: 1, label: 'Saal 1', standardEnd: '16:00', extendedEnd: null,   notfall: false },
+  { id: 2, label: 'Saal 2', standardEnd: '16:00', extendedEnd: null,   notfall: false },
+  { id: 3, label: 'Saal 3', standardEnd: '16:00', extendedEnd: null,   notfall: true  },
+  { id: 4, label: 'Saal 4', standardEnd: '16:00', extendedEnd: null,   notfall: false },
+  { id: 5, label: 'Saal 5', standardEnd: '16:00', extendedEnd: '20:00', notfall: false },
+  { id: 6, label: 'Saal 6', standardEnd: '16:00', extendedEnd: '20:00', notfall: false },
+];
+
 const THRESHOLDS = {
   occupancy_warning:    80,
   occupancy_critical:   95,
   staff_coverage_min:   90,
-  epa_complexity_high:  3.5,
+  barthel_high:         40,
   pool_request_trigger: 0.85,
   pool_release_trigger: 0.70,
 };
@@ -79,94 +257,140 @@ function randomFloat(min, max, decimals = 1) {
 }
 
 function getCurrentShift() {
-  const h = new Date().getHours();
-  if (h >= 7  && h < 14) return 'F';
-  if (h >= 14 && h < 22) return 'S';
+  const now   = new Date();
+  const total = now.getHours() * 60 + now.getMinutes();
+  if (total >= 7 * 60 && total < 15 * 60 + 30) return 'F';
+  if (total >= 15 * 60 + 30 && total < 22 * 60 + 45) return 'S';
   return 'N';
 }
 
-// ── Aktuelle Schichtdaten (Live-Demo-Daten) ──────────────────
+function barthelColor(score) {
+  if (score <= 30) return '#E63946';
+  if (score <= 80) return '#F7941D';
+  if (score <= 95) return '#7BC67E';
+  return '#2DC653';
+}
+
+// ── Aktuelle Schichtdaten ────────────────────────────────────
 
 function generateCurrentShiftData() {
-  const now = new Date();
+  const now   = new Date();
   const shift = getCurrentShift();
 
   return DEPARTMENTS.map(dept => {
-    const isICU      = dept.type === 'icu'  || dept.type === 'nicu';
-    const isIMC      = dept.type === 'imc';
-    const isEmerg    = dept.type === 'emergency';
-    const occupied   = randomInt(Math.floor(dept.beds * 0.55), Math.floor(dept.beds * 0.97));
-    const reserved   = isICU ? randomInt(0, 2) : randomInt(0, 3);
+    const isICU   = dept.type === 'icu' || dept.type === 'nicu';
+    const isIMC   = dept.type === 'imc';
+    const isEmerg = dept.type === 'emergency';
+    const isIPS   = dept.id === 'ips';
 
-    // EPA-AC Kids V2.0 — IPS wird NICHT mit EPA-AC bewertet (nur NEMS)
-    // IMC bekommt EPA-AC UND NEMS
-    const isIPS      = dept.id === 'ips';
-    let epaScores    = [];
+    const occupied    = randomInt(Math.floor(dept.beds * 0.55), Math.floor(dept.beds * 0.97));
+    const closedBeds  = randomInt(0, Math.floor(dept.beds * 0.08));
+    const operational = dept.beds - closedBeds;
+    const reserved    = isICU ? randomInt(0, 2) : randomInt(0, 3);
+
+    // Barthel — IPS nicht mit Barthel bewertet
+    let barthelDistrib  = [0, 0, 0, 0];
+    let barthelAvgScore = null;
+
     if (!isIPS) {
       for (let i = 0; i < occupied; i++) {
-        if (isIMC)       epaScores.push(randomInt(3, 5));
-        else if (isEmerg)epaScores.push(randomInt(2, 4));
-        else             epaScores.push(randomInt(1, 4));
+        let lvl;
+        if (isICU || isIMC) lvl = randomInt(1, 2);
+        else if (isEmerg)   lvl = randomInt(1, 3);
+        else                lvl = randomInt(1, 4);
+        barthelDistrib[lvl - 1]++;
       }
+      const midpoints = [15, 57.5, 90, 100];
+      const total     = barthelDistrib.reduce((a, b) => a + b, 0);
+      barthelAvgScore = total > 0
+        ? parseFloat((barthelDistrib.reduce((s, c, i) => s + c * midpoints[i], 0) / total).toFixed(1))
+        : null;
     }
-    const epaAvg = epaScores.length > 0
-      ? parseFloat((epaScores.reduce((a, b) => a + b, 0) / epaScores.length).toFixed(1))
-      : null;
-    const epaDistrib = [1,2,3,4,5].map(lvl => epaScores.filter(s => s === lvl).length);
 
-    // NEMS: IPS (icu/nicu) UND IMC
+    // NEMS: IPS und IMC
     const showNems = isICU || isIMC;
     const nemsAvg  = showNems
-      ? (isIPS ? randomFloat(16, 32, 1) : isIMC ? randomFloat(10, 20, 1) : randomFloat(12, 28, 1))
+      ? (isIPS ? randomFloat(16, 34, 1) : randomFloat(10, 22, 1))
       : null;
 
-    // Staff
-    const staffTarget = isICU
+    // Staff by role
+    const roleType = getRoleType(dept);
+    const roles    = STAFF_ROLES_BY_TYPE[roleType];
+
+    const staffTargetTotal = isICU
       ? Math.ceil(occupied / 1.2)
       : isIMC
         ? Math.ceil(occupied / 2.5)
         : isEmerg
           ? randomInt(4, 8)
           : Math.ceil(occupied / 4.5);
-    const staffActual    = Math.max(1, staffTarget + randomInt(-2, 2));
-    const staffCoverage  = Math.round((staffActual / staffTarget) * 100);
 
-    const pfn  = Math.round(staffActual * randomFloat(0.55, 0.70));
-    const pa   = Math.round(staffActual * randomFloat(0.20, 0.30));
-    const ausb = Math.max(0, staffActual - pfn - pa);
+    const staffActualTotal = Math.max(1, staffTargetTotal + randomInt(-2, 2));
 
-    const poolRequest = staffActual < staffTarget * THRESHOLDS.pool_request_trigger;
-    const poolRelease = staffActual > staffTarget && (occupied / dept.beds) < 0.65;
+    const ROLE_WEIGHTS = {
+      exp_int: 0.35, exp_nf: 0.35, pfn_hf: 0.40, stud_hf3: 0.10, stud_hf2: 0.08,
+      stud_hf1: 0.05, stud_int: 0.10, stud_nf: 0.10, fage_efz: 0.15,
+      lern_fa1: 0.04, lern_fa2: 0.05, pfh_ags: 0.06, disp_mpa: 0.05,
+    };
+
+    const staff_actual_by_role = {};
+    const staff_target_by_role = {};
+    let remA = staffActualTotal, remT = staffTargetTotal;
+
+    roles.forEach((role, idx) => {
+      if (idx === roles.length - 1) {
+        staff_actual_by_role[role.id] = Math.max(0, remA);
+        staff_target_by_role[role.id] = Math.max(0, remT);
+      } else {
+        const w = ROLE_WEIGHTS[role.id] || 0.05;
+        const a = Math.min(Math.max(0, Math.round(staffActualTotal * w)), remA);
+        const t = Math.min(Math.max(0, Math.round(staffTargetTotal * w)), remT);
+        staff_actual_by_role[role.id] = a;
+        staff_target_by_role[role.id] = t;
+        remA -= a;
+        remT -= t;
+      }
+    });
+
+    const staffCoverage = Math.round((staffActualTotal / Math.max(staffTargetTotal, 1)) * 100);
+    const poolRequest   = staffActualTotal < staffTargetTotal * THRESHOLDS.pool_request_trigger;
+    const poolRelease   = staffActualTotal > staffTargetTotal && (occupied / dept.beds) < 0.65;
+
+    const pfn  = Math.round(staffActualTotal * randomFloat(0.55, 0.70));
+    const pa   = Math.round(staffActualTotal * randomFloat(0.20, 0.30));
+    const ausb = Math.max(0, staffActualTotal - pfn - pa);
 
     return {
-      department_id:   dept.id,
-      timestamp:       now.toISOString(),
+      department_id:        dept.id,
+      timestamp:            now.toISOString(),
       shift,
-      beds_total:      dept.beds,
-      beds_occupied:   occupied,
-      beds_reserved:   reserved,
-      occupancy_pct:   Math.round((occupied / dept.beds) * 100),
-      epa_scores:      epaScores,
-      epa_average:     epaAvg,
-      epa_distribution:epaDistrib,
-      nems_average:    nemsAvg,
+      beds_total:           dept.beds,
+      beds_operational:     operational,
+      beds_occupied:        occupied,
+      beds_reserved:        reserved,
+      occupancy_pct:        Math.round((occupied / dept.beds) * 100),
+      barthel_distrib:      barthelDistrib,
+      barthel_avg_score:    barthelAvgScore,
+      nems_average:         nemsAvg,
+      staff_actual_by_role,
+      staff_target_by_role,
       staff: {
-        actual:  { pflegefachpersonen: pfn, pflegeassistenz: pa, auszubildende: ausb, leitend: 1 },
-        target:  {
-          pflegefachpersonen: Math.round(staffTarget * 0.62),
-          pflegeassistenz:    Math.round(staffTarget * 0.25),
-          auszubildende:      Math.max(0, staffTarget - Math.round(staffTarget * 0.62) - Math.round(staffTarget * 0.25)),
+        actual: { pflegefachpersonen: pfn, pflegeassistenz: pa, auszubildende: ausb, leitend: 1 },
+        target: {
+          pflegefachpersonen: Math.round(staffTargetTotal * 0.62),
+          pflegeassistenz:    Math.round(staffTargetTotal * 0.25),
+          auszubildende:      Math.max(0, staffTargetTotal - Math.round(staffTargetTotal * 0.62) - Math.round(staffTargetTotal * 0.25)),
           leitend:            1,
         },
       },
-      staff_actual_total:  staffActual,
-      staff_target_total:  staffTarget,
+      staff_actual_total:  staffActualTotal,
+      staff_target_total:  staffTargetTotal,
       staff_coverage_pct:  staffCoverage,
       pool_request:        poolRequest,
       pool_request_count:  poolRequest ? randomInt(1, 3) : 0,
       pool_release:        poolRelease,
       pool_release_count:  poolRelease ? randomInt(1, 2) : 0,
-      notes:               '',
+      notes: '',
     };
   });
 }
@@ -180,24 +404,16 @@ function generateHistoricalData() {
   for (let dayOffset = 89; dayOffset >= 0; dayOffset--) {
     const date = new Date(today);
     date.setDate(today.getDate() - dayOffset);
-    const dow = date.getDay(); // 0=Sun, 6=Sat
-    const isWeekend = dow === 0 || dow === 6;
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
     DEPARTMENTS.forEach(dept => {
       ['F', 'S', 'N'].forEach(shiftId => {
-        const baseOcc = isWeekend ? 0.62 : 0.78;
-        const occupied = Math.min(dept.beds,
-          Math.round(dept.beds * (baseOcc + randomFloat(-0.12, 0.12))));
-
-        const isICU = dept.type === 'icu' || dept.type === 'nicu';
-        const epaAvg = isICU
-          ? randomFloat(3.5, 4.8, 1)
-          : randomFloat(1.5, 3.2, 1);
-        const nemsAvg = isICU ? randomFloat(14, 26, 1) : null;
-
-        const staffTarget = isICU
-          ? Math.ceil(occupied / 1.2)
-          : Math.ceil(occupied / 4.5);
+        const baseOcc  = isWeekend ? 0.62 : 0.78;
+        const occupied = Math.min(dept.beds, Math.round(dept.beds * (baseOcc + randomFloat(-0.12, 0.12))));
+        const isICU    = dept.type === 'icu' || dept.type === 'nicu';
+        const nemsAvg  = (isICU || dept.type === 'imc') ? randomFloat(14, 26, 1) : null;
+        const barthelAvg = dept.id === 'ips' ? null : randomFloat(20, 75, 1);
+        const staffTarget = isICU ? Math.ceil(occupied / 1.2) : Math.ceil(occupied / 4.5);
         const staffActual = Math.max(1, staffTarget + randomInt(-2, 2));
 
         records.push({
@@ -207,7 +423,7 @@ function generateHistoricalData() {
           beds_total:    dept.beds,
           beds_occupied: occupied,
           occupancy_pct: Math.round((occupied / dept.beds) * 100),
-          epa_average:   epaAvg,
+          barthel_avg:   barthelAvg,
           nems_average:  nemsAvg,
           staff_actual:  staffActual,
           staff_target:  staffTarget,
@@ -227,63 +443,105 @@ const PROCEDURES_LIST = [
   'Adenotomie', 'Osteosynthese', 'VSD-Verschluss', 'Leberresektion',
   'Fundoplikatio', 'Cochlea-Implantat', 'Nephrektomie', 'Splenektomie',
   'Kyphoskoliose-Korrektur', 'Pyloromyotomie', 'Cholangiografie',
+  'Zystoskopie', 'Orchidopexie', 'Hypospadiekorrektur',
 ];
+
+const SURGEONS = ['Dr. Müller', 'Prof. Zimmermann', 'Dr. Baumann', 'Dr. Schneider', 'PD Dr. Fischer'];
 
 function generateORProcedures() {
   const procedures = [];
-  const today = new Date();
+  const today      = new Date();
 
   for (let dayOffset = -1; dayOffset <= 4; dayOffset++) {
-    const date = new Date(today);
+    const date    = new Date(today);
     date.setDate(today.getDate() + dayOffset);
-    const dow  = date.getDay();
+    const dow     = date.getDay();
     if (dow === 0 || dow === 6) continue;
 
-    const count = randomInt(3, 9);
-    for (let i = 0; i < count; i++) {
-      const startH  = randomInt(7, 15);
-      const startM  = [0, 15, 30, 45][randomInt(0, 3)];
-      const duration = randomInt(45, 240);
-      const dest    = Math.random() < 0.35 ? 'IPS' : Math.random() < 0.5 ? 'IMC' : 'Abteilung';
-      procedures.push({
-        id:                  `OR-${date.toISOString().split('T')[0]}-${i+1}`,
-        date:                date.toISOString().split('T')[0],
-        time:                `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`,
-        procedure:            PROCEDURES_LIST[randomInt(0, PROCEDURES_LIST.length - 1)],
-        age_years:            randomInt(0, 17),
-        duration_min:         duration,
-        or_room:              randomInt(1, 8),
-        postop_destination:   dest,
-        postop_duration_days: dest === 'IPS' ? randomInt(1, 5) : dest === 'IMC' ? randomInt(1, 3) : randomInt(0, 2),
-        status:               dayOffset < 0 ? 'completed' : dayOffset === 0 && startH < new Date().getHours() ? 'completed' : 'planned',
-        surgeon:              ['Dr. Müller', 'Prof. Zimmermann', 'Dr. Baumann', 'Dr. Schneider', 'PD Dr. Fischer'][randomInt(0, 4)],
-      });
-    }
+    const dateStr = date.toISOString().split('T')[0];
+
+    OR_ROOMS.forEach(room => {
+      const maxEndMin = room.extendedEnd
+        ? parseInt(room.extendedEnd) * 60
+        : 16 * 60;
+
+      let curMin = 7 * 60;
+
+      for (let i = 0; i < randomInt(1, 4); i++) {
+        if (curMin >= maxEndMin) break;
+        const duration = randomInt(45, 180);
+        const dest     = Math.random() < 0.30 ? 'IPS' : Math.random() < 0.45 ? 'IMC' : 'Abteilung';
+        const startH   = Math.floor(curMin / 60);
+        const startM   = curMin % 60;
+        const isNF     = false;
+
+        procedures.push({
+          id:                   `OR-${dateStr}-S${room.id}-${i + 1}`,
+          date:                 dateStr,
+          time:                 `${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}`,
+          duration_min:         duration,
+          or_room:              room.id,
+          procedure:            PROCEDURES_LIST[randomInt(0, PROCEDURES_LIST.length - 1)],
+          surgeon:              SURGEONS[randomInt(0, SURGEONS.length - 1)],
+          age_years:            randomInt(0, 17),
+          postop_destination:   dest,
+          postop_duration_days: dest === 'IPS' ? randomInt(1, 5) : dest === 'IMC' ? randomInt(1, 3) : randomInt(0, 2),
+          dringlichkeit:        Math.random() < 0.12 ? 'Dringlich' : 'Elektiv',
+          status:               dayOffset < 0 ? 'completed'
+                              : dayOffset === 0 && startH < new Date().getHours() ? 'completed'
+                              : 'planned',
+          is_notfall_spur:      false,
+        });
+
+        curMin += duration + randomInt(15, 30);
+      }
+
+      // Saal 3 Notfall-Spur 20:00–07:00 (immer)
+      if (room.id === 3) {
+        procedures.push({
+          id:                   `OR-${dateStr}-S3-NFS`,
+          date:                 dateStr,
+          time:                 '20:00',
+          duration_min:         660,
+          or_room:              3,
+          procedure:            'Notfall-Spur (reserviert)',
+          surgeon:              'Dienstchirurg·in',
+          age_years:            null,
+          postop_destination:   'IPS',
+          postop_duration_days: 0,
+          dringlichkeit:        'Notfall',
+          status:               'reserved',
+          is_notfall_spur:      true,
+        });
+      }
+    });
   }
+
   return procedures.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 }
 
-// ── Antizipierte Belegung (nächste 5 Tage) ──────────────────
+// ── Antizipierte Belegung ────────────────────────────────────
 
 function generateAnticipatedOccupancy() {
-  const days = [];
+  const days  = [];
   const today = new Date();
 
   for (let i = 0; i <= 5; i++) {
-    const date = new Date(today);
+    const date  = new Date(today);
     date.setDate(today.getDate() + i);
-    const label = i === 0 ? 'Heute' : i === 1 ? 'Morgen' : date.toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'numeric' });
+    const label = i === 0 ? 'Heute' : i === 1 ? 'Morgen'
+      : date.toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
-    const orPlan = generateORProcedures().filter(p => p.date === date.toISOString().split('T')[0] && p.status === 'planned');
+    const orPlan    = generateORProcedures().filter(p => p.date === date.toISOString().split('T')[0] && p.status === 'planned');
     const ipsPostop = orPlan.filter(p => p.postop_destination === 'IPS').length;
     const imcPostop = orPlan.filter(p => p.postop_destination === 'IMC').length;
 
     days.push({
       label,
-      date: date.toISOString().split('T')[0],
-      elective:   orPlan.length,
-      ips_postop: ipsPostop,
-      imc_postop: imcPostop,
+      date:               date.toISOString().split('T')[0],
+      elective:           orPlan.filter(p => p.dringlichkeit === 'Elektiv').length,
+      ips_postop:         ipsPostop,
+      imc_postop:         imcPostop,
       emergency_forecast: randomInt(8, 20),
       total_anticipated:  randomInt(130, 165),
       baseline_avg:       152,
@@ -295,13 +553,12 @@ function generateAnticipatedOccupancy() {
 // ── Globaler App-State ───────────────────────────────────────
 
 const AppState = {
-  currentShiftData:  [],
-  historicalData:    [],
-  orProcedures:      [],
-  anticipated:       [],
-  poolRequests:      [],
-  alerts:            [],
-  lastRefresh:       null,
+  currentShiftData: [],
+  historicalData:   [],
+  orProcedures:     [],
+  anticipated:      [],
+  alerts:           [],
+  lastRefresh:      null,
 
   init() {
     this.currentShiftData = generateCurrentShiftData();
@@ -315,6 +572,8 @@ const AppState = {
 
   refresh() {
     this.currentShiftData = generateCurrentShiftData();
+    this.orProcedures     = generateORProcedures();
+    this.anticipated      = generateAnticipatedOccupancy();
     this.lastRefresh      = new Date();
     this.buildAlerts();
   },
@@ -331,8 +590,8 @@ const AppState = {
       if (d.pool_request) {
         this.alerts.push({ level: 'warning', dept: dept.name, msg: `Pool-Anfrage: ${d.pool_request_count} Pflegeperson(en)` });
       }
-      if (d.epa_average >= THRESHOLDS.epa_complexity_high) {
-        this.alerts.push({ level: 'info', dept: dept.name, msg: `Hohe Komplexität: Ø EPA-AC ${d.epa_average}` });
+      if (d.barthel_avg_score !== null && d.barthel_avg_score < THRESHOLDS.barthel_high) {
+        this.alerts.push({ level: 'info', dept: dept.name, msg: `Hohe Pflegeabhängigkeit: Ø Barthel ${Math.round(d.barthel_avg_score)}` });
       }
     });
   },
@@ -346,29 +605,78 @@ const AppState = {
   },
 
   getKPIs() {
-    const total_beds     = DEPARTMENTS.reduce((s, d) => s + d.beds, 0);
-    const total_occupied = this.currentShiftData.reduce((s, d) => s + d.beds_occupied, 0);
-    // EPA-AC Ø nur für Stationen mit EPA-AC Kids V2.0 (IPS ausgeschlossen)
-    const epaRecs  = this.currentShiftData.filter(d => d.epa_average !== null);
-    const avg_epa  = epaRecs.length
-      ? parseFloat((epaRecs.reduce((s, d) => s + d.epa_average, 0) / epaRecs.length).toFixed(1))
-      : 0;
-    const total_staff_a  = this.currentShiftData.reduce((s, d) => s + d.staff_actual_total, 0);
-    const total_staff_t  = this.currentShiftData.reduce((s, d) => s + d.staff_target_total, 0);
-    const pool_reqs      = this.currentShiftData.filter(d => d.pool_request).reduce((s, d) => s + d.pool_request_count, 0);
-    const pool_rels      = this.currentShiftData.filter(d => d.pool_release).reduce((s, d) => s + d.pool_release_count, 0);
+    const all     = this.currentShiftData;
+
+    const sumGroup = ids => {
+      const recs  = all.filter(d => ids.includes(d.department_id));
+      const depts = DEPARTMENTS.filter(d => ids.includes(d.id));
+      return {
+        beds_total:       depts.reduce((s, d) => s + d.beds, 0),
+        beds_operational: recs.reduce((s, d) => s + (d.beds_operational ?? d.beds_total), 0),
+        beds_occupied:    recs.reduce((s, d) => s + d.beds_occupied, 0),
+      };
+    };
+
+    const bettenIds  = DEPT_GROUPS.find(g => g.id === 'betten').depts;
+    const spezialIds = DEPT_GROUPS.find(g => g.id === 'spezial').depts;
+
+    const belegung = {
+      ips:    sumGroup(['ips']),
+      imc:    sumGroup(['imc']),
+      neo:    sumGroup(['neo']),
+      notfall:sumGroup(['notfall']),
+      betten: sumGroup(bettenIds),
+      total:  sumGroup([...spezialIds, ...bettenIds]),
+    };
+
+    const barthelRecs = all.filter(d => d.barthel_avg_score !== null);
+    const avg_barthel = barthelRecs.length
+      ? parseFloat((barthelRecs.reduce((s, d) => s + d.barthel_avg_score, 0) / barthelRecs.length).toFixed(1))
+      : null;
+
+    const total_staff_a = all.reduce((s, d) => s + d.staff_actual_total, 0);
+    const total_staff_t = all.reduce((s, d) => s + d.staff_target_total, 0);
+    const pool_reqs     = all.filter(d => d.pool_request).reduce((s, d) => s + d.pool_request_count, 0);
+    const pool_rels     = all.filter(d => d.pool_release).reduce((s, d) => s + d.pool_release_count, 0);
 
     return {
-      total_beds,
-      total_occupied,
-      occupancy_pct: Math.round((total_occupied / total_beds) * 100),
-      avg_epa,
+      belegung,
+      avg_barthel,
       staff_actual:   total_staff_a,
       staff_target:   total_staff_t,
-      staff_coverage: Math.round((total_staff_a / total_staff_t) * 100),
+      staff_coverage: Math.round((total_staff_a / Math.max(total_staff_t, 1)) * 100),
       pool_requests:  pool_reqs,
       pool_releases:  pool_rels,
       alerts_count:   this.alerts.length,
     };
+  },
+
+  getCompetencies() {
+    try {
+      const stored = localStorage.getItem('kispi_competencies');
+      if (!stored) return DEFAULT_COMPETENCIES;
+      const overrides = JSON.parse(stored);
+      const merged = {};
+      Object.keys(DEFAULT_COMPETENCIES).forEach(k => {
+        merged[k] = overrides[k]
+          ? { ...DEFAULT_COMPETENCIES[k], items: overrides[k].items }
+          : DEFAULT_COMPETENCIES[k];
+      });
+      return merged;
+    } catch {
+      return DEFAULT_COMPETENCIES;
+    }
+  },
+
+  saveCompetency(roleId, items) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('kispi_competencies') || '{}');
+      stored[roleId] = { items };
+      localStorage.setItem('kispi_competencies', JSON.stringify(stored));
+    } catch { /* ignore */ }
+  },
+
+  resetCompetencies() {
+    localStorage.removeItem('kispi_competencies');
   },
 };

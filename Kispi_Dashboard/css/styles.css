@@ -1220,3 +1220,252 @@ input:focus, select:focus, textarea:focus {
 }
 
 [data-tooltip]:hover::after { opacity: 1; }
+
+/* ── Gesamtbelegung Tabelle ──────────────────────────────── */
+
+.belegung-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.belegung-table th {
+  padding: 10px 14px;
+  background: var(--kispi-bg);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  border-bottom: 2px solid var(--border);
+}
+
+.belegung-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.belegung-table tr:last-child td { border-bottom: none; }
+
+.belegung-table tr.belegung-summary td {
+  background: #F8FBFF;
+  font-style: italic;
+}
+
+.belegung-table tfoot tr td {
+  background: var(--kispi-bg);
+  border-top: 2px solid var(--border);
+  font-weight: 700;
+  padding: 11px 14px;
+}
+
+.text-center { text-align: center; }
+
+/* ── Station Group Labels ─────────────────────────────────── */
+
+.station-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-light);
+  padding: 4px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.station-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.station-group-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* ── Closed Bed Icon ──────────────────────────────────────── */
+
+.bed-icon.closed {
+  background: #CBD5E0;
+  opacity: 0.4;
+}
+
+/* ── Competency Accordion ─────────────────────────────────── */
+
+.competency-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: box-shadow var(--transition);
+}
+
+.competency-card:hover { box-shadow: var(--shadow); }
+
+.competency-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: var(--card-bg);
+  transition: background var(--transition);
+}
+
+.competency-header:hover { background: var(--kispi-bg); }
+
+.competency-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dark);
+}
+
+.competency-category {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.comp-chevron {
+  color: var(--text-light);
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.competency-body {
+  border-top: 1px solid var(--border);
+  background: #FAFBFC;
+}
+
+.competency-items {
+  list-style: none;
+  padding: 12px 16px;
+  margin: 0;
+}
+
+.competency-items li {
+  padding: 5px 0 5px 16px;
+  position: relative;
+  font-size: 13px;
+  color: var(--text-mid);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}
+
+.competency-items li:last-child { border-bottom: none; }
+
+.competency-items li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--kispi-teal);
+}
+
+/* ── OR Room Grid ─────────────────────────────────────────── */
+
+.or-room-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .or-room-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.or-room-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--card-bg);
+  position: relative;
+}
+
+.or-room-card.or-room-notfall {
+  border-color: #E6394633;
+  background: #FFF5F5;
+}
+
+.or-room-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.or-room-label {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-dark);
+}
+
+.or-room-time {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+.or-usage-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.or-usage-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.or-room-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.or-room-procs {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.or-room-proc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 3px 6px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 4px;
+}
+
+.or-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Competency Modal ─────────────────────────────────────── */
+
+#comp-modal-overlay {
+  z-index: 300;
+}
+
+#comp-modal-overlay .modal-box {
+  max-width: 560px;
+}
