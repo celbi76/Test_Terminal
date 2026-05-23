@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Universitätskinderspital Zürich</title>
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <span>Dashboard wird geladen…</span>
+</div>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+<nav id="sidebar">
+  <button id="sidebar-toggle" title="Sidebar ein-/ausblenden">
+    <i class="bi bi-chevron-left"></i>
+  </button>
+
+  <div id="sidebar-logo">
+    <!-- Kispi Logo SVG (präzise Nachbildung) -->
+    <svg class="logo-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- Blauer Kreis (Kispi Blau #3DB8E8) -->
+      <circle cx="50" cy="50" r="50" fill="#3DB8E8"/>
+      <!-- Weisse Kindersilhouette: Horseshoe-Form (Arme hoch, Körper unten) -->
+      <path d="M 11 29 A 45 45 0 1 1 89 29 L 74 39 A 29 29 0 1 0 26 39 Z" fill="white"/>
+      <!-- Weisser Kopf (Kreis oben) -->
+      <circle cx="50" cy="19" r="12" fill="white"/>
+    </svg>
+    <div class="logo-text">
+      <span class="brand">KISPI</span>
+      <span class="sub">Universitäts-<br>Kinderspital Zürich</span>
+    </div>
+  </div>
+
+  <nav id="sidebar-nav">
+    <div class="nav-section-label">Navigation</div>
+
+    <div class="nav-item active" data-page="overview">
+      <i class="bi bi-grid-1x2-fill nav-icon"></i>
+      <span class="nav-label">Klinikübersicht</span>
+      <span class="nav-badge" id="nav-alert-badge">0</span>
+    </div>
+
+    <div class="nav-item" data-page="stations">
+      <i class="bi bi-hospital nav-icon"></i>
+      <span class="nav-label">Stationen</span>
+    </div>
+
+    <div class="nav-item" data-page="staffing">
+      <i class="bi bi-people-fill nav-icon"></i>
+      <span class="nav-label">Personal &amp; Pool</span>
+    </div>
+
+    <div class="nav-item" data-page="or">
+      <i class="bi bi-scissors nav-icon"></i>
+      <span class="nav-label">OP-Planung</span>
+    </div>
+
+    <div class="nav-item" data-page="historical">
+      <i class="bi bi-bar-chart-line-fill nav-icon"></i>
+      <span class="nav-label">Historische Daten</span>
+    </div>
+
+    <div class="nav-section-label" style="margin-top:12px">Aktionen</div>
+
+    <div class="nav-item entry-btn" id="nav-data-entry">
+      <i class="bi bi-plus-circle-fill nav-icon"></i>
+      <span class="nav-label">Dateneingabe</span>
+    </div>
+  </nav>
+
+  <div id="sidebar-footer">
+    <div class="user-avatar">PL</div>
+    <div class="user-info">
+      <div class="user-name">Pflegeleitung</div>
+      <div class="user-role">Klinikmanagement</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN CONTENT ──────────────────────────────────────────── -->
+<main id="main-content">
+
+  <!-- Topbar -->
+  <header id="topbar">
+    <div class="page-title">
+      <span id="page-main-title">Klinikübersicht</span>
+      <span id="page-sub-title">Echtzeit-Dashboard</span>
+    </div>
+
+    <div class="topbar-group">
+      <span class="shift-badge" id="shift-badge"></span>
+      <div>
+        <div class="topbar-clock" id="topbar-clock">--:--:--</div>
+        <div class="topbar-date" id="topbar-date"></div>
+      </div>
+    </div>
+
+    <div class="topbar-group">
+      <button class="btn-icon" id="btn-refresh" title="Daten aktualisieren">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+      <button class="btn-icon" title="Warnungen">
+        <i class="bi bi-bell-fill"></i>
+        <span class="badge" id="alert-badge" style="display:none">0</span>
+      </button>
+      <button class="btn-primary" id="btn-data-entry">
+        <i class="bi bi-plus-lg"></i> Dateneingabe
+      </button>
+    </div>
+
+    <div id="refresh-indicator" class="text-sm text-muted"></div>
+  </header>
+
+  <!-- Page Content -->
+  <div id="page-content">
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: ÜBERSICHT
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-overview" class="page active">
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid mb-20">
+
+        <div class="kpi-card kpi-teal" id="kpi-card-occ">
+          <span class="kpi-icon"><i class="bi bi-hospital"></i></span>
+          <div class="kpi-label">Gesamtbelegung</div>
+          <div class="kpi-value"><span id="kpi-total-patients">—</span><span class="kpi-unit" id="kpi-occupancy-pct"></span></div>
+          <div class="kpi-sub" id="kpi-total-beds"></div>
+        </div>
+
+        <div class="kpi-card kpi-blue">
+          <span class="kpi-icon"><i class="bi bi-activity"></i></span>
+          <div class="kpi-label">Ø EPA-AC Komplexität</div>
+          <div class="kpi-value"><span id="kpi-epa-val">—</span></div>
+          <div class="kpi-sub" id="kpi-epa-sub"></div>
+        </div>
+
+        <div class="kpi-card kpi-green" id="kpi-card-coverage">
+          <span class="kpi-icon"><i class="bi bi-people-fill"></i></span>
+          <div class="kpi-label">Personelle Abdeckung</div>
+          <div class="kpi-value"><span id="kpi-staff-actual">—</span><span class="kpi-unit">IST</span></div>
+          <div class="kpi-sub" id="kpi-staff-target"></div>
+          <div class="kpi-sub" id="kpi-coverage" style="font-weight:700;font-size:14px"></div>
+        </div>
+
+        <div class="kpi-card kpi-warn">
+          <span class="kpi-icon"><i class="bi bi-person-plus"></i></span>
+          <div class="kpi-label">Pool-Anfragen</div>
+          <div class="kpi-value"><span id="kpi-pool-req">—</span><span class="kpi-unit">Pers.</span></div>
+          <div class="kpi-sub" id="kpi-pool-rel"></div>
+        </div>
+
+        <div class="kpi-card kpi-danger">
+          <span class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></span>
+          <div class="kpi-label">Warnungen</div>
+          <div class="kpi-value"><span id="kpi-alerts">—</span></div>
+          <div class="kpi-sub">Aktuelle Alerts</div>
+        </div>
+      </div>
+
+      <!-- Station Grid + Alerts -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-hospital" style="color:var(--kispi-teal)"></i>
+            <h3>Stationsbelegung — Aktuelle Schicht</h3>
+            <span class="text-sm text-muted" style="margin-left:auto">Klicken für Details</span>
+          </div>
+          <div class="card-body">
+            <div class="station-grid" id="station-grid"><!-- JS --></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-exclamation-triangle-fill" style="color:var(--warning)"></i>
+            <h3>Aktuelle Warnungen &amp; Alerts</h3>
+          </div>
+          <div class="card-body" id="alerts-panel"><!-- JS --></div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-graph-up-arrow" style="color:var(--kispi-teal)"></i>
+            <h3>Belegungstrend — Letzte 7 Tage</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chart-occ-trend"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-bar-chart-steps" style="color:var(--kispi-blue-mid)"></i>
+            <h3>EPA-AC Verteilung — Klinik gesamt</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chart-epa-distrib"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-people" style="color:var(--success)"></i>
+            <h3>Personal IST vs. SOLL — Alle Abteilungen</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap-lg"><canvas id="chart-staff"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-calendar-week" style="color:var(--warning)"></i>
+            <h3>Antizipierte Belegung — Nächste 5 Tage</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap-lg"><canvas id="chart-anticipated"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: STATIONEN
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-stations" class="page">
+      <div class="station-detail-grid" id="station-detail-grid"><!-- JS --></div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: PERSONAL
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-staffing" class="page">
+
+      <!-- Summary Table -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <i class="bi bi-table" style="color:var(--kispi-teal)"></i>
+          <h3>Personal-Übersicht — Aktuelle Schicht</h3>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="staffing-table">
+            <thead>
+              <tr>
+                <th>Abteilung</th>
+                <th>Dipl. PFP</th>
+                <th>PA</th>
+                <th>Ausb.</th>
+                <th>IST Total</th>
+                <th>SOLL Total</th>
+                <th>Abdeckung</th>
+                <th>Pat./Pflegeperson</th>
+                <th>Pool-Status</th>
+              </tr>
+            </thead>
+            <tbody id="staffing-tbody"><!-- JS --></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-bar-chart-fill" style="color:var(--kispi-teal)"></i>
+            <h3>Skill-Grade-Mix — IST-Verteilung</h3>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:10px;font-size:12px;color:var(--text-light)">
+              Ziel: <strong>Dipl. PFP 60%</strong> · PA 25% · Ausb. 15%
+            </div>
+            <div class="chart-wrap-lg"><canvas id="chart-skill-mix"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-people-fill" style="color:var(--info)"></i>
+            <h3>Nurse-to-Patient Ratio</h3>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:10px;font-size:12px;color:var(--text-light)">
+              Zielwerte: IPS ≤ 1:1.5 · IMC ≤ 1:2.5 · Abt. ≤ 1:5
+            </div>
+            <div class="chart-wrap-lg"><canvas id="chart-nurse-ratio"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pool Management -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header" style="border-left:4px solid var(--danger)">
+            <i class="bi bi-person-plus-fill" style="color:var(--danger)"></i>
+            <h3>Pool-Anfragen</h3>
+          </div>
+          <div class="card-body">
+            <div class="pool-cards" id="pool-requests-container"><!-- JS --></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="border-left:4px solid var(--success)">
+            <i class="bi bi-person-dash-fill" style="color:var(--success)"></i>
+            <h3>Personalfreigaben</h3>
+          </div>
+          <div class="card-body">
+            <div class="pool-cards" id="pool-releases-container"><!-- JS --></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: OP-PLANUNG
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-or" class="page">
+
+      <!-- Summary KPIs -->
+      <div class="kpi-grid mb-20" style="grid-template-columns: repeat(4, 1fr)">
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-label">Eingriffe heute</div>
+          <div class="kpi-value" id="or-today-count">—</div>
+          <div class="kpi-sub">geplant / abgeschlossen</div>
+        </div>
+        <div class="kpi-card kpi-teal">
+          <div class="kpi-label">Morgen</div>
+          <div class="kpi-value" id="or-tomorrow-count">—</div>
+          <div class="kpi-sub">Eingriffe geplant</div>
+        </div>
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-label">Postop → IPS</div>
+          <div class="kpi-value" id="or-ips-count">—</div>
+          <div class="kpi-sub">Verlegungen erwartet</div>
+        </div>
+        <div class="kpi-card kpi-warn">
+          <div class="kpi-label">Postop → IMC</div>
+          <div class="kpi-value" id="or-imc-count">—</div>
+          <div class="kpi-sub">Verlegungen erwartet</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-scissors" style="color:var(--kispi-teal)"></i>
+          <h3>OP-Programm &amp; postoperative Verlegungsplanung</h3>
+          <div class="flex-center gap-8" style="margin-left:auto;font-size:12px">
+            <span style="width:12px;height:12px;background:var(--danger);border-radius:2px;display:inline-block"></span> IPS
+            <span style="width:12px;height:12px;background:var(--warning);border-radius:2px;display:inline-block;margin-left:6px"></span> IMC
+            <span style="width:12px;height:12px;background:var(--kispi-teal);border-radius:2px;display:inline-block;margin-left:6px"></span> Abteilung
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="or-timeline"><!-- JS --></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: HISTORISCHE DATEN
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-historical" class="page">
+
+      <!-- Filters -->
+      <div class="card mb-20">
+        <div class="card-body" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div class="date-filter">
+            <button class="date-filter-btn" data-days="7">7 Tage</button>
+            <button class="date-filter-btn active" data-days="30">30 Tage</button>
+            <button class="date-filter-btn" data-days="60">60 Tage</button>
+            <button class="date-filter-btn" data-days="90">90 Tage</button>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Abteilung:</label>
+            <select id="hist-dept-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle Abteilungen</option>
+              <!-- filled by JS -->
+            </select>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Kennzahl:</label>
+            <select id="hist-metric-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="occupancy_pct">Belegung %</option>
+              <option value="epa_average">Ø EPA-AC</option>
+              <option value="staff_actual">Personal IST</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-graph-up" style="color:var(--kispi-teal)"></i>
+            <h3>Verlaufstrend</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap-lg"><canvas id="chart-hist-trend"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-calendar-week" style="color:var(--kispi-blue-mid)"></i>
+            <h3>Abweichung nach Wochentag</h3>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:8px;font-size:12px;color:var(--text-light)">
+              Abweichung vom Gesamtdurchschnitt (rot = über Ø, grün = unter Ø)
+            </div>
+            <div class="chart-wrap-lg"><canvas id="chart-deviation"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historical Stats Table -->
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-table" style="color:var(--kispi-teal)"></i>
+          <h3>Statistik-Übersicht — Alle Abteilungen (Letzte 7 Tage)</h3>
+        </div>
+        <div class="card-body" style="overflow-x:auto;padding:0">
+          <table class="staffing-table">
+            <thead>
+              <tr>
+                <th>Abteilung</th>
+                <th>Ø Belegung</th>
+                <th>Max. Belegung</th>
+                <th>Ø EPA-AC</th>
+                <th>Ø Personal IST</th>
+                <th>Ø Personal SOLL</th>
+                <th>Pool-Anfragen</th>
+              </tr>
+            </thead>
+            <tbody id="hist-stats-tbody"><!-- JS --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end page-content -->
+</main>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: DATENEINGABE
+══════════════════════════════════════════════════════════ -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <svg viewBox="0 0 100 100" width="28" height="28">
+        <circle cx="50" cy="50" r="50" fill="#3DB8E8"/>
+        <path d="M 11 29 A 45 45 0 1 1 89 29 L 74 39 A 29 29 0 1 0 26 39 Z" fill="white"/>
+        <circle cx="50" cy="19" r="12" fill="white"/>
+      </svg>
+      <h2>Dateneingabe — Schichtübergabe</h2>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Schicht -->
+      <div class="form-section">
+        <div class="form-section-title">1. Schicht wählen</div>
+        <div class="shift-select-grid">
+          <div class="shift-option" data-shift-id="F">
+            <span class="shift-icon">🌅</span>
+            <span class="shift-label">Frühdienst</span>
+            <span class="shift-time">07:00–14:00</span>
+          </div>
+          <div class="shift-option" data-shift-id="S">
+            <span class="shift-icon">🌆</span>
+            <span class="shift-label">Spätdienst</span>
+            <span class="shift-time">14:00–22:00</span>
+          </div>
+          <div class="shift-option" data-shift-id="N">
+            <span class="shift-icon">🌙</span>
+            <span class="shift-label">Nachtdienst</span>
+            <span class="shift-time">22:00–07:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Abteilung -->
+      <div class="form-section">
+        <div class="form-section-title">2. Abteilung wählen</div>
+        <div class="dept-select-grid" id="dept-select-grid">
+          <!-- filled by JS below -->
+        </div>
+      </div>
+
+      <!-- Belegung -->
+      <div class="form-section">
+        <div class="form-section-title">3. Belegung</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="entry-beds-total">Betten gesamt</label>
+            <input type="number" id="entry-beds-total" min="0" max="100" placeholder="z.B. 20">
+          </div>
+          <div class="form-group">
+            <label for="entry-beds-occupied">Betten belegt</label>
+            <input type="number" id="entry-beds-occupied" min="0" max="100" placeholder="z.B. 17">
+          </div>
+        </div>
+      </div>
+
+      <!-- EPA-AC -->
+      <div class="form-section">
+        <div class="form-section-title">4. EPA-AC Einschätzung (Anzahl Patienten je Stufe)</div>
+        <div class="epa-input-grid">
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#2DC653"></div>
+            <label>EPA 1<br>Selbst-<br>pflegend</label>
+            <input type="number" id="entry-epa-1" min="0" max="50" value="0">
+          </div>
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#7BC67E"></div>
+            <label>EPA 2<br>Teil-<br>assistenz</label>
+            <input type="number" id="entry-epa-2" min="0" max="50" value="0">
+          </div>
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#F7941D"></div>
+            <label>EPA 3<br>Voll-<br>assistenz</label>
+            <input type="number" id="entry-epa-3" min="0" max="50" value="0">
+          </div>
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#E67E22"></div>
+            <label>EPA 4<br>Intensiv-<br>pflege</label>
+            <input type="number" id="entry-epa-4" min="0" max="50" value="0">
+          </div>
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#E63946"></div>
+            <label>EPA 5<br>Max.<br>Intensiv</label>
+            <input type="number" id="entry-epa-5" min="0" max="50" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- NEMS (ICU only) -->
+      <div class="form-section" id="nems-row" style="display:none">
+        <div class="form-section-title">4b. NEMS Score (IPS / Neonatologie)</div>
+        <div class="form-group">
+          <label for="entry-nems">NEMS Durchschnitt (alle Patienten)</label>
+          <input type="number" id="entry-nems" min="1.2" max="40" step="0.1" placeholder="z.B. 18.5">
+        </div>
+      </div>
+
+      <!-- Personal -->
+      <div class="form-section">
+        <div class="form-section-title">5. Personal IST</div>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="entry-staff-pfn">Dipl. Pflegefachperson</label>
+            <input type="number" id="entry-staff-pfn" min="0" max="50" placeholder="IST">
+          </div>
+          <div class="form-group">
+            <label for="entry-staff-pa">Pflegeassistenz</label>
+            <input type="number" id="entry-staff-pa" min="0" max="50" placeholder="IST">
+          </div>
+          <div class="form-group">
+            <label for="entry-staff-ausb">Auszubildende</label>
+            <input type="number" id="entry-staff-ausb" min="0" max="20" placeholder="IST">
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal SOLL (PEP) -->
+      <div class="form-section">
+        <div class="form-section-title">6. Personal SOLL (aus PEP)</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="entry-staff-pfn-soll">Dipl. Pflegefachperson SOLL</label>
+            <input type="number" id="entry-staff-pfn-soll" min="0" max="50" placeholder="SOLL">
+          </div>
+          <div class="form-group">
+            <label for="entry-staff-pa-soll">Pflegeassistenz SOLL</label>
+            <input type="number" id="entry-staff-pa-soll" min="0" max="50" placeholder="SOLL">
+          </div>
+        </div>
+      </div>
+
+      <!-- Bemerkungen -->
+      <div class="form-section">
+        <div class="form-section-title">7. Bemerkungen</div>
+        <div class="form-group">
+          <label for="entry-notes">Freitext</label>
+          <textarea id="entry-notes" rows="3" placeholder="Besondere Vorkommnisse, Zusatzinfos…"></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="modal-cancel" onclick="document.getElementById('modal-overlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn-primary" id="btn-submit-entry">
+        <i class="bi bi-check-lg"></i> Dateneingabe speichern
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+// ── Abteilungs-Optionen ins Modal einfügen ───────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const grid = document.getElementById('dept-select-grid');
+  if (grid) {
+    grid.innerHTML = DEPARTMENTS.map(d => `
+      <div class="dept-option" data-dept-id="${d.id}" style="border-color:${d.color}22">
+        <div style="width:8px;height:8px;border-radius:50%;background:${d.color};margin:0 auto 4px"></div>
+        <div style="font-size:12px">${d.name}</div>
+        <div style="font-size:9px;color:#718096;font-weight:400">${d.floor}. Etage</div>
+      </div>
+    `).join('');
+
+    grid.querySelectorAll('.dept-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        grid.querySelectorAll('.dept-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        selectedDept = opt.dataset.deptId;
+        prefillFromCurrentData();
+      });
+    });
+  }
+
+  // Abteilungs-Optionen für Historical-Seite
+  const histSel = document.getElementById('hist-dept-select');
+  if (histSel) {
+    DEPARTMENTS.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name + ' — ' + d.fullName;
+      histSel.appendChild(opt);
+    });
+  }
+
+  // OR-Page KPIs (nach Datenladen)
+  setTimeout(() => {
+    const today    = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0];
+    const todayOps   = AppState.orProcedures.filter(p => p.date === today);
+    const tomorrowOps = AppState.orProcedures.filter(p => p.date === tomorrow && p.status === 'planned');
+    const ipsOps  = AppState.orProcedures.filter(p => p.date >= today && p.postop_destination === 'IPS' && p.status === 'planned');
+    const imcOps  = AppState.orProcedures.filter(p => p.date >= today && p.postop_destination === 'IMC' && p.status === 'planned');
+
+    const orTodayEl    = document.getElementById('or-today-count');
+    const orTomorrowEl = document.getElementById('or-tomorrow-count');
+    const orIpsEl      = document.getElementById('or-ips-count');
+    const orImcEl      = document.getElementById('or-imc-count');
+
+    if (orTodayEl)    orTodayEl.textContent    = todayOps.length;
+    if (orTomorrowEl) orTomorrowEl.textContent = tomorrowOps.length;
+    if (orIpsEl)      orIpsEl.textContent      = ipsOps.length;
+    if (orImcEl)      orImcEl.textContent      = imcOps.length;
+
+    // Historical stats table
+    const tbody = document.getElementById('hist-stats-tbody');
+    if (tbody && AppState.historicalData.length) {
+      const today7 = new Date();
+      today7.setDate(today7.getDate() - 7);
+      const last7Str = today7.toISOString().split('T')[0];
+
+      tbody.innerHTML = DEPARTMENTS.map(dept => {
+        const recs = AppState.historicalData.filter(r => r.department_id === dept.id && r.date >= last7Str);
+        if (!recs.length) return '';
+        const avgOcc  = Math.round(recs.reduce((s,r)=>s+r.occupancy_pct,0)/recs.length);
+        const maxOcc  = Math.max(...recs.map(r=>r.occupancy_pct));
+        const avgEpa  = (recs.reduce((s,r)=>s+r.epa_average,0)/recs.length).toFixed(1);
+        const avgAct  = Math.round(recs.reduce((s,r)=>s+r.staff_actual,0)/recs.length);
+        const avgTgt  = Math.round(recs.reduce((s,r)=>s+r.staff_target,0)/recs.length);
+        const poolCnt = recs.filter(r=>r.pool_request).length;
+        return `<tr>
+          <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dept.color};margin-right:6px"></span>${dept.name}</td>
+          <td>${avgOcc}%</td>
+          <td>${maxOcc}%</td>
+          <td style="color:${avgEpa > 3.5 ? 'var(--danger)' : avgEpa > 2.5 ? 'var(--warning)' : 'var(--success)'}">${avgEpa}</td>
+          <td>${avgAct}</td>
+          <td>${avgTgt}</td>
+          <td>${poolCnt > 0 ? `<span class="badge badge-yellow">${poolCnt}×</span>` : '<span class="badge badge-green">0</span>'}</td>
+        </tr>`;
+      }).join('');
+    }
+  }, 800);
+});
+</script>
+
+</body>
+</html>
