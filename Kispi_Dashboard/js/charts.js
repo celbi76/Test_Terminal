@@ -378,25 +378,34 @@ function buildSkillMixChart(canvasId, shiftData) {
 
   if (charts[canvasId]) charts[canvasId].destroy();
 
-  const labels = shiftData.map(d => DEPARTMENTS.find(x => x.id === d.department_id)?.name || d.department_id);
-  const pfn    = shiftData.map(d => d.staff.actual.pflegefachpersonen);
-  const pa     = shiftData.map(d => d.staff.actual.pflegeassistenz);
-  const ausb   = shiftData.map(d => d.staff.actual.auszubildende);
+  const labels   = shiftData.map(d => DEPARTMENTS.find(x => x.id === d.department_id)?.name || d.department_id);
+  const allRoles = getAllRoles();
+
+  const palette = [
+    '#E63946','#F7941D','#3DB8E8','#00A79D','#2DC653','#9B59B6',
+    '#F0C040','#2980B9','#27AE60','#8E44AD','#E67E22','#16A085','#607D8B',
+  ];
+
+  const datasets = allRoles.map((role, i) => ({
+    label:           ROLE_SHORT[role.id] || role.label,
+    data:            shiftData.map(d => d.staff_actual_by_role?.[role.id] || 0),
+    backgroundColor: palette[i % palette.length],
+    borderRadius:    2,
+    stack:           'stack',
+  }));
 
   charts[canvasId] = new Chart(canvas, {
     type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Dipl. Pflegefachperson', data: pfn,  backgroundColor: CHART_COLORS.teal,   borderRadius: 4, stack: 'stack' },
-        { label: 'Pflegeassistenz',         data: pa,   backgroundColor: CHART_COLORS.blue,   borderRadius: 4, stack: 'stack' },
-        { label: 'Auszubildende',           data: ausb, backgroundColor: CHART_COLORS.purple, borderRadius: 4, stack: 'stack' },
-      ],
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { position: 'top' } },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { font: { size: 11 }, boxWidth: 12, padding: 8 },
+        },
+      },
       scales: {
         y: { stacked: true, grid: { color: '#F0F4F8' }, ticks: { precision: 0 } },
         x: { stacked: true, grid: { display: false } },

@@ -12,6 +12,28 @@ function localDateStr(date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+// Alle Berufsgruppen (dedupliziert, kanonische Reihenfolge: ICU → NF → Betten)
+function getAllRoles() {
+  const seen = new Set();
+  const roles = [];
+  ['icu', 'emergency', 'ward'].forEach(type => {
+    (STAFF_ROLES_BY_TYPE[type] || []).forEach(r => {
+      if (!seen.has(r.id)) { seen.add(r.id); roles.push(r); }
+    });
+  });
+  return roles;
+}
+
+const ROLE_SHORT = {
+  exp_int:  'Exp. Intensiv',  exp_nf:   'Exp. Notfall',
+  pfn_hf:   'Dipl. PFP HF',
+  stud_hf3: 'Stud. HF 3.J',  stud_hf2: 'Stud. HF 2.J',  stud_hf1: 'Stud. HF 1.J',
+  stud_int: 'Stud. Intensiv', stud_nf:  'Stud. Notfall',
+  fage_efz: 'FaGe EFZ',
+  lern_fa2: 'FaGe i.A. 2.J', lern_fa1: 'FaGe i.A. 1.J',
+  pfh_ags:  'PfH / AGS',      disp_mpa: 'Disp. / MPA',
+};
+
 // ── Initialisierung ──────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -392,17 +414,34 @@ function renderStationsPage() {
 // ── STAFFING PAGE ────────────────────────────────────────────
 
 function renderStaffingPage() {
+  const allRoles = getAllRoles();
+  const all      = AppState.currentShiftData;
+
+  // ── Thead (dynamisch per Berufsgruppe) ──────────────────────
+  const thead = document.getElementById('staffing-thead');
+  if (thead) {
+    thead.innerHTML = `<tr>
+      <th>Abteilung</th>
+      ${allRoles.map(r => `<th title="${r.label}">${ROLE_SHORT[r.id] || r.label}</th>`).join('')}
+      <th>IST Total</th><th>SOLL Total</th><th>Abdeckung</th>
+      <th>Betr. Betten</th><th>Pat./Pflegeperson</th><th>Pool-Status</th>
+    </tr>`;
+  }
+
+  // ── Tbody ───────────────────────────────────────────────────
   const tbody = document.getElementById('staffing-tbody');
   if (tbody) {
-    tbody.innerHTML = AppState.currentShiftData.map(d => {
-      const dept  = DEPARTMENTS.find(x => x.id === d.department_id);
-      const ratio = d.staff_actual_total > 0 ? `1 : ${(d.beds_occupied / d.staff_actual_total).toFixed(1)}` : '-';
-      const cColor= d.staff_coverage_pct >= 95 ? '#2DC653' : d.staff_coverage_pct >= 80 ? '#F7941D' : '#E63946';
+    tbody.innerHTML = all.map(d => {
+      const dept   = DEPARTMENTS.find(x => x.id === d.department_id);
+      const ratio  = d.staff_actual_total > 0 ? `1 : ${(d.beds_occupied / d.staff_actual_total).toFixed(1)}` : '—';
+      const cColor = d.staff_coverage_pct >= 95 ? '#2DC653' : d.staff_coverage_pct >= 80 ? '#F7941D' : '#E63946';
+      const roleCells = allRoles.map(r => {
+        const v = d.staff_actual_by_role?.[r.id];
+        return `<td style="text-align:center">${v !== undefined ? v : '<span style="color:#CBD5E0">—</span>'}</td>`;
+      }).join('');
       return `<tr>
         <td><span class="station-dot" style="background:${dept.color};display:inline-block;margin-right:6px"></span>${dept.name}</td>
-        <td>${d.staff.actual.pflegefachpersonen}</td>
-        <td>${d.staff.actual.pflegeassistenz}</td>
-        <td>${d.staff.actual.auszubildende}</td>
+        ${roleCells}
         <td><strong>${d.staff_actual_total}</strong></td>
         <td>${d.staff_target_total}</td>
         <td>
@@ -411,6 +450,7 @@ function renderStaffingPage() {
             <span class="coverage-pct" style="color:${cColor}">${d.staff_coverage_pct}%</span>
           </div>
         </td>
+        <td style="text-align:center">${d.beds_operational ?? d.beds_total ?? '—'}</td>
         <td>${ratio}</td>
         <td>${d.pool_request
           ? `<span class="badge badge-red">+${d.pool_request_count} Anfrage</span>`
@@ -420,33 +460,31 @@ function renderStaffingPage() {
       </tr>`;
     }).join('');
   }
-  // Total row per Berufsgruppe
+
+  // ── Tfoot (Total pro Berufsgruppe) ──────────────────────────
   const tfoot = document.getElementById('staffing-tfoot');
   if (tfoot) {
-    const all   = AppState.currentShiftData;
-    const tPFP  = all.reduce((s, d) => s + d.staff.actual.pflegefachpersonen, 0);
-    const tPA   = all.reduce((s, d) => s + d.staff.actual.pflegeassistenz, 0);
-    const tAusb = all.reduce((s, d) => s + d.staff.actual.auszubildende, 0);
     const tIST  = all.reduce((s, d) => s + d.staff_actual_total, 0);
     const tSOLL = all.reduce((s, d) => s + d.staff_target_total, 0);
     const tCov  = Math.round((tIST / Math.max(tSOLL, 1)) * 100);
     const tCol  = tCov >= 95 ? '#2DC653' : tCov >= 80 ? '#F7941D' : '#E63946';
+    const roleTotals = allRoles.map(r => {
+      const sum = all.reduce((s, d) => s + (d.staff_actual_by_role?.[r.id] || 0), 0);
+      return `<td style="text-align:center"><strong>${sum > 0 ? sum : '—'}</strong></td>`;
+    }).join('');
     tfoot.innerHTML = `
       <tr class="staffing-total-row">
         <td><strong>Total Klinik</strong></td>
-        <td><strong>${tPFP}</strong></td>
-        <td><strong>${tPA}</strong></td>
-        <td><strong>${tAusb}</strong></td>
-        <td><strong>${tIST}</strong></td>
-        <td><strong>${tSOLL}</strong></td>
+        ${roleTotals}
+        <td><strong>${tIST}</strong></td><td><strong>${tSOLL}</strong></td>
         <td>
           <div class="coverage-bar-wrap">
             <div class="coverage-bar"><div class="coverage-fill" style="width:${Math.min(tCov,100)}%;background:${tCol}"></div></div>
             <span class="coverage-pct" style="color:${tCol}">${tCov}%</span>
           </div>
         </td>
-        <td>—</td>
-        <td>—</td>
+        <td style="text-align:center"><strong>${all.reduce((s, d) => s + (d.beds_operational ?? d.beds_total ?? 0), 0)}</strong></td>
+        <td>—</td><td>—</td>
       </tr>`;
   }
 
