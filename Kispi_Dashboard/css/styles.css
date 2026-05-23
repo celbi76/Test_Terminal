@@ -1481,7 +1481,7 @@ input:focus, select:focus, textarea:focus {
   width: 52px;
   flex-shrink: 0;
   position: relative;
-  height: 780px;
+  height: 1440px;
   border-right: 1px solid var(--border);
 }
 
@@ -1541,6 +1541,17 @@ input:focus, select:focus, textarea:focus {
   background: rgba(0,0,0,0.12);
 }
 
+.or-grid-line-midnight {
+  background: rgba(0,45,85,0.35);
+  height: 2px;
+}
+
+.or-time-tick-midnight {
+  color: var(--kispi-blue-dark);
+  font-weight: 700;
+  font-size: 11px;
+}
+
 .or-inactive-zone {
   position: absolute;
   left: 0; right: 0;
@@ -1552,8 +1563,20 @@ input:focus, select:focus, textarea:focus {
   position: absolute;
   left: 0; right: 0;
   background: rgba(230,57,70,0.07);
-  border-top: 1px dashed rgba(230,57,70,0.4);
+  border-top: 2px dashed rgba(230,57,70,0.5);
   pointer-events: none;
+}
+
+.or-notfall-zone-label {
+  position: sticky;
+  top: 8px;
+  padding: 4px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #E63946;
+  text-align: center;
+  line-height: 1.4;
+  opacity: 0.8;
 }
 
 .or-proc-block {
