@@ -1050,6 +1050,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── DATA ENTRY MODAL ─────────────────────────────────────────
 
+function setEntryDateToday() {
+  const el = document.getElementById('entry-date');
+  if (el) { el.value = localDateStr(); updateEntryDateHint(); }
+}
+
+function updateEntryDateHint() {
+  const val   = document.getElementById('entry-date')?.value;
+  const hint  = document.getElementById('entry-date-hint');
+  if (!hint) return;
+  if (!val) { hint.textContent = ''; return; }
+  const today = localDateStr();
+  if (val === today) {
+    hint.style.color = 'var(--kispi-teal)';
+    hint.textContent = 'Heutige Daten werden im Live-Dashboard aktualisiert und gespeichert.';
+  } else if (val < today) {
+    hint.style.color = 'var(--kispi-blue)';
+    hint.textContent = 'Vergangene Schicht — Daten werden in der Rückschau (Historische Daten) gespeichert.';
+  } else {
+    hint.style.color = 'var(--text-light)';
+    hint.textContent = 'Zukünftiges Datum — wird gespeichert, aber noch nicht im Live-Dashboard angezeigt.';
+  }
+}
+
 function initDataEntryModal() {
   document.getElementById('btn-data-entry')?.addEventListener('click', openDataEntry);
   document.getElementById('nav-data-entry')?.addEventListener('click', openDataEntry);
@@ -1067,6 +1090,8 @@ function initDataEntryModal() {
   const cur = SHIFTS.find(s => s.id === getCurrentShift());
   document.querySelector(`.shift-option[data-shift-id="${cur?.id}"]`)?.click();
   document.getElementById('btn-submit-entry')?.addEventListener('click', submitDataEntry);
+  // Pre-fill date to today on first load
+  setEntryDateToday();
 }
 
 function buildDeptSelectGrid() {
@@ -1141,12 +1166,19 @@ function prefillFromCurrentData() {
   if (barthelSec) barthelSec.style.display = hideBarthel ? 'none' : '';
 }
 
-function openDataEntry()  { document.getElementById('modal-overlay')?.classList.add('open'); }
+function openDataEntry()  {
+  document.getElementById('modal-overlay')?.classList.add('open');
+  // Always reset date to today when opening
+  if (!document.getElementById('entry-date')?.value) setEntryDateToday();
+  updateEntryDateHint();
+}
 function closeDataEntry() { document.getElementById('modal-overlay')?.classList.remove('open'); }
 
 function submitDataEntry() {
-  if (!selectedDept)  { alert('Bitte Abteilung wählen.'); return; }
+  const entryDate = getInputVal('entry-date');
+  if (!entryDate)     { alert('Bitte Datum eingeben.');   return; }
   if (!selectedShift) { alert('Bitte Schicht wählen.');   return; }
+  if (!selectedDept)  { alert('Bitte Abteilung wählen.'); return; }
 
   const dept       = DEPARTMENTS.find(x => x.id === selectedDept);
   const isIPS      = dept?.id === 'ips';
@@ -1176,6 +1208,7 @@ function submitDataEntry() {
   AppState.submitShiftEntry({
     department_id:       selectedDept,
     shift:               selectedShift,
+    date:                entryDate,
     beds_total:          bedsTotal,
     beds_operational:    bedsOper,
     beds_occupied:       bedsOcc,
@@ -1203,7 +1236,8 @@ function submitDataEntry() {
   renderAllPages();
   updateAlertBadge();
   closeDataEntry();
-  showToast(`Dateneingabe für ${dept.name} gespeichert.`);
+  const isToday = entryDate === localDateStr();
+  showToast(`${dept.name} · ${entryDate} · Schicht ${selectedShift} gespeichert${isToday ? ' (Live-Dashboard aktualisiert)' : ' (Rückschau)'}.`);
 }
 
 // ── Toast ─────────────────────────────────────────────────────

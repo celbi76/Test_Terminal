@@ -589,9 +589,22 @@
     </div>
     <div class="modal-body">
 
+      <!-- 0. Datum -->
+      <div class="form-section">
+        <div class="form-section-title">1. Datum der Schicht</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="date" id="entry-date"
+                 style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit"
+                 onchange="updateEntryDateHint()">
+          <button class="btn-secondary" onclick="setEntryDateToday()"
+                  style="font-size:12px;padding:5px 14px;white-space:nowrap">Heute</button>
+        </div>
+        <div id="entry-date-hint" style="font-size:11px;margin-top:5px;color:var(--text-light)"></div>
+      </div>
+
       <!-- 1. Schicht -->
       <div class="form-section">
-        <div class="form-section-title">1. Schicht wählen</div>
+        <div class="form-section-title">2. Schicht wählen</div>
         <div class="shift-select-grid">
           <div class="shift-option" data-shift-id="F">
             <span class="shift-icon">🌅</span>
@@ -613,13 +626,13 @@
 
       <!-- 2. Abteilung -->
       <div class="form-section">
-        <div class="form-section-title">2. Abteilung wählen</div>
+        <div class="form-section-title">3. Abteilung wählen</div>
         <div class="dept-select-grid" id="dept-select-grid"><!-- JS --></div>
       </div>
 
       <!-- 3. Belegung -->
       <div class="form-section">
-        <div class="form-section-title">3. Belegung</div>
+        <div class="form-section-title">4. Belegung</div>
         <div class="form-grid">
           <div class="form-group">
             <label for="entry-beds-total">Betten gesamt</label>
@@ -638,7 +651,7 @@
 
       <!-- 4. Barthel-Index -->
       <div class="form-section" id="barthel-section">
-        <div class="form-section-title">4. Barthel-Index — Anzahl Patienten je Kategorie
+        <div class="form-section-title">5. Barthel-Index — Anzahl Patienten je Kategorie
           <span style="font-weight:400;font-size:10px;color:var(--text-light);margin-left:6px">(nicht für IPS — NEMS-Scoring)</span>
         </div>
         <div class="epa-input-grid" style="grid-template-columns:repeat(4,1fr)">
@@ -678,7 +691,7 @@
 
       <!-- 5. Personal IST / SOLL nach Rolle -->
       <div class="form-section">
-        <div class="form-section-title">5. Personal IST / SOLL nach Berufsgruppe</div>
+        <div class="form-section-title">6. Personal IST / SOLL nach Berufsgruppe</div>
         <div id="staff-role-inputs">
           <div style="color:var(--text-light);font-size:12px;padding:8px 0">Bitte zuerst Abteilung auswählen.</div>
         </div>
@@ -686,7 +699,7 @@
 
       <!-- 6. Bemerkungen -->
       <div class="form-section">
-        <div class="form-section-title">6. Bemerkungen</div>
+        <div class="form-section-title">7. Bemerkungen</div>
         <div class="form-group">
           <label for="entry-notes">Freitext</label>
           <textarea id="entry-notes" rows="3" placeholder="Besondere Vorkommnisse, Zusatzinfos…"></textarea>
