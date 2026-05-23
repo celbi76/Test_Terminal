@@ -288,16 +288,16 @@ function generateCurrentShiftData() {
     const operational = dept.beds - closedBeds;
     const reserved    = isICU ? randomInt(0, 2) : randomInt(0, 3);
 
-    // Barthel — IPS nicht mit Barthel bewertet
+    // Barthel — IPS und IMC werden mit NEMS bewertet, nicht Barthel
     let barthelDistrib  = [0, 0, 0, 0];
     let barthelAvgScore = null;
 
-    if (!isIPS) {
+    if (!isIPS && !isIMC) {
       for (let i = 0; i < occupied; i++) {
         let lvl;
-        if (isICU || isIMC) lvl = randomInt(1, 2);
-        else if (isEmerg)   lvl = randomInt(1, 3);
-        else                lvl = randomInt(1, 4);
+        if (isICU)        lvl = randomInt(1, 2);
+        else if (isEmerg) lvl = randomInt(1, 3);
+        else              lvl = randomInt(1, 4);
         barthelDistrib[lvl - 1]++;
       }
       const midpoints = [15, 57.5, 90, 100];
