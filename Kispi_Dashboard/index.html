@@ -30,18 +30,18 @@
   </button>
 
   <div id="sidebar-logo">
-    <!-- Kispi Logo SVG (präzise Nachbildung) -->
+    <!-- Kispi Logo SVG — exakte Nachbildung (Schicht-Methode) -->
     <svg class="logo-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <!-- Blauer Kreis (Kispi Blau #3DB8E8) -->
-      <circle cx="50" cy="50" r="50" fill="#3DB8E8"/>
-      <!-- Weisse Kindersilhouette: Horseshoe-Form (Arme hoch, Körper unten) -->
-      <path d="M 11 29 A 45 45 0 1 1 89 29 L 74 39 A 29 29 0 1 0 26 39 Z" fill="white"/>
-      <!-- Weisser Kopf (Kreis oben) -->
-      <circle cx="50" cy="19" r="12" fill="white"/>
+      <circle cx="50" cy="50" r="50"  fill="#3DB8E8"/><!-- Hintergrund -->
+      <circle cx="50" cy="50" r="46"  fill="white"/>  <!-- Weisser Ring aussen -->
+      <circle cx="50" cy="50" r="29"  fill="#3DB8E8"/><!-- Blaue Aussparung innen -->
+      <rect   x="0"   y="0"  width="100" height="26" fill="#3DB8E8"/><!-- Deckt Ringoberseite ab → Horseshoe -->
+      <circle cx="50" cy="15" r="10"  fill="white"/>  <!-- Kopf -->
     </svg>
     <div class="logo-text">
-      <span class="brand">KISPI</span>
-      <span class="sub">Universitäts-<br>Kinderspital Zürich</span>
+      <span class="brand-small">UNIVERSITÄTS-</span>
+      <span class="brand-main">KINDERSPITAL</span>
+      <span class="brand-main">ZÜRICH</span>
     </div>
   </div>
 
@@ -145,7 +145,7 @@
 
         <div class="kpi-card kpi-blue">
           <span class="kpi-icon"><i class="bi bi-activity"></i></span>
-          <div class="kpi-label">Ø EPA-AC Komplexität</div>
+          <div class="kpi-label">Ø EPA-AC Kids V2.0</div>
           <div class="kpi-value"><span id="kpi-epa-val">—</span></div>
           <div class="kpi-sub" id="kpi-epa-sub"></div>
         </div>
@@ -210,7 +210,7 @@
         <div class="card">
           <div class="card-header">
             <i class="bi bi-bar-chart-steps" style="color:var(--kispi-blue-mid)"></i>
-            <h3>EPA-AC Verteilung — Klinik gesamt</h3>
+            <h3>EPA-AC Kids V2.0 — Klinik gesamt (ohne IPS)</h3>
           </div>
           <div class="card-body">
             <div class="chart-wrap"><canvas id="chart-epa-distrib"></canvas></div>
@@ -472,10 +472,12 @@
 <div id="modal-overlay" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <svg viewBox="0 0 100 100" width="28" height="28">
-        <circle cx="50" cy="50" r="50" fill="#3DB8E8"/>
-        <path d="M 11 29 A 45 45 0 1 1 89 29 L 74 39 A 29 29 0 1 0 26 39 Z" fill="white"/>
-        <circle cx="50" cy="19" r="12" fill="white"/>
+      <svg viewBox="0 0 100 100" width="30" height="30">
+        <circle cx="50" cy="50" r="50"  fill="#3DB8E8"/>
+        <circle cx="50" cy="50" r="46"  fill="white"/>
+        <circle cx="50" cy="50" r="29"  fill="#3DB8E8"/>
+        <rect   x="0"  y="0"  width="100" height="26" fill="#3DB8E8"/>
+        <circle cx="50" cy="15" r="10"  fill="white"/>
       </svg>
       <h2>Dateneingabe — Schichtübergabe</h2>
       <button class="modal-close" id="modal-close">✕</button>
@@ -527,41 +529,43 @@
         </div>
       </div>
 
-      <!-- EPA-AC -->
-      <div class="form-section">
-        <div class="form-section-title">4. EPA-AC Einschätzung (Anzahl Patienten je Stufe)</div>
+      <!-- EPA-AC Kids V2.0 -->
+      <div class="form-section" id="epa-section">
+        <div class="form-section-title">4. EPA-AC Kids V2.0 — Anzahl Patienten je Stufe
+          <span style="font-weight:400;font-size:10px;color:var(--text-light);margin-left:6px">(nicht für IPS)</span>
+        </div>
         <div class="epa-input-grid">
           <div class="epa-level-input">
             <div class="level-dot" style="background:#2DC653"></div>
-            <label>EPA 1<br>Selbst-<br>pflegend</label>
+            <label>S1<br>Gering</label>
             <input type="number" id="entry-epa-1" min="0" max="50" value="0">
           </div>
           <div class="epa-level-input">
             <div class="level-dot" style="background:#7BC67E"></div>
-            <label>EPA 2<br>Teil-<br>assistenz</label>
+            <label>S2<br>Teilweise</label>
             <input type="number" id="entry-epa-2" min="0" max="50" value="0">
           </div>
           <div class="epa-level-input">
             <div class="level-dot" style="background:#F7941D"></div>
-            <label>EPA 3<br>Voll-<br>assistenz</label>
+            <label>S3<br>Vollständig</label>
             <input type="number" id="entry-epa-3" min="0" max="50" value="0">
           </div>
           <div class="epa-level-input">
             <div class="level-dot" style="background:#E67E22"></div>
-            <label>EPA 4<br>Intensiv-<br>pflege</label>
+            <label>S4<br>Komplex</label>
             <input type="number" id="entry-epa-4" min="0" max="50" value="0">
           </div>
           <div class="epa-level-input">
             <div class="level-dot" style="background:#E63946"></div>
-            <label>EPA 5<br>Max.<br>Intensiv</label>
+            <label>S5<br>Intensiv</label>
             <input type="number" id="entry-epa-5" min="0" max="50" value="0">
           </div>
         </div>
       </div>
 
-      <!-- NEMS (ICU only) -->
+      <!-- NEMS (IPS + IMC) -->
       <div class="form-section" id="nems-row" style="display:none">
-        <div class="form-section-title">4b. NEMS Score (IPS / Neonatologie)</div>
+        <div class="form-section-title">4b. NEMS Score (IPS &amp; IMC — Nine Equivalents of Nursing Manpower Use Score)</div>
         <div class="form-group">
           <label for="entry-nems">NEMS Durchschnitt (alle Patienten)</label>
           <input type="number" id="entry-nems" min="1.2" max="40" step="0.1" placeholder="z.B. 18.5">

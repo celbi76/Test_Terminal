@@ -85,20 +85,23 @@ body {
   transition: opacity var(--transition);
 }
 
-#sidebar-logo .logo-text .brand {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--kispi-teal);
+#sidebar-logo .logo-text .brand-small {
+  font-size: 9px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.60);
+  letter-spacing: 0.8px;
   display: block;
+  line-height: 1.4;
 }
 
-#sidebar-logo .logo-text .sub {
-  font-size: 9px;
-  color: rgba(255,255,255,0.55);
+#sidebar-logo .logo-text .brand-main {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+  display: block;
+  line-height: 1.15;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
 }
 
 #sidebar.collapsed #sidebar-logo .logo-text { opacity: 0; width: 0; }

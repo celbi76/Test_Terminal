@@ -2,16 +2,18 @@
 // KISPI DASHBOARD — Datenkonfiguration & Datengenerierung
 // ============================================================
 
+// Bettenkapazität: IPS 25 | IMC/Neo = Intensiv | Normalbetten gesamt 200
+// Normalbetten: Notfall 20 + Onko 30 + Chir 45 + Med A 35 + Med B 35 + Neuro 35 = 200
 const DEPARTMENTS = [
-  { id: 'ips',    name: 'IPS',        fullName: 'Intensivpflegestation',      beds: 20, type: 'icu',       floor: 'K1',  color: '#E63946' },
+  { id: 'ips',    name: 'IPS',        fullName: 'Intensivpflegestation',      beds: 25, type: 'icu',       floor: 'K1',  color: '#E63946' },
   { id: 'imc',    name: 'IMC',        fullName: 'Intermediate Care',           beds: 12, type: 'imc',       floor: 'K1',  color: '#F7941D' },
-  { id: 'notfall',name: 'Notfall',    fullName: 'Notfallstation',              beds: 15, type: 'emergency', floor: 'EG',  color: '#FF6B35' },
+  { id: 'notfall',name: 'Notfall',    fullName: 'Notfallstation',              beds: 20, type: 'emergency', floor: 'EG',  color: '#FF6B35' },
   { id: 'neo',    name: 'Neo',        fullName: 'Neonatologie',                beds: 16, type: 'nicu',      floor: '1',   color: '#9B59B6' },
-  { id: 'onko',   name: 'Onkologie',  fullName: 'Onkologie / Hämatologie',     beds: 24, type: 'ward',      floor: '2',   color: '#2980B9' },
-  { id: 'chir',   name: 'Chirurgie',  fullName: 'Chirurgie',                   beds: 28, type: 'ward',      floor: '3',   color: '#27AE60' },
-  { id: 'med_a',  name: 'Medizin A',  fullName: 'Medizin A (Allgemein)',        beds: 22, type: 'ward',      floor: '4',   color: '#16A085' },
-  { id: 'med_b',  name: 'Medizin B',  fullName: 'Medizin B (Spezial)',          beds: 22, type: 'ward',      floor: '5',   color: '#1E8BC3' },
-  { id: 'neuro',  name: 'Neurologie', fullName: 'Neurologie / Neuropädiatrie', beds: 18, type: 'ward',      floor: '6',   color: '#8E44AD' },
+  { id: 'onko',   name: 'Onkologie',  fullName: 'Onkologie / Hämatologie',     beds: 30, type: 'ward',      floor: '2',   color: '#2980B9' },
+  { id: 'chir',   name: 'Chirurgie',  fullName: 'Chirurgie',                   beds: 45, type: 'ward',      floor: '3',   color: '#27AE60' },
+  { id: 'med_a',  name: 'Medizin A',  fullName: 'Medizin A (Allgemein)',        beds: 35, type: 'ward',      floor: '4',   color: '#16A085' },
+  { id: 'med_b',  name: 'Medizin B',  fullName: 'Medizin B (Spezial)',          beds: 35, type: 'ward',      floor: '5',   color: '#1E8BC3' },
+  { id: 'neuro',  name: 'Neurologie', fullName: 'Neurologie / Neuropädiatrie', beds: 35, type: 'ward',      floor: '6',   color: '#8E44AD' },
 ];
 
 const SHIFTS = [
@@ -20,13 +22,20 @@ const SHIFTS = [
   { id: 'N', label: 'Nachtdienst', time: '22:00–07:00', icon: '🌙' },
 ];
 
-// EPA-AC Level Definitions (Einschätzung Pflegeaufwand Akut)
+// EPA-AC Kids Version 2.0 — Pädiatrisch validiertes Pflegeaufwand-Assessment
+// Quelle: Universitätskinderspital Zürich / LEP AG
+// IPS und IMC werden mit NEMS bewertet, nicht mit EPA-AC Kids
 const EPA_LEVELS = [
-  { level: 1, label: 'Selbstpflegend',         color: '#2DC653', ratio: '1:10', weight: 1.0 },
-  { level: 2, label: 'Teilassistenz',           color: '#7BC67E', ratio: '1:6',  weight: 1.5 },
-  { level: 3, label: 'Vollassistenz',           color: '#F7941D', ratio: '1:3',  weight: 2.5 },
-  { level: 4, label: 'Intensivpflege',          color: '#E67E22', ratio: '1:1.5',weight: 4.0 },
-  { level: 5, label: 'Max. Intensivpflege',     color: '#E63946', ratio: '2:1',  weight: 6.0 },
+  { level: 1, label: 'Stufe 1 – Gering',     shortLabel: 'Gering',    color: '#2DC653', ratio: '1:8',   weight: 1.0,
+    desc: 'Kind/Jugendliche·r weitgehend selbständig, minimale Pflegeunterstützung' },
+  { level: 2, label: 'Stufe 2 – Teilweise',  shortLabel: 'Teilweise', color: '#7BC67E', ratio: '1:5',   weight: 1.6,
+    desc: 'Teilassistenz, entwicklungsgerechte Unterstützung bei Alltagsaktivitäten' },
+  { level: 3, label: 'Stufe 3 – Vollständig',shortLabel: 'Vollständig',color: '#F7941D', ratio: '1:3',   weight: 2.8,
+    desc: 'Vollassistenz, Kind vollständig pflegeabhängig, inkl. Familiensupport' },
+  { level: 4, label: 'Stufe 4 – Komplex',    shortLabel: 'Komplex',   color: '#E67E22', ratio: '1:1.5', weight: 4.5,
+    desc: 'Erhöhter/komplexer Pflegebedarf, multidisziplinäre Interventionen' },
+  { level: 5, label: 'Stufe 5 – Intensiv',   shortLabel: 'Intensiv',  color: '#E63946', ratio: '2:1',   weight: 7.0,
+    desc: 'Maximaler Pflegebedarf, hochintensive Betreuung (prä-IPS / krisenhafte Situation)' },
 ];
 
 // NEMS Score (Nine Equivalents of nursing Manpower use Score) — ICU only
@@ -89,22 +98,26 @@ function generateCurrentShiftData() {
     const occupied   = randomInt(Math.floor(dept.beds * 0.55), Math.floor(dept.beds * 0.97));
     const reserved   = isICU ? randomInt(0, 2) : randomInt(0, 3);
 
-    // EPA-AC Distribution
-    const epaScores  = [];
-    for (let i = 0; i < occupied; i++) {
-      if (isICU)       epaScores.push(randomInt(3, 5));
-      else if (isIMC)  epaScores.push(randomInt(2, 4));
-      else if (isEmerg)epaScores.push(randomInt(2, 4));
-      else             epaScores.push(randomInt(1, 3));
+    // EPA-AC Kids V2.0 — IPS wird NICHT mit EPA-AC bewertet (nur NEMS)
+    // IMC bekommt EPA-AC UND NEMS
+    const isIPS      = dept.id === 'ips';
+    let epaScores    = [];
+    if (!isIPS) {
+      for (let i = 0; i < occupied; i++) {
+        if (isIMC)       epaScores.push(randomInt(3, 5));
+        else if (isEmerg)epaScores.push(randomInt(2, 4));
+        else             epaScores.push(randomInt(1, 4));
+      }
     }
-    const epaAvg = occupied > 0
+    const epaAvg = epaScores.length > 0
       ? parseFloat((epaScores.reduce((a, b) => a + b, 0) / epaScores.length).toFixed(1))
-      : 0;
+      : null;
     const epaDistrib = [1,2,3,4,5].map(lvl => epaScores.filter(s => s === lvl).length);
 
-    // NEMS (nur IPS/Neo)
-    const nemsAvg = isICU
-      ? randomFloat(12, 28, 1)
+    // NEMS: IPS (icu/nicu) UND IMC
+    const showNems = isICU || isIMC;
+    const nemsAvg  = showNems
+      ? (isIPS ? randomFloat(16, 32, 1) : isIMC ? randomFloat(10, 20, 1) : randomFloat(12, 28, 1))
       : null;
 
     // Staff
@@ -335,7 +348,11 @@ const AppState = {
   getKPIs() {
     const total_beds     = DEPARTMENTS.reduce((s, d) => s + d.beds, 0);
     const total_occupied = this.currentShiftData.reduce((s, d) => s + d.beds_occupied, 0);
-    const avg_epa        = parseFloat((this.currentShiftData.reduce((s, d) => s + d.epa_average, 0) / this.currentShiftData.length).toFixed(1));
+    // EPA-AC Ø nur für Stationen mit EPA-AC Kids V2.0 (IPS ausgeschlossen)
+    const epaRecs  = this.currentShiftData.filter(d => d.epa_average !== null);
+    const avg_epa  = epaRecs.length
+      ? parseFloat((epaRecs.reduce((s, d) => s + d.epa_average, 0) / epaRecs.length).toFixed(1))
+      : 0;
     const total_staff_a  = this.currentShiftData.reduce((s, d) => s + d.staff_actual_total, 0);
     const total_staff_t  = this.currentShiftData.reduce((s, d) => s + d.staff_target_total, 0);
     const pool_reqs      = this.currentShiftData.filter(d => d.pool_request).reduce((s, d) => s + d.pool_request_count, 0);
