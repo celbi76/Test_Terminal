@@ -415,6 +415,36 @@ function renderStaffingPage() {
       </tr>`;
     }).join('');
   }
+  // Total row per Berufsgruppe
+  const tfoot = document.getElementById('staffing-tfoot');
+  if (tfoot) {
+    const all   = AppState.currentShiftData;
+    const tPFP  = all.reduce((s, d) => s + d.staff.actual.pflegefachpersonen, 0);
+    const tPA   = all.reduce((s, d) => s + d.staff.actual.pflegeassistenz, 0);
+    const tAusb = all.reduce((s, d) => s + d.staff.actual.auszubildende, 0);
+    const tIST  = all.reduce((s, d) => s + d.staff_actual_total, 0);
+    const tSOLL = all.reduce((s, d) => s + d.staff_target_total, 0);
+    const tCov  = Math.round((tIST / Math.max(tSOLL, 1)) * 100);
+    const tCol  = tCov >= 95 ? '#2DC653' : tCov >= 80 ? '#F7941D' : '#E63946';
+    tfoot.innerHTML = `
+      <tr class="staffing-total-row">
+        <td><strong>Total Klinik</strong></td>
+        <td><strong>${tPFP}</strong></td>
+        <td><strong>${tPA}</strong></td>
+        <td><strong>${tAusb}</strong></td>
+        <td><strong>${tIST}</strong></td>
+        <td><strong>${tSOLL}</strong></td>
+        <td>
+          <div class="coverage-bar-wrap">
+            <div class="coverage-bar"><div class="coverage-fill" style="width:${Math.min(tCov,100)}%;background:${tCol}"></div></div>
+            <span class="coverage-pct" style="color:${tCol}">${tCov}%</span>
+          </div>
+        </td>
+        <td>—</td>
+        <td>—</td>
+      </tr>`;
+  }
+
   buildSkillMixChart('chart-skill-mix', AppState.currentShiftData);
   buildNurseRatioChart('chart-nurse-ratio', AppState.currentShiftData);
   renderPoolCards();
