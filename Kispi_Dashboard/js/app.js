@@ -7,6 +7,11 @@ let historyDays  = 30;
 let selectedDept = null;
 let selectedShift= null;
 
+function localDateStr(date) {
+  const d = date || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 // ── Initialisierung ──────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -489,7 +494,7 @@ function confirmPoolRelease(deptId) {
 
 // ── OR PAGE ──────────────────────────────────────────────────
 
-let orSelectedDate = new Date().toISOString().split('T')[0];
+let orSelectedDate = localDateStr();
 
 function renderORPage() {
   renderORKPIs();
@@ -500,8 +505,9 @@ function renderORPage() {
 }
 
 function renderORKPIs() {
-  const today       = new Date().toISOString().split('T')[0];
-  const tomorrowStr = new Date(new Date().setDate(new Date().getDate()+1)).toISOString().split('T')[0];
+  const today       = localDateStr();
+  const tom         = new Date(); tom.setDate(tom.getDate()+1);
+  const tomorrowStr = localDateStr(tom);
   setEl('or-today-count',    AppState.orProcedures.filter(p => p.date===today && !p.is_notfall_spur).length);
   setEl('or-tomorrow-count', AppState.orProcedures.filter(p => p.date===tomorrowStr && p.status==='planned' && !p.is_notfall_spur).length);
   setEl('or-ips-count',      AppState.orProcedures.filter(p => p.date>=today && p.postop_destination==='IPS' && p.status==='planned').length);
@@ -617,21 +623,21 @@ function buildORTimelineGrid() {
 }
 
 function orGoToday() {
-  orSelectedDate = new Date().toISOString().split('T')[0];
+  orSelectedDate = localDateStr();
   document.getElementById('or-date-picker').value = orSelectedDate;
   buildORTimelineGrid();
 }
 
 function orPrevDay() {
-  const d = new Date(orSelectedDate); d.setDate(d.getDate()-1);
-  orSelectedDate = d.toISOString().split('T')[0];
+  const d = new Date(orSelectedDate + 'T12:00:00'); d.setDate(d.getDate()-1);
+  orSelectedDate = localDateStr(d);
   document.getElementById('or-date-picker').value = orSelectedDate;
   buildORTimelineGrid();
 }
 
 function orNextDay() {
-  const d = new Date(orSelectedDate); d.setDate(d.getDate()+1);
-  orSelectedDate = d.toISOString().split('T')[0];
+  const d = new Date(orSelectedDate + 'T12:00:00'); d.setDate(d.getDate()+1);
+  orSelectedDate = localDateStr(d);
   document.getElementById('or-date-picker').value = orSelectedDate;
   buildORTimelineGrid();
 }
