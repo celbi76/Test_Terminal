@@ -351,8 +351,8 @@
     ══════════════════════════════════════════════════════ -->
     <section id="page-or" class="page">
 
-      <!-- KPI Row -->
-      <div class="kpi-grid mb-20" style="grid-template-columns: repeat(4, 1fr)">
+      <!-- KPI Rows -->
+      <div class="kpi-grid mb-12" style="grid-template-columns: repeat(4, 1fr)">
         <div class="kpi-card kpi-blue">
           <div class="kpi-label">Eingriffe heute</div>
           <div class="kpi-value" id="or-today-count">—</div>
@@ -366,12 +366,36 @@
         <div class="kpi-card kpi-danger">
           <div class="kpi-label">Postop → IPS</div>
           <div class="kpi-value" id="or-ips-count">—</div>
-          <div class="kpi-sub">Verlegungen erwartet</div>
+          <div class="kpi-sub">Laufende Woche (<span id="or-ips-week-label">…</span>)</div>
         </div>
         <div class="kpi-card kpi-warn">
           <div class="kpi-label">Postop → IMC</div>
           <div class="kpi-value" id="or-imc-count">—</div>
-          <div class="kpi-sub">Verlegungen erwartet</div>
+          <div class="kpi-sub">Laufende Woche (<span id="or-imc-week-label">…</span>)</div>
+        </div>
+      </div>
+
+      <!-- Postop-Verlegungen für das angezeigte Datum -->
+      <div class="kpi-grid mb-20" style="grid-template-columns: repeat(4, 1fr)">
+        <div class="kpi-card" style="border-left:4px solid #E63946">
+          <div class="kpi-label" style="color:#E63946">Postop → IPS</div>
+          <div class="kpi-value" id="or-dest-ips-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-ips-date">…</span></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #F7941D">
+          <div class="kpi-label" style="color:#F7941D">Postop → IMC</div>
+          <div class="kpi-value" id="or-dest-imc-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-imc-date">…</span></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #F0C040">
+          <div class="kpi-label" style="color:#857300">Postop → AWR</div>
+          <div class="kpi-value" id="or-dest-awr-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-awr-date">…</span></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #00A79D">
+          <div class="kpi-label" style="color:#00A79D">Postop → Abteilung</div>
+          <div class="kpi-value" id="or-dest-abt-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-abt-date">…</span></div>
         </div>
       </div>
 

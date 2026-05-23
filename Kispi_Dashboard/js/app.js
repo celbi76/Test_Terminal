@@ -544,13 +544,38 @@ function renderORPage() {
 }
 
 function renderORKPIs() {
-  const today       = localDateStr();
-  const tom         = new Date(); tom.setDate(tom.getDate()+1);
+  const now  = new Date();
+  const today = localDateStr();
+  const tom   = new Date(now); tom.setDate(now.getDate() + 1);
   const tomorrowStr = localDateStr(tom);
-  setEl('or-today-count',    AppState.orProcedures.filter(p => p.date===today && !p.is_notfall_spur).length);
-  setEl('or-tomorrow-count', AppState.orProcedures.filter(p => p.date===tomorrowStr && p.status==='planned' && !p.is_notfall_spur).length);
-  setEl('or-ips-count',      AppState.orProcedures.filter(p => p.date>=today && p.postop_destination==='IPS' && p.status==='planned').length);
-  setEl('or-imc-count',      AppState.orProcedures.filter(p => p.date>=today && p.postop_destination==='IMC' && p.status==='planned').length);
+
+  // Laufende Woche: Mon – Sun
+  const dow  = now.getDay(); // 0=Sun
+  const mon  = new Date(now); mon.setDate(now.getDate() + (dow === 0 ? -6 : 1 - dow));
+  const sun  = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const weekStart = localDateStr(mon);
+  const weekEnd   = localDateStr(sun);
+  const weekLabel = `${mon.getDate()}.${mon.getMonth()+1}. – ${sun.getDate()}.${sun.getMonth()+1}.`;
+
+  const all = AppState.orProcedures;
+
+  // ── Row 1: Programm-Übersicht & Woche ───────────────────────
+  setEl('or-today-count',    all.filter(p => p.date===today && !p.is_notfall_spur).length);
+  setEl('or-tomorrow-count', all.filter(p => p.date===tomorrowStr && p.status==='planned' && !p.is_notfall_spur).length);
+  setEl('or-ips-count',      all.filter(p => p.date>=weekStart && p.date<=weekEnd && p.postop_destination==='IPS' && p.status==='planned').length);
+  setEl('or-imc-count',      all.filter(p => p.date>=weekStart && p.date<=weekEnd && p.postop_destination==='IMC' && p.status==='planned').length);
+  setEl('or-ips-week-label', weekLabel);
+  setEl('or-imc-week-label', weekLabel);
+
+  // ── Row 2: Postop-Verlegungen für das angezeigte Datum ──────
+  const selDate  = orSelectedDate;
+  const selLabel = new Date(selDate + 'T12:00:00').toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'short' });
+  const selPlanned = all.filter(p => p.date===selDate && p.status==='planned' && !p.is_notfall_spur);
+  setEl('or-dest-ips-count', selPlanned.filter(p => p.postop_destination==='IPS').length);
+  setEl('or-dest-imc-count', selPlanned.filter(p => p.postop_destination==='IMC').length);
+  setEl('or-dest-awr-count', selPlanned.filter(p => p.postop_destination==='AWR').length);
+  setEl('or-dest-abt-count', selPlanned.filter(p => p.postop_destination==='Abteilung').length);
+  ['or-dest-ips-date','or-dest-imc-date','or-dest-awr-date','or-dest-abt-date'].forEach(id => setEl(id, selLabel));
 }
 
 function timeStrToMin(timeStr) {
@@ -659,6 +684,7 @@ function buildORTimelineGrid() {
       ${timeAxis}
       <div class="or-rooms-wrapper">${roomCols}</div>
     </div>`;
+  renderORKPIs();
 }
 
 function orGoToday() {
