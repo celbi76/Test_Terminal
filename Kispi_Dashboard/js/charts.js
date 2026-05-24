@@ -244,6 +244,9 @@ function buildAnticipatedChart(canvasId, anticipated) {
 
   if (charts[canvasId]) charts[canvasId].destroy();
 
+  const baselineMin = Math.min(...anticipated.map(a => a.baseline_avg)) - 20;
+  const yMin = Math.max(0, Math.floor(baselineMin / 10) * 10);
+
   charts[canvasId] = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -253,32 +256,40 @@ function buildAnticipatedChart(canvasId, anticipated) {
           label: 'Baseline Ø',
           data: anticipated.map(a => a.baseline_avg),
           type: 'line',
-          borderColor: CHART_COLORS.gray,
-          borderDash: [6,3],
+          borderColor: '#718096',
+          borderDash: [6, 3],
           borderWidth: 1.5,
           pointRadius: 0,
           fill: false,
           order: 0,
-        },
-        {
-          label: 'Notfall (antizipiert)',
-          data: anticipated.map(a => a.emergency_forecast),
-          backgroundColor: 'rgba(230,57,70,0.7)',
-          borderRadius: 4,
-          stack: 'stack',
-        },
-        {
-          label: 'Elektive Eingriffe (postop)',
-          data: anticipated.map(a => a.ips_postop + a.imc_postop),
-          backgroundColor: 'rgba(247,148,29,0.7)',
-          borderRadius: 4,
-          stack: 'stack',
+          yAxisID: 'y',
         },
         {
           label: 'Reguläre Belegung',
-          data: anticipated.map(a => a.total_anticipated - a.emergency_forecast - a.ips_postop - a.imc_postop),
+          data: anticipated.map(a => Math.max(0, a.total_anticipated - a.emergency_forecast - a.ips_postop - a.imc_postop)),
           backgroundColor: 'rgba(0,167,157,0.65)',
-          borderRadius: 4,
+          borderRadius: 3,
+          stack: 'stack',
+        },
+        {
+          label: 'Notfall-Eintritte (hist. Ø)',
+          data: anticipated.map(a => a.emergency_forecast),
+          backgroundColor: 'rgba(230,57,70,0.75)',
+          borderRadius: 3,
+          stack: 'stack',
+        },
+        {
+          label: 'IPS-Postop aus OP',
+          data: anticipated.map(a => a.ips_postop),
+          backgroundColor: 'rgba(142,68,173,0.75)',
+          borderRadius: 3,
+          stack: 'stack',
+        },
+        {
+          label: 'IMC-Postop aus OP',
+          data: anticipated.map(a => a.imc_postop),
+          backgroundColor: 'rgba(247,148,29,0.80)',
+          borderRadius: 3,
           stack: 'stack',
         },
       ],
@@ -286,20 +297,26 @@ function buildAnticipatedChart(canvasId, anticipated) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'top' },
+        legend: { position: 'top', labels: { boxWidth: 10, padding: 10 } },
         tooltip: {
           callbacks: {
             label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}`,
+            footer: items => {
+              const total = items.filter(i => i.dataset.stack === 'stack').reduce((s, i) => s + (i.parsed.y || 0), 0);
+              return `Gesamt antizipiert: ${total}`;
+            },
           },
         },
       },
       scales: {
         y: {
           beginAtZero: false,
-          min: 80,
+          min: yMin,
           grid: { color: '#F0F4F8' },
           stacked: true,
+          title: { display: true, text: 'Patienten / Betten', font: { size: 11 } },
         },
         x: { grid: { display: false }, stacked: true },
       },
@@ -526,4 +543,103 @@ function buildDeviationChart(canvasId, historicalData, metric) {
       },
     },
   });
+}
+
+// ── Prognose: Belegungsprognose ───────────────────────────────
+
+function buildForecastOccChart(canvasId, forecastDays, horizon) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  const SPEZIAL_IDS = ['ips', 'imc', 'neo', 'notfall'];
+  const BETTEN_IDS  = ['onko', 'chir', 'med_a', 'med_b', 'neuro'];
+
+  const groupAvg = (day, ids) => {
+    const vals = ids.map(id => day.perDept[id]?.projOccPct || 0);
+    return Math.round(vals.reduce((s, v) => s + v, 0) / vals.length);
+  };
+
+  let labels, datasets;
+
+  if (horizon === '3m') {
+    const weeks = [];
+    for (let w = 0; w < 13; w++) {
+      const chunk = forecastDays.slice(w * 7, w * 7 + 7);
+      if (!chunk.length) break;
+      const d0 = new Date(chunk[0].date);
+      const kw = getISOWeek(d0);
+      weeks.push({
+        label:    `KW ${kw}`,
+        total:    Math.round(chunk.reduce((s, d) => s + d.avgOccPct, 0) / chunk.length),
+        spezial:  Math.round(chunk.reduce((s, d) => s + groupAvg(d, SPEZIAL_IDS), 0) / chunk.length),
+        betten:   Math.round(chunk.reduce((s, d) => s + groupAvg(d, BETTEN_IDS), 0) / chunk.length),
+      });
+    }
+    labels   = weeks.map(w => w.label);
+    datasets = [
+      { label: 'Gesamt Ø',        data: weeks.map(w => w.total),   borderColor: '#00A79D', backgroundColor: 'rgba(0,167,157,0.12)', fill: true,  tension: 0.4, borderWidth: 2.5, pointRadius: 4 },
+      { label: 'Spezialabt. Ø',   data: weeks.map(w => w.spezial), borderColor: '#E63946', fill: false, tension: 0.4, borderWidth: 2, pointRadius: 3, borderDash: [5, 3] },
+      { label: 'Bettenabt. Ø',    data: weeks.map(w => w.betten),  borderColor: '#2980B9', fill: false, tension: 0.4, borderWidth: 2, pointRadius: 3, borderDash: [5, 3] },
+    ];
+  } else {
+    labels = forecastDays.map(d => d.label);
+    datasets = [
+      {
+        label: 'Gesamt Ø',
+        data:  forecastDays.map(d => d.avgOccPct),
+        borderColor: '#00A79D', backgroundColor: 'rgba(0,167,157,0.12)',
+        fill: true, tension: 0.4, borderWidth: 2.5, pointRadius: 5,
+        pointBackgroundColor: forecastDays.map(d => d.isWeekend ? '#A0AEC0' : '#00A79D'),
+      },
+      {
+        label: 'IPS',
+        data:  forecastDays.map(d => d.perDept['ips']?.projOccPct || 0),
+        borderColor: '#E63946', fill: false, tension: 0.3, borderWidth: 2,
+        pointRadius: 4, pointBackgroundColor: '#E63946',
+      },
+      {
+        label: 'IMC',
+        data:  forecastDays.map(d => d.perDept['imc']?.projOccPct || 0),
+        borderColor: '#F7941D', fill: false, tension: 0.3, borderWidth: 2,
+        pointRadius: 4, pointBackgroundColor: '#F7941D', borderDash: [5, 3],
+      },
+      {
+        label: 'Bettenabt. Ø',
+        data:  forecastDays.map(d => groupAvg(d, BETTEN_IDS)),
+        borderColor: '#2980B9', fill: false, tension: 0.3, borderWidth: 2,
+        pointRadius: 4, pointBackgroundColor: '#2980B9', borderDash: [5, 3],
+      },
+    ];
+  }
+
+  charts[canvasId] = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'bottom' },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` } },
+      },
+      scales: {
+        y: {
+          min: 0, max: 100,
+          grid: { color: '#F0F4F8' },
+          ticks: { callback: v => v + '%', stepSize: 20 },
+          title: { display: true, text: 'Belegung (%)', font: { size: 11 } },
+        },
+        x: { grid: { display: false } },
+      },
+    },
+  });
+}
+
+function getISOWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }

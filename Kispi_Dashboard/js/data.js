@@ -533,29 +533,79 @@ function generateORProcedures() {
 
 // ── Antizipierte Belegung ────────────────────────────────────
 
-function generateAnticipatedOccupancy() {
+function generateAnticipatedOccupancy(historicalData, orProcedures) {
   const days  = [];
   const today = new Date();
+  const fmtD  = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  // Build historical DOW baseline per key dept (last 30 days)
+  const cutoff30 = new Date(today); cutoff30.setDate(today.getDate() - 30);
+  const c30Str   = fmtD(cutoff30);
+  const hist30   = (historicalData || []).filter(r => r.date >= c30Str);
+
+  const dowBeds = {}; // dowBeds[deptId][dow] = { sum, count }
+  ['notfall', 'ips', 'imc'].forEach(id => {
+    dowBeds[id] = Array.from({length: 7}, () => ({ sum: 0, count: 0 }));
+  });
+  hist30.forEach(r => {
+    if (!dowBeds[r.department_id]) return;
+    const dow  = new Date(r.date).getDay();
+    const dept = DEPARTMENTS.find(d => d.id === r.department_id);
+    if (!dept) return;
+    const beds = Math.round(dept.beds * ((r.occupancy_pct || r.beds_occupied || 0) / (r.occupancy_pct ? 1 : dept.beds)));
+    dowBeds[r.department_id][dow].sum += (r.beds_occupied != null ? r.beds_occupied : beds);
+    dowBeds[r.department_id][dow].count++;
+  });
+
+  // Compute a stable baseline from historical totals
+  const dateOccMap = {};
+  hist30.filter(r => r.shift === 'F').forEach(r => {
+    const dept = DEPARTMENTS.find(d => d.id === r.department_id);
+    if (!dept) return;
+    const beds = r.beds_occupied != null ? r.beds_occupied : Math.round(dept.beds * (r.occupancy_pct || 0) / 100);
+    if (!dateOccMap[r.date]) dateOccMap[r.date] = 0;
+    dateOccMap[r.date] += beds;
+  });
+  const totals     = Object.values(dateOccMap);
+  const baselineAvg = totals.length ? Math.round(totals.reduce((s, v) => s + v, 0) / totals.length) : 152;
+
+  const allProcs = orProcedures || generateORProcedures();
 
   for (let i = 0; i <= 5; i++) {
-    const date  = new Date(today);
+    const date    = new Date(today);
     date.setDate(today.getDate() + i);
-    const label = i === 0 ? 'Heute' : i === 1 ? 'Morgen'
+    const dateStr = fmtD(date);
+    const dow     = date.getDay();
+    const label   = i === 0 ? 'Heute' : i === 1 ? 'Morgen'
       : date.toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
-    const orPlan    = generateORProcedures().filter(p => p.date === date.toISOString().split('T')[0] && p.status === 'planned');
+    // OR postop from actual plan (IPS/IMC separately)
+    const orPlan    = allProcs.filter(p => p.date === dateStr && p.status === 'planned');
     const ipsPostop = orPlan.filter(p => p.postop_destination === 'IPS').length;
     const imcPostop = orPlan.filter(p => p.postop_destination === 'IMC').length;
 
+    // Historical-based emergency (notfall avg for same DOW)
+    const nfDOW  = dowBeds['notfall'][dow];
+    const nfAvg  = nfDOW.count > 0 ? Math.round(nfDOW.sum / nfDOW.count) : randomInt(9, 15);
+
+    // Historical IPS/IMC avg for same DOW
+    const ipsDOW    = dowBeds['ips'][dow];
+    const ipsHistAvg = ipsDOW.count > 0 ? Math.round(ipsDOW.sum / ipsDOW.count) : 18;
+    const imcDOW    = dowBeds['imc'][dow];
+    const imcHistAvg = imcDOW.count > 0 ? Math.round(imcDOW.sum / imcDOW.count) : 8;
+
+    const totalAnt = Math.min(273, Math.max(100, baselineAvg + (ipsPostop + imcPostop) * 1 + randomInt(-4, 8)));
+
     days.push({
       label,
-      date:               date.toISOString().split('T')[0],
-      elective:           orPlan.filter(p => p.dringlichkeit === 'Elektiv').length,
+      date:               dateStr,
       ips_postop:         ipsPostop,
       imc_postop:         imcPostop,
-      emergency_forecast: randomInt(8, 20),
-      total_anticipated:  randomInt(130, 165),
-      baseline_avg:       152,
+      ips_hist_avg:       ipsHistAvg,
+      imc_hist_avg:       imcHistAvg,
+      emergency_forecast: nfAvg,
+      total_anticipated:  totalAnt,
+      baseline_avg:       baselineAvg,
     });
   }
   return days;
@@ -582,7 +632,6 @@ const AppState = {
     this.currentShiftData = generateCurrentShiftData();
     this.historicalData   = generateHistoricalData();
     this.orProcedures     = generateORProcedures();
-    this.anticipated      = generateAnticipatedOccupancy();
     this.lastRefresh      = new Date();
     // Merge custom/modified procedures from localStorage
     const custom = this.getCustomProcedures();
@@ -593,6 +642,8 @@ const AppState = {
     this.orProcedures.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
     // Merge manually-submitted shift history into historicalData
     this._mergeShiftHistory();
+    // Compute anticipated AFTER all data is merged (uses historicalData + orProcedures)
+    this.anticipated = generateAnticipatedOccupancy(this.historicalData, this.orProcedures);
     this.buildAlerts();
     return this;
   },
@@ -609,7 +660,7 @@ const AppState = {
     this.orProcedures.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
     this.historicalData   = generateHistoricalData();
     this._mergeShiftHistory();
-    this.anticipated      = generateAnticipatedOccupancy();
+    this.anticipated      = generateAnticipatedOccupancy(this.historicalData, this.orProcedures);
     this.lastRefresh      = new Date();
     this.buildAlerts();
   },
@@ -773,5 +824,111 @@ const AppState = {
 
   resetCompetencies() {
     localStorage.removeItem('kispi_competencies');
+  },
+
+  // ── Prognose / Predictive Analytics ─────────────────────────
+
+  getForecast(mode, horizon) {
+    const fmtDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const today    = new Date();
+    const todayStr = fmtDate(today);
+
+    // Baseline window: short = 30 days, long = full 90 days (with seasonal adjustment)
+    const cutoffDays = mode === 'long' ? 90 : 30;
+    const cutoff     = new Date(today);
+    cutoff.setDate(today.getDate() - cutoffDays);
+    const cutoffStr  = fmtDate(cutoff);
+
+    const histSlice = this.historicalData.filter(r => r.date >= cutoffStr && r.date < todayStr);
+
+    // Accumulate per-dept, per-DOW averages
+    const baseline = {};
+    DEPARTMENTS.forEach(dept => {
+      baseline[dept.id] = Array.from({length: 7}, () => ({
+        occSum: 0, count: 0,
+        nemsSum: 0, nemsCount: 0,
+        barthelSum: 0, barthelCount: 0,
+      }));
+    });
+
+    histSlice.forEach(r => {
+      if (!baseline[r.department_id]) return;
+      const dow = new Date(r.date).getDay();
+      const b   = baseline[r.department_id][dow];
+      b.occSum += (r.occupancy_pct || 0);
+      b.count++;
+      if (r.nems_average != null) { b.nemsSum    += r.nems_average;  b.nemsCount++; }
+      if (r.barthel_avg  != null) { b.barthelSum += r.barthel_avg;   b.barthelCount++; }
+    });
+
+    // Long-term baseline adds a seasonal factor (simulates year-ago occupancy pattern)
+    const SEASONAL = [1.08, 1.06, 1.04, 0.97, 0.94, 0.88, 0.85, 0.87, 0.95, 1.02, 1.07, 1.10];
+    const seasonFactor = d => (mode === 'long' ? SEASONAL[d.getMonth()] : 1);
+
+    const numDays   = horizon === '3m' ? 91 : 7;
+    const futureDays = [];
+
+    for (let i = 1; i <= numDays; i++) {
+      const d      = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr    = fmtDate(d);
+      const dow        = d.getDay();
+      const isWeekend  = dow === 0 || dow === 6;
+      const factor     = seasonFactor(d);
+
+      const label = i <= 7
+        ? (i === 1 ? 'Morgen' : d.toLocaleDateString('de-CH', { weekday: 'short', day: 'numeric', month: 'numeric' }))
+        : d.toLocaleDateString('de-CH', { day: 'numeric', month: 'numeric' });
+
+      let totalOccSum = 0, totalNurses = 0, totalComplexity = 0;
+      const perDept   = {};
+
+      DEPARTMENTS.forEach(dept => {
+        const b = baseline[dept.id][dow];
+        let projOccPct = b.count > 0
+          ? Math.round((b.occSum / b.count) * factor)
+          : (isWeekend ? 63 : 78);
+        projOccPct = Math.min(100, Math.max(15, projOccPct));
+        const projBeds = Math.round(dept.beds * projOccPct / 100);
+
+        const avgNems    = b.nemsCount    > 0 ? parseFloat((b.nemsSum    / b.nemsCount).toFixed(1))    : null;
+        const avgBarthel = b.barthelCount > 0 ? parseFloat((b.barthelSum / b.barthelCount).toFixed(1)) : null;
+
+        const isICU = dept.type === 'icu' || dept.type === 'nicu';
+        const isIMC = dept.type === 'imc';
+        let complexityIdx, complexityLabel;
+        if ((isICU || isIMC) && avgNems != null) {
+          complexityIdx   = Math.min(100, Math.round((avgNems / 40) * 100));
+          complexityLabel = avgNems >= 25 ? 'Hoch' : avgNems >= 18 ? 'Mittel' : 'Niedrig';
+        } else if (avgBarthel != null) {
+          complexityIdx   = Math.min(100, Math.round(((100 - avgBarthel) / 100) * 100));
+          complexityLabel = avgBarthel <= 30 ? 'Hoch' : avgBarthel <= 80 ? 'Mittel' : 'Niedrig';
+        } else {
+          complexityIdx = 50; complexityLabel = 'Mittel';
+        }
+
+        // Required qualified nurses per shift: ICU 1:1.2, IMC 1:2.5, Emergency fixed, Ward 1:4.5
+        const ratio     = isICU ? 1.2 : isIMC ? 2.5 : dept.type === 'emergency' ? null : 4.5;
+        const reqNurses = ratio != null ? Math.ceil(projBeds / ratio) : 6;
+
+        perDept[dept.id] = { projOccPct, projBeds, complexityIdx, complexityLabel, avgNems, avgBarthel, reqNurses };
+        totalOccSum      += projOccPct;
+        totalNurses      += reqNurses;
+        totalComplexity  += complexityIdx;
+      });
+
+      futureDays.push({
+        date:          dateStr,
+        label,
+        isWeekend,
+        dow,
+        perDept,
+        avgOccPct:     Math.round(totalOccSum    / DEPARTMENTS.length),
+        totalNurses,
+        avgComplexity: Math.round(totalComplexity / DEPARTMENTS.length),
+      });
+    }
+
+    return { mode, horizon, days: futureDays };
   },
 };
