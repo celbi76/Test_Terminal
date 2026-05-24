@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260524d">
+  <link rel="stylesheet" href="css/styles.css?v=20260524e">
 </head>
 <body>
 
@@ -179,22 +179,26 @@
         <!-- KPI-Karten (rechts) -->
         <div style="display:flex;flex-direction:column;gap:12px">
 
-          <!-- Barthel + NEMS kombiniert -->
           <div class="kpi-card kpi-blue">
             <span class="kpi-icon"><i class="bi bi-activity"></i></span>
             <div class="kpi-label">Ø Barthel-Index</div>
             <div class="kpi-value"><span id="kpi-barthel-val">—</span></div>
             <div class="kpi-sub" id="kpi-barthel-sub"></div>
-            <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;gap:10px">
+          </div>
+
+          <div class="kpi-card" style="border-left-color:#E63946">
+            <span class="kpi-icon" style="color:#E63946"><i class="bi bi-heart-pulse"></i></span>
+            <div class="kpi-label">Ø NEMS-Score</div>
+            <div style="display:flex;gap:16px;margin-top:4px">
               <div style="flex:1">
-                <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#E63946">IPS Ø NEMS</div>
-                <div style="font-size:22px;font-weight:800;color:#E63946;line-height:1.2" id="kpi-ips-nems">—</div>
-                <div style="font-size:10px;color:var(--text-mid)" id="kpi-ips-nems-level"></div>
+                <div style="font-size:10px;font-weight:600;color:#E63946;margin-bottom:2px">IPS</div>
+                <div class="kpi-value" style="font-size:26px;color:#E63946" id="kpi-ips-nems">—</div>
+                <div class="kpi-sub" id="kpi-ips-nems-level"></div>
               </div>
-              <div style="flex:1">
-                <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#F7941D">IMC Ø NEMS</div>
-                <div style="font-size:22px;font-weight:800;color:#F7941D;line-height:1.2" id="kpi-imc-nems">—</div>
-                <div style="font-size:10px;color:var(--text-mid)" id="kpi-imc-nems-level"></div>
+              <div style="flex:1;border-left:1px solid var(--border);padding-left:16px">
+                <div style="font-size:10px;font-weight:600;color:#F7941D;margin-bottom:2px">IMC</div>
+                <div class="kpi-value" style="font-size:26px;color:#F7941D" id="kpi-imc-nems">—</div>
+                <div class="kpi-sub" id="kpi-imc-nems-level"></div>
               </div>
             </div>
           </div>
@@ -1000,9 +1004,9 @@
 </div>
 
 <!-- Scripts -->
-<script src="js/data.js?v=20260524d"></script>
-<script src="js/charts.js?v=20260524d"></script>
-<script src="js/app.js?v=20260524d"></script>
+<script src="js/data.js?v=20260524e"></script>
+<script src="js/charts.js?v=20260524e"></script>
+<script src="js/app.js?v=20260524e"></script>
 
 </body>
 </html>
