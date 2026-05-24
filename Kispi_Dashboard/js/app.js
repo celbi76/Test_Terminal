@@ -84,13 +84,48 @@ function initClock() {
 
 function initNavigation() {
   document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-    item.addEventListener('click', () => navigateTo(item.dataset.page));
+    item.addEventListener('click', () => {
+      navigateTo(item.dataset.page);
+      const submenuId = item.dataset.submenu;
+      if (submenuId) {
+        const submenu = document.getElementById(submenuId);
+        const isOpen  = submenu?.classList.contains('open');
+        submenu?.classList.toggle('open', !isOpen);
+        item.classList.toggle('submenu-open', !isOpen);
+      }
+    });
+  });
+
+  document.querySelectorAll('.nav-subitem[data-page]').forEach(sub => {
+    sub.addEventListener('click', e => {
+      e.stopPropagation();
+      navigateTo(sub.dataset.page);
+    });
   });
 }
 
 function navigateTo(pageId) {
-  document.querySelectorAll('.nav-item[data-page]').forEach(el =>
+  // Subitems active state
+  document.querySelectorAll('.nav-subitem[data-page]').forEach(el =>
     el.classList.toggle('active', el.dataset.page === pageId));
+
+  // Main items: active on exact match, OR when one of their subitems is active
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    const submenu    = el.dataset.submenu ? document.getElementById(el.dataset.submenu) : null;
+    const hasActive  = submenu?.querySelector(`.nav-subitem[data-page="${pageId}"]`);
+    el.classList.toggle('active', el.dataset.page === pageId || !!hasActive);
+  });
+
+  // If navigating to a subpage, ensure its parent submenu is open
+  document.querySelectorAll('.nav-item[data-submenu]').forEach(el => {
+    const submenu   = document.getElementById(el.dataset.submenu);
+    const hasActive = submenu?.querySelector(`.nav-subitem[data-page="${pageId}"]`);
+    if (hasActive) {
+      submenu.classList.add('open');
+      el.classList.add('submenu-open');
+    }
+  });
+
   document.querySelectorAll('.page').forEach(el =>
     el.classList.toggle('active', el.id === `page-${pageId}`));
 
