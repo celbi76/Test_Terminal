@@ -231,6 +231,17 @@ function renderKPIRow(kpis) {
 
   const cc = document.getElementById('kpi-card-coverage');
   if (cc) cc.className = 'kpi-card ' + (kpis.staff_coverage >= 95 ? 'kpi-green' : kpis.staff_coverage >= 80 ? 'kpi-warn' : 'kpi-danger');
+
+  // NEMS scores for IPS and IMC
+  const nemsLabel = n => n >= 25 ? 'Hohe Komplexität' : n >= 18 ? 'Mittlere Komplexität' : 'Geringe Komplexität';
+  const ipsData   = AppState.currentShiftData.find(d => d.department_id === 'ips');
+  const imcData   = AppState.currentShiftData.find(d => DEPARTMENTS.find(x => x.id === d.department_id)?.type === 'imc');
+  const ipsNems   = ipsData?.nems_average ?? null;
+  const imcNems   = imcData?.nems_average ?? null;
+  setEl('kpi-ips-nems',       ipsNems !== null ? ipsNems : '—');
+  setEl('kpi-ips-nems-level', ipsNems !== null ? nemsLabel(ipsNems) : 'Keine Daten');
+  setEl('kpi-imc-nems',       imcNems !== null ? imcNems : '—');
+  setEl('kpi-imc-nems-level', imcNems !== null ? nemsLabel(imcNems) : 'Keine Daten');
 }
 
 // ── Station Grid (Overview) ──────────────────────────────────
