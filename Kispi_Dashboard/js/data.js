@@ -611,6 +611,98 @@ function generateAnticipatedOccupancy(historicalData, orProcedures) {
   return days;
 }
 
+// ── Bedarfsmeldungen — Konfiguration ─────────────────────────
+
+const BEDARFSMELDUNG_KATEGORIEN = [
+  { id: 'personal',      label: 'Personalbedarf',    icon: 'bi-person-plus-fill',   color: '#2980B9' },
+  { id: 'material',      label: 'Verbrauchsmaterial', icon: 'bi-bag-plus-fill',      color: '#27AE60' },
+  { id: 'geraet',        label: 'Medizingeräte',      icon: 'bi-heart-pulse-fill',   color: '#8E44AD' },
+  { id: 'infrastruktur', label: 'Infrastruktur / IT', icon: 'bi-tools',              color: '#F7941D' },
+  { id: 'sonstiges',     label: 'Sonstiges',          icon: 'bi-three-dots-vertical',color: '#718096' },
+];
+
+const BEDARFSMELDUNG_PRIORITAETEN = [
+  { id: 'sofort',    label: 'Sofort',    color: '#E63946', bg: '#FDE8EA' },
+  { id: 'dringlich', label: 'Dringlich', color: '#F7941D', bg: '#FEF3E2' },
+  { id: 'normal',    label: 'Normal',    color: '#2980B9', bg: '#E8F4FD' },
+  { id: 'geplant',   label: 'Geplant',   color: '#718096', bg: '#F0F4F8' },
+];
+
+const BEDARFSMELDUNG_STATUS_LIST = [
+  { id: 'offen',       label: 'Offen',          color: '#E63946', bg: '#FDE8EA' },
+  { id: 'bearbeitung', label: 'In Bearbeitung',  color: '#F7941D', bg: '#FEF3E2' },
+  { id: 'erledigt',    label: 'Erledigt',        color: '#2DC653', bg: '#E8F8EE' },
+  { id: 'abgelehnt',   label: 'Abgelehnt',       color: '#718096', bg: '#F0F4F8' },
+];
+
+function getDefaultBedarfsmeldungen() {
+  const now = new Date();
+  const d = (offset, timeStr) => {
+    const dt = new Date(now);
+    dt.setDate(now.getDate() - offset);
+    const ds = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+    return timeStr ? `${ds}T${timeStr}.000Z` : ds;
+  };
+  return [
+    {
+      id: 'BM-001', department_id: 'ips', kategorie: 'personal', prioritaet: 'sofort',
+      status: 'offen',
+      titel: 'Zusätzliche Intensivpflegekraft Nachtschicht',
+      beschreibung: 'Erhöhte Belegung (92%) und hohe Pflegekomplexität (NEMS Ø 28). Für die kommende Nachtschicht wird dringend eine zusätzliche Fachperson benötigt.',
+      menge: '1 Pflegefachperson', gewuenschtes_datum: d(0),
+      erstellt_von: 'Pflegeleitung IPS', erstellt_am: d(0, '06:30:00'), updated_at: null, notizen: '',
+    },
+    {
+      id: 'BM-002', department_id: 'notfall', kategorie: 'material', prioritaet: 'dringlich',
+      status: 'bearbeitung',
+      titel: 'Verbandsmaterial nachbestellen',
+      beschreibung: 'Bestand sterile Verbände Gr. M und L kritisch tief. Aktueller Vorrat reicht für ca. 2 Tage.',
+      menge: '5 Kartons', gewuenschtes_datum: d(0),
+      erstellt_von: 'Pflegeleitung Notfall', erstellt_am: d(1, '14:20:00'), updated_at: d(0, '09:00:00'), notizen: 'Bestellung bei Zentrallager aufgegeben, Lieferung morgen erwartet.',
+    },
+    {
+      id: 'BM-003', department_id: 'chir', kategorie: 'geraet', prioritaet: 'normal',
+      status: 'offen',
+      titel: 'Infusionspumpe defekt — Ersatz benötigt',
+      beschreibung: 'Infusionspumpe #A3-07 zeigt Fehlercode E4 und ist ausser Betrieb. Reparatur oder Ersatzgerät erforderlich.',
+      menge: '1 Gerät', gewuenschtes_datum: d(-2),
+      erstellt_von: 'Pflegeleitung Chirurgie', erstellt_am: d(2, '11:00:00'), updated_at: null, notizen: '',
+    },
+    {
+      id: 'BM-004', department_id: 'onko', kategorie: 'personal', prioritaet: 'dringlich',
+      status: 'offen',
+      titel: 'Pool-Anfrage Do/Fr Spätdienst',
+      beschreibung: 'Zwei Pflegefachpersonen erkrankt. Spätdienst Donnerstag und Freitag mit nur 60% Abdeckung geplant.',
+      menge: '2 Pflegefachpersonen', gewuenschtes_datum: d(-1),
+      erstellt_von: 'Pflegeleitung Onkologie', erstellt_am: d(2, '08:15:00'), updated_at: null, notizen: '',
+    },
+    {
+      id: 'BM-005', department_id: 'neo', kategorie: 'infrastruktur', prioritaet: 'normal',
+      status: 'erledigt',
+      titel: 'Klimaanlage Zimmer 204 defekt',
+      beschreibung: 'Klimaanlage in Zimmer 204 (Neonatologie) ausgefallen. Temperaturregulierung für Frühgeborene nicht gewährleistet.',
+      menge: '—', gewuenschtes_datum: d(5),
+      erstellt_von: 'Pflegeleitung Neo', erstellt_am: d(5, '07:00:00'), updated_at: d(3, '16:30:00'), notizen: 'Reparatur durch Haustechnik abgeschlossen.',
+    },
+    {
+      id: 'BM-006', department_id: 'imc', kategorie: 'material', prioritaet: 'geplant',
+      status: 'offen',
+      titel: 'EKG-Elektroden Routinebestellung',
+      beschreibung: 'Einweg-Klebeelektroden nähern sich Mindestbestand. Reguläre Nachbestellung für nächste Woche geplant.',
+      menge: '10 Pakete', gewuenschtes_datum: d(-5),
+      erstellt_von: 'Pflegeleitung IMC', erstellt_am: d(4, '13:45:00'), updated_at: null, notizen: '',
+    },
+    {
+      id: 'BM-007', department_id: 'med_a', kategorie: 'sonstiges', prioritaet: 'normal',
+      status: 'abgelehnt',
+      titel: 'Zusätzlicher Angehörigenraum',
+      beschreibung: 'Bei Langzeitpatienten wäre ein separater, ruhiger Wartebereich für Angehörige hilfreich.',
+      menge: '—', gewuenschtes_datum: d(14),
+      erstellt_von: 'Pflegeleitung Medizin A', erstellt_am: d(14, '09:30:00'), updated_at: d(10, '11:00:00'), notizen: 'Kapazitätsmässig nicht umsetzbar. Empfehlung: Wartebereich EG nutzen.',
+    },
+  ];
+}
+
 // ── OP-Zusatzkonstanten ──────────────────────────────────────
 
 const POSTOP_DESTINATIONS = ['IPS', 'IMC', 'AWR', 'Abteilung'];
@@ -795,6 +887,42 @@ const AppState = {
     const list = this.getCustomProcedures().filter(p => p.id !== id);
     localStorage.setItem('kispi_or_custom', JSON.stringify(list));
     this.orProcedures = this.orProcedures.filter(p => p.id !== id);
+  },
+
+  // ── Bedarfsmeldungen (localStorage) ─────────────────────────
+
+  getBedarfsmeldungen() {
+    try {
+      const stored = localStorage.getItem('kispi_bedarfsmeldungen');
+      if (!stored) {
+        const defaults = getDefaultBedarfsmeldungen();
+        localStorage.setItem('kispi_bedarfsmeldungen', JSON.stringify(defaults));
+        return defaults;
+      }
+      return JSON.parse(stored);
+    } catch { return []; }
+  },
+
+  saveBedarfsmeldung(entry) {
+    const list = this.getBedarfsmeldungen();
+    const i = list.findIndex(e => e.id === entry.id);
+    if (i >= 0) list[i] = entry; else list.unshift(entry);
+    localStorage.setItem('kispi_bedarfsmeldungen', JSON.stringify(list));
+  },
+
+  updateBedarfsmeldungStatus(id, status) {
+    const list = this.getBedarfsmeldungen();
+    const i = list.findIndex(e => e.id === id);
+    if (i >= 0) {
+      list[i].status = status;
+      list[i].updated_at = new Date().toISOString();
+      localStorage.setItem('kispi_bedarfsmeldungen', JSON.stringify(list));
+    }
+  },
+
+  deleteBedarfsmeldung(id) {
+    const list = this.getBedarfsmeldungen().filter(e => e.id !== id);
+    localStorage.setItem('kispi_bedarfsmeldungen', JSON.stringify(list));
   },
 
   getCompetencies() {
