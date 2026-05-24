@@ -643,7 +643,7 @@ function getDefaultBedarfsmeldungen() {
     {
       id: 'BM-001', department_id: 'ips', kategorie: 'personal', prioritaet: 'sofort',
       status: 'offen',
-      titel: 'Zusätzliche Intensivpflegekraft Nachtschicht',
+      titel: 'Dipl. Experte/in NDS HF Intensiv',
       beschreibung: 'Erhöhte Belegung (92%) und hohe Pflegekomplexität (NEMS Ø 28). Für die kommende Nachtschicht wird dringend eine zusätzliche Fachperson benötigt.',
       menge: '1 Pflegefachperson', gewuenschtes_datum: d(0),
       erstellt_von: 'Pflegeleitung IPS', erstellt_am: d(0, '06:30:00'), updated_at: null, notizen: '',
@@ -651,7 +651,7 @@ function getDefaultBedarfsmeldungen() {
     {
       id: 'BM-002', department_id: 'notfall', kategorie: 'personal', prioritaet: 'dringlich',
       status: 'bearbeitung',
-      titel: 'Pool-Anfrage Frühdienst Wochenende',
+      titel: 'Dipl. Pflegefachperson HF',
       beschreibung: 'Aufgrund erhöhter Ausfälle am Wochenende sind Frühdienst Sa/So unterbesetzt. Zwei zusätzliche Pflegepersonen aus dem Pool benötigt.',
       menge: '2 Pflegefachpersonen', gewuenschtes_datum: d(0),
       erstellt_von: 'Pflegeleitung Notfall', erstellt_am: d(1, '14:20:00'), updated_at: d(0, '09:00:00'), notizen: 'Pool-Koordination informiert, Rückmeldung ausstehend.',
@@ -659,7 +659,7 @@ function getDefaultBedarfsmeldungen() {
     {
       id: 'BM-003', department_id: 'chir', kategorie: 'personal', prioritaet: 'normal',
       status: 'offen',
-      titel: 'Einarbeitung neue Pflegefachperson — Mentor gesucht',
+      titel: 'Dipl. Pflegefachperson HF',
       beschreibung: 'Neue Fachperson tritt in 2 Wochen an. Für strukturierte Einarbeitung wird eine erfahrene Pflegefachperson als Mentorin/Mentor benötigt (50%, 4 Wochen).',
       menge: '1 Pflegefachperson (50%)', gewuenschtes_datum: d(-14),
       erstellt_von: 'Pflegeleitung Chirurgie', erstellt_am: d(2, '11:00:00'), updated_at: null, notizen: '',
@@ -667,7 +667,7 @@ function getDefaultBedarfsmeldungen() {
     {
       id: 'BM-004', department_id: 'onko', kategorie: 'personal', prioritaet: 'dringlich',
       status: 'offen',
-      titel: 'Pool-Anfrage Do/Fr Spätdienst',
+      titel: 'Dipl. Pflegefachperson HF',
       beschreibung: 'Zwei Pflegefachpersonen erkrankt. Spätdienst Donnerstag und Freitag mit nur 60% Abdeckung geplant.',
       menge: '2 Pflegefachpersonen', gewuenschtes_datum: d(-1),
       erstellt_von: 'Pflegeleitung Onkologie', erstellt_am: d(2, '08:15:00'), updated_at: null, notizen: '',
@@ -675,7 +675,7 @@ function getDefaultBedarfsmeldungen() {
     {
       id: 'BM-005', department_id: 'neo', kategorie: 'personal', prioritaet: 'normal',
       status: 'erledigt',
-      titel: 'Zusätzliche Nachtschicht Neonatologie',
+      titel: 'Dipl. Experte/in NDS HF Intensiv',
       beschreibung: 'Aufgrund erhöhter Frühgeborenen-Belegung war temporär eine dritte Pflegeperson im Nachtdienst erforderlich.',
       menge: '1 Pflegefachperson', gewuenschtes_datum: d(5),
       erstellt_von: 'Pflegeleitung Neo', erstellt_am: d(5, '07:00:00'), updated_at: d(3, '16:30:00'), notizen: 'Pool konnte abgedeckt werden. Situation stabilisiert.',
@@ -683,7 +683,7 @@ function getDefaultBedarfsmeldungen() {
     {
       id: 'BM-006', department_id: 'imc', kategorie: 'personal', prioritaet: 'geplant',
       status: 'offen',
-      titel: 'Ferienplanung Sommer — Stellvertretung gesucht',
+      titel: 'Dipl. Pflegefachperson HF',
       beschreibung: 'Im August fehlen durch Ferienabwesenheiten 3 Vollzeitstellen. Frühzeitige Pool-Reservierung oder befristete Anstellung notwendig.',
       menge: '3 VZÄ (Aug.)', gewuenschtes_datum: d(-60),
       erstellt_von: 'Pflegeleitung IMC', erstellt_am: d(4, '13:45:00'), updated_at: null, notizen: '',
@@ -691,7 +691,7 @@ function getDefaultBedarfsmeldungen() {
     {
       id: 'BM-007', department_id: 'med_a', kategorie: 'personal', prioritaet: 'normal',
       status: 'abgelehnt',
-      titel: 'Aufstockung Pflegeassistenz 20%',
+      titel: 'Pflegehilfe / AGS',
       beschreibung: 'Zur Entlastung der Pflegefachpersonen bei administrativen und hauswirtschaftlichen Tätigkeiten wäre eine zusätzliche Pflegeassistenz (20%) sinnvoll.',
       menge: '1 Pflegeassistenz (20%)', gewuenschtes_datum: d(14),
       erstellt_von: 'Pflegeleitung Medizin A', erstellt_am: d(14, '09:30:00'), updated_at: d(10, '11:00:00'), notizen: 'Stellenplan gibt keine Aufstockung her. Überprüfung im nächsten Budget.',

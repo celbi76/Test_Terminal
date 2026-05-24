@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260524i">
+  <link rel="stylesheet" href="css/styles.css?v=20260524j">
 </head>
 <body>
 
@@ -1185,10 +1185,35 @@
           <input type="date" id="bedarf-datum">
         </div>
 
-        <!-- Titel -->
+        <!-- Ausbildung / Berufsgruppe -->
         <div class="form-group" style="grid-column:1/-1">
-          <label for="bedarf-titel">Bezeichnung / Titel</label>
-          <input type="text" id="bedarf-titel" placeholder="Kurze Beschreibung des Bedarfs">
+          <label for="bedarf-titel">Ausbildung</label>
+          <select id="bedarf-titel">
+            <option value="">— Berufsgruppe wählen —</option>
+            <optgroup label="Experten / Spezialisten">
+              <option value="Dipl. Experte/in NDS HF Intensiv">Dipl. Experte/in NDS HF Intensiv</option>
+              <option value="Dipl. Experte/in NDS HF Notfall">Dipl. Experte/in NDS HF Notfall</option>
+            </optgroup>
+            <optgroup label="Pflegefachpersonen">
+              <option value="Dipl. Pflegefachperson HF">Dipl. Pflegefachperson HF</option>
+            </optgroup>
+            <optgroup label="Studierende">
+              <option value="Student·in NDS Intensiv">Student·in NDS Intensiv</option>
+              <option value="Student·in NDS Notfall">Student·in NDS Notfall</option>
+              <option value="Student·in HF 3. Jahr">Student·in HF 3. Jahr</option>
+              <option value="Student·in HF 2. Jahr">Student·in HF 2. Jahr</option>
+              <option value="Student·in HF 1. Jahr">Student·in HF 1. Jahr</option>
+            </optgroup>
+            <optgroup label="Lernende &amp; Assistenzen">
+              <option value="FaGe EFZ">FaGe EFZ</option>
+              <option value="Lernende FaGe 2. Jahr">Lernende FaGe 2. Jahr</option>
+              <option value="Lernende FaGe 1. Jahr">Lernende FaGe 1. Jahr</option>
+              <option value="Pflegehilfe / AGS">Pflegehilfe / AGS</option>
+            </optgroup>
+            <optgroup label="Administration">
+              <option value="Disponent / MPA">Disponent / MPA</option>
+            </optgroup>
+          </select>
         </div>
 
         <!-- Beschreibung -->
@@ -1233,9 +1258,9 @@
 </div>
 
 <!-- Scripts -->
-<script src="js/data.js?v=20260524i"></script>
-<script src="js/charts.js?v=20260524i"></script>
-<script src="js/app.js?v=20260524i"></script>
+<script src="js/data.js?v=20260524j"></script>
+<script src="js/charts.js?v=20260524j"></script>
+<script src="js/app.js?v=20260524j"></script>
 
 </body>
 </html>
