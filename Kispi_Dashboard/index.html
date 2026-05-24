@@ -72,9 +72,17 @@
       <span class="nav-label">Stationen</span>
     </div>
 
-    <div class="nav-item" data-page="staffing">
+    <div class="nav-item" data-page="staffing" data-submenu="nav-sub-staffing">
       <i class="bi bi-people-fill nav-icon"></i>
       <span class="nav-label">Personal &amp; Pool</span>
+      <span class="nav-badge" id="nav-bedarf-badge" style="display:none">0</span>
+      <i class="bi bi-chevron-down nav-chevron"></i>
+    </div>
+    <div class="nav-submenu" id="nav-sub-staffing">
+      <div class="nav-subitem" data-page="bedarfsmeldungen">
+        <i class="bi bi-clipboard2-plus-fill nav-subicon"></i>
+        <span class="nav-label">Bedarfsmeldungen</span>
+      </div>
     </div>
 
     <div class="nav-item" data-page="or">
@@ -97,17 +105,16 @@
       <span class="nav-label">Prognose</span>
     </div>
 
-    <div class="nav-item" data-page="bedarfsmeldungen">
-      <i class="bi bi-clipboard2-plus-fill nav-icon"></i>
-      <span class="nav-label">Bedarfsmeldungen</span>
-      <span class="nav-badge" id="nav-bedarf-badge" style="display:none">0</span>
-    </div>
-
     <div class="nav-section-label" style="margin-top:12px">Aktionen</div>
 
     <div class="nav-item entry-btn" id="nav-data-entry">
       <i class="bi bi-plus-circle-fill nav-icon"></i>
       <span class="nav-label">Dateneingabe</span>
+    </div>
+
+    <div class="nav-item entry-btn entry-btn-bedarf" id="nav-new-bedarf" onclick="openBedarfForm()">
+      <i class="bi bi-clipboard2-plus-fill nav-icon"></i>
+      <span class="nav-label">Neue Bedarfsmeldung</span>
     </div>
   </nav>
 

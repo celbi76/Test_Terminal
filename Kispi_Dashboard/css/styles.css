@@ -177,6 +177,63 @@ body {
   text-align: center;
 }
 
+.nav-chevron {
+  margin-left: auto;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
+  opacity: 0.6;
+}
+
+.nav-item.submenu-open .nav-chevron { transform: rotate(180deg); }
+#sidebar.collapsed .nav-chevron { display: none; }
+
+/* ── Nav Submenu ─────────────────────────────────────────── */
+
+.nav-submenu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+  background: rgba(0,0,0,0.18);
+}
+
+.nav-submenu.open { max-height: 200px; }
+#sidebar.collapsed .nav-submenu { max-height: 0 !important; }
+
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 18px 9px 44px;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: background var(--transition), color var(--transition);
+  white-space: nowrap;
+}
+
+.nav-subitem:hover {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.9);
+}
+
+.nav-subitem.active {
+  color: var(--kispi-teal);
+  border-left-color: var(--kispi-teal);
+  background: rgba(0,167,157,0.12);
+}
+
+.nav-subicon {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Nav Action Buttons ──────────────────────────────────── */
+
 .nav-item.entry-btn {
   background: rgba(0,167,157,0.25);
   color: var(--kispi-teal);
@@ -191,6 +248,17 @@ body {
 
 .nav-item.entry-btn:hover {
   background: var(--kispi-teal);
+  color: #fff;
+}
+
+.nav-item.entry-btn-bedarf {
+  background: rgba(41,128,185,0.2);
+  color: #5BA3D0;
+  margin-top: 4px;
+}
+
+.nav-item.entry-btn-bedarf:hover {
+  background: #2980B9;
   color: #fff;
 }
 
