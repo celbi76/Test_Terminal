@@ -1639,7 +1639,7 @@ function submitBedarfForm() {
   const dept  = getInputVal('bedarf-dept');
   const titel = getInputVal('bedarf-titel').trim();
   if (!dept)  { alert('Bitte Abteilung wählen.');     return; }
-  if (!titel) { alert('Bitte Bezeichnung eingeben.'); return; }
+  if (!titel) { alert('Bitte Ausbildung wählen.');    return; }
 
   const entry = {
     id:                bedarfEditId || `BM-${Date.now()}`,
