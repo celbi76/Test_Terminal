@@ -766,9 +766,6 @@ const AppState = {
       } else if (d.occupancy_pct >= THRESHOLDS.occupancy_warning) {
         this.alerts.push({ level: 'warning', dept: dept.name, msg: `Hohe Belegung: ${d.occupancy_pct}%` });
       }
-      if (d.pool_request) {
-        this.alerts.push({ level: 'warning', dept: dept.name, msg: `Pool-Anfrage: ${d.pool_request_count} Pflegeperson(en)` });
-      }
       if (d.barthel_avg_score !== null && d.barthel_avg_score < THRESHOLDS.barthel_high) {
         this.alerts.push({ level: 'info', dept: dept.name, msg: `Hohe Pflegeabhängigkeit: Ø Barthel ${Math.round(d.barthel_avg_score)}` });
       }

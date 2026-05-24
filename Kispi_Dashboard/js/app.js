@@ -84,18 +84,8 @@ function initClock() {
 
 function initNavigation() {
   document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-    item.addEventListener('click', () => {
-      navigateTo(item.dataset.page);
-      const submenuId = item.dataset.submenu;
-      if (submenuId) {
-        const submenu = document.getElementById(submenuId);
-        const isOpen  = submenu?.classList.contains('open');
-        submenu?.classList.toggle('open', !isOpen);
-        item.classList.toggle('submenu-open', !isOpen);
-      }
-    });
+    item.addEventListener('click', () => navigateTo(item.dataset.page));
   });
-
   document.querySelectorAll('.nav-subitem[data-page]').forEach(sub => {
     sub.addEventListener('click', e => {
       e.stopPropagation();
@@ -105,29 +95,39 @@ function initNavigation() {
 }
 
 function navigateTo(pageId) {
-  // Subitems active state
+  // 1. Pages
+  document.querySelectorAll('.page').forEach(el =>
+    el.classList.toggle('active', el.id === `page-${pageId}`));
+
+  // 2. Find parent item if pageId belongs to a submenu
+  let parentItem = null;
+  document.querySelectorAll('.nav-item[data-submenu]').forEach(el => {
+    const sm = document.getElementById(el.dataset.submenu);
+    if (sm?.querySelector(`.nav-subitem[data-page="${pageId}"]`)) parentItem = el;
+  });
+
+  // 3. Active states
+  document.querySelectorAll('.nav-item[data-page]').forEach(el =>
+    el.classList.toggle('active', el.dataset.page === pageId || el === parentItem));
   document.querySelectorAll('.nav-subitem[data-page]').forEach(el =>
     el.classList.toggle('active', el.dataset.page === pageId));
 
-  // Main items: active on exact match, OR when one of their subitems is active
-  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
-    const submenu    = el.dataset.submenu ? document.getElementById(el.dataset.submenu) : null;
-    const hasActive  = submenu?.querySelector(`.nav-subitem[data-page="${pageId}"]`);
-    el.classList.toggle('active', el.dataset.page === pageId || !!hasActive);
-  });
-
-  // If navigating to a subpage, ensure its parent submenu is open
-  document.querySelectorAll('.nav-item[data-submenu]').forEach(el => {
-    const submenu   = document.getElementById(el.dataset.submenu);
-    const hasActive = submenu?.querySelector(`.nav-subitem[data-page="${pageId}"]`);
-    if (hasActive) {
-      submenu.classList.add('open');
-      el.classList.add('submenu-open');
+  // 4. Submenu open/close
+  //    - Navigating to a subitem  → open parent submenu (stays open)
+  //    - Navigating to the parent item itself → toggle submenu
+  if (parentItem) {
+    const sm = document.getElementById(parentItem.dataset.submenu);
+    sm?.classList.add('open');
+    parentItem.classList.add('submenu-open');
+  } else {
+    const itemWithSub = document.querySelector(`.nav-item[data-page="${pageId}"][data-submenu]`);
+    if (itemWithSub) {
+      const sm     = document.getElementById(itemWithSub.dataset.submenu);
+      const isOpen = sm?.classList.contains('open');
+      sm?.classList.toggle('open', !isOpen);
+      itemWithSub.classList.toggle('submenu-open', !isOpen);
     }
-  });
-
-  document.querySelectorAll('.page').forEach(el =>
-    el.classList.toggle('active', el.id === `page-${pageId}`));
+  }
 
   const titles = {
     overview:          ['Klinikübersicht',    'Echtzeit-Dashboard'],
