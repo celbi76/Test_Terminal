@@ -614,11 +614,7 @@ function generateAnticipatedOccupancy(historicalData, orProcedures) {
 // ── Bedarfsmeldungen — Konfiguration ─────────────────────────
 
 const BEDARFSMELDUNG_KATEGORIEN = [
-  { id: 'personal',      label: 'Personalbedarf',    icon: 'bi-person-plus-fill',   color: '#2980B9' },
-  { id: 'material',      label: 'Verbrauchsmaterial', icon: 'bi-bag-plus-fill',      color: '#27AE60' },
-  { id: 'geraet',        label: 'Medizingeräte',      icon: 'bi-heart-pulse-fill',   color: '#8E44AD' },
-  { id: 'infrastruktur', label: 'Infrastruktur / IT', icon: 'bi-tools',              color: '#F7941D' },
-  { id: 'sonstiges',     label: 'Sonstiges',          icon: 'bi-three-dots-vertical',color: '#718096' },
+  { id: 'personal', label: 'Personalbedarf', icon: 'bi-person-plus-fill', color: '#2980B9' },
 ];
 
 const BEDARFSMELDUNG_PRIORITAETEN = [
@@ -653,19 +649,19 @@ function getDefaultBedarfsmeldungen() {
       erstellt_von: 'Pflegeleitung IPS', erstellt_am: d(0, '06:30:00'), updated_at: null, notizen: '',
     },
     {
-      id: 'BM-002', department_id: 'notfall', kategorie: 'material', prioritaet: 'dringlich',
+      id: 'BM-002', department_id: 'notfall', kategorie: 'personal', prioritaet: 'dringlich',
       status: 'bearbeitung',
-      titel: 'Verbandsmaterial nachbestellen',
-      beschreibung: 'Bestand sterile Verbände Gr. M und L kritisch tief. Aktueller Vorrat reicht für ca. 2 Tage.',
-      menge: '5 Kartons', gewuenschtes_datum: d(0),
-      erstellt_von: 'Pflegeleitung Notfall', erstellt_am: d(1, '14:20:00'), updated_at: d(0, '09:00:00'), notizen: 'Bestellung bei Zentrallager aufgegeben, Lieferung morgen erwartet.',
+      titel: 'Pool-Anfrage Frühdienst Wochenende',
+      beschreibung: 'Aufgrund erhöhter Ausfälle am Wochenende sind Frühdienst Sa/So unterbesetzt. Zwei zusätzliche Pflegepersonen aus dem Pool benötigt.',
+      menge: '2 Pflegefachpersonen', gewuenschtes_datum: d(0),
+      erstellt_von: 'Pflegeleitung Notfall', erstellt_am: d(1, '14:20:00'), updated_at: d(0, '09:00:00'), notizen: 'Pool-Koordination informiert, Rückmeldung ausstehend.',
     },
     {
-      id: 'BM-003', department_id: 'chir', kategorie: 'geraet', prioritaet: 'normal',
+      id: 'BM-003', department_id: 'chir', kategorie: 'personal', prioritaet: 'normal',
       status: 'offen',
-      titel: 'Infusionspumpe defekt — Ersatz benötigt',
-      beschreibung: 'Infusionspumpe #A3-07 zeigt Fehlercode E4 und ist ausser Betrieb. Reparatur oder Ersatzgerät erforderlich.',
-      menge: '1 Gerät', gewuenschtes_datum: d(-2),
+      titel: 'Einarbeitung neue Pflegefachperson — Mentor gesucht',
+      beschreibung: 'Neue Fachperson tritt in 2 Wochen an. Für strukturierte Einarbeitung wird eine erfahrene Pflegefachperson als Mentorin/Mentor benötigt (50%, 4 Wochen).',
+      menge: '1 Pflegefachperson (50%)', gewuenschtes_datum: d(-14),
       erstellt_von: 'Pflegeleitung Chirurgie', erstellt_am: d(2, '11:00:00'), updated_at: null, notizen: '',
     },
     {
@@ -677,28 +673,28 @@ function getDefaultBedarfsmeldungen() {
       erstellt_von: 'Pflegeleitung Onkologie', erstellt_am: d(2, '08:15:00'), updated_at: null, notizen: '',
     },
     {
-      id: 'BM-005', department_id: 'neo', kategorie: 'infrastruktur', prioritaet: 'normal',
+      id: 'BM-005', department_id: 'neo', kategorie: 'personal', prioritaet: 'normal',
       status: 'erledigt',
-      titel: 'Klimaanlage Zimmer 204 defekt',
-      beschreibung: 'Klimaanlage in Zimmer 204 (Neonatologie) ausgefallen. Temperaturregulierung für Frühgeborene nicht gewährleistet.',
-      menge: '—', gewuenschtes_datum: d(5),
-      erstellt_von: 'Pflegeleitung Neo', erstellt_am: d(5, '07:00:00'), updated_at: d(3, '16:30:00'), notizen: 'Reparatur durch Haustechnik abgeschlossen.',
+      titel: 'Zusätzliche Nachtschicht Neonatologie',
+      beschreibung: 'Aufgrund erhöhter Frühgeborenen-Belegung war temporär eine dritte Pflegeperson im Nachtdienst erforderlich.',
+      menge: '1 Pflegefachperson', gewuenschtes_datum: d(5),
+      erstellt_von: 'Pflegeleitung Neo', erstellt_am: d(5, '07:00:00'), updated_at: d(3, '16:30:00'), notizen: 'Pool konnte abgedeckt werden. Situation stabilisiert.',
     },
     {
-      id: 'BM-006', department_id: 'imc', kategorie: 'material', prioritaet: 'geplant',
+      id: 'BM-006', department_id: 'imc', kategorie: 'personal', prioritaet: 'geplant',
       status: 'offen',
-      titel: 'EKG-Elektroden Routinebestellung',
-      beschreibung: 'Einweg-Klebeelektroden nähern sich Mindestbestand. Reguläre Nachbestellung für nächste Woche geplant.',
-      menge: '10 Pakete', gewuenschtes_datum: d(-5),
+      titel: 'Ferienplanung Sommer — Stellvertretung gesucht',
+      beschreibung: 'Im August fehlen durch Ferienabwesenheiten 3 Vollzeitstellen. Frühzeitige Pool-Reservierung oder befristete Anstellung notwendig.',
+      menge: '3 VZÄ (Aug.)', gewuenschtes_datum: d(-60),
       erstellt_von: 'Pflegeleitung IMC', erstellt_am: d(4, '13:45:00'), updated_at: null, notizen: '',
     },
     {
-      id: 'BM-007', department_id: 'med_a', kategorie: 'sonstiges', prioritaet: 'normal',
+      id: 'BM-007', department_id: 'med_a', kategorie: 'personal', prioritaet: 'normal',
       status: 'abgelehnt',
-      titel: 'Zusätzlicher Angehörigenraum',
-      beschreibung: 'Bei Langzeitpatienten wäre ein separater, ruhiger Wartebereich für Angehörige hilfreich.',
-      menge: '—', gewuenschtes_datum: d(14),
-      erstellt_von: 'Pflegeleitung Medizin A', erstellt_am: d(14, '09:30:00'), updated_at: d(10, '11:00:00'), notizen: 'Kapazitätsmässig nicht umsetzbar. Empfehlung: Wartebereich EG nutzen.',
+      titel: 'Aufstockung Pflegeassistenz 20%',
+      beschreibung: 'Zur Entlastung der Pflegefachpersonen bei administrativen und hauswirtschaftlichen Tätigkeiten wäre eine zusätzliche Pflegeassistenz (20%) sinnvoll.',
+      menge: '1 Pflegeassistenz (20%)', gewuenschtes_datum: d(14),
+      erstellt_von: 'Pflegeleitung Medizin A', erstellt_am: d(14, '09:30:00'), updated_at: d(10, '11:00:00'), notizen: 'Stellenplan gibt keine Aufstockung her. Überprüfung im nächsten Budget.',
     },
   ];
 }

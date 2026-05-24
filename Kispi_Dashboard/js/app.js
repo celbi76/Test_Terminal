@@ -194,6 +194,7 @@ function renderOverviewPage() {
   renderAlerts();
   buildOccupancyTrendChart('chart-occ-trend',   AppState.historicalData);
   buildBarthelChart('chart-barthel-distrib',     AppState.currentShiftData);
+  buildNemsChart('chart-nems',                   AppState.currentShiftData);
   buildStaffChart('chart-staff',                 AppState.currentShiftData);
   buildAnticipatedChart('chart-anticipated',     AppState.anticipated);
 }
@@ -1218,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('bedarf-modal-overlay')?.addEventListener('click', e => {
     if (e.target.id === 'bedarf-modal-overlay') closeBedarfForm();
   });
-  ['bedarf-filter-status','bedarf-filter-kategorie','bedarf-filter-prioritaet','bedarf-filter-dept'].forEach(id => {
+  ['bedarf-filter-status','bedarf-filter-prioritaet','bedarf-filter-dept'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', renderBedarfsmeldungenPage);
   });
 });
@@ -1422,7 +1423,6 @@ let bedarfEditId = null;
 function renderBedarfsmeldungenPage() {
   const all        = AppState.getBedarfsmeldungen();
   const statusSel  = document.getElementById('bedarf-filter-status')?.value    || 'all';
-  const katSel     = document.getElementById('bedarf-filter-kategorie')?.value  || 'all';
   const prioSel    = document.getElementById('bedarf-filter-prioritaet')?.value || 'all';
   const deptSel    = document.getElementById('bedarf-filter-dept')?.value       || 'all';
 
@@ -1481,7 +1481,6 @@ function renderBedarfsmeldungenPage() {
   // Apply filters
   const filtered = all.filter(e =>
     (statusSel === 'all' || e.status === statusSel) &&
-    (katSel    === 'all' || e.kategorie === katSel) &&
     (prioSel   === 'all' || e.prioritaet === prioSel) &&
     (deptSel   === 'all' || e.department_id === deptSel)
   );
@@ -1513,7 +1512,7 @@ function renderBedarfsmeldungenPage() {
 
 function buildBedarfItemHtml(e) {
   const dept   = DEPARTMENTS.find(d => d.id === e.department_id);
-  const kat    = BEDARFSMELDUNG_KATEGORIEN.find(k => k.id === e.kategorie) || BEDARFSMELDUNG_KATEGORIEN[4];
+  const kat    = BEDARFSMELDUNG_KATEGORIEN.find(k => k.id === e.kategorie) || BEDARFSMELDUNG_KATEGORIEN[0];
   const prio   = BEDARFSMELDUNG_PRIORITAETEN.find(p => p.id === e.prioritaet) || BEDARFSMELDUNG_PRIORITAETEN[2];
   const status = BEDARFSMELDUNG_STATUS_LIST.find(s => s.id === e.status) || BEDARFSMELDUNG_STATUS_LIST[0];
 
@@ -1609,7 +1608,6 @@ function openBedarfForm(id) {
     title.textContent = 'Bedarfsmeldung bearbeiten';
     delBtn.style.display = '';
     setInputVal('bedarf-dept',        e.department_id || '');
-    setInputVal('bedarf-kategorie',   e.kategorie     || 'sonstiges');
     setInputVal('bedarf-prioritaet',  e.prioritaet    || 'normal');
     setInputVal('bedarf-datum',       e.gewuenschtes_datum || '');
     setInputVal('bedarf-titel',       e.titel         || '');
@@ -1621,7 +1619,6 @@ function openBedarfForm(id) {
     title.textContent = 'Neue Bedarfsmeldung';
     delBtn.style.display = 'none';
     setInputVal('bedarf-dept',        '');
-    setInputVal('bedarf-kategorie',   'personal');
     setInputVal('bedarf-prioritaet',  'normal');
     setInputVal('bedarf-datum',       localDateStr());
     setInputVal('bedarf-titel',       '');

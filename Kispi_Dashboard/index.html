@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260524h">
+  <link rel="stylesheet" href="css/styles.css?v=20260524i">
 </head>
 <body>
 
@@ -287,6 +287,46 @@
           </div>
           <div class="card-body">
             <div class="chart-wrap"><canvas id="chart-barthel-distrib"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEMS Chart Row -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-heart-pulse" style="color:#E63946"></i>
+            <h3>NEMS-Score — IPS &amp; IMC (Aktuelle Schicht)</h3>
+            <span class="text-sm text-muted" style="margin-left:auto">Nine Equivalents of nursing Manpower use Score</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chart-nems"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-info-circle" style="color:var(--kispi-blue-mid)"></i>
+            <h3>NEMS — Komplexitätsstufen</h3>
+          </div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0">
+              <div style="display:flex;align-items:flex-start;gap:12px">
+                <div style="width:12px;height:12px;border-radius:50%;background:#E63946;flex-shrink:0;margin-top:3px"></div>
+                <div><div style="font-weight:600;font-size:13px;color:#E63946">Hohe Komplexität — NEMS ≥ 25</div><div class="text-sm text-muted" style="margin-top:2px">Kritisch kranke Patienten, maximale Pflege- und Überwachungsintensität. Erhöhter Personalbedarf pro Patient.</div></div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px">
+                <div style="width:12px;height:12px;border-radius:50%;background:#F7941D;flex-shrink:0;margin-top:3px"></div>
+                <div><div style="font-weight:600;font-size:13px;color:#F7941D">Mittlere Komplexität — NEMS 18–24</div><div class="text-sm text-muted" style="margin-top:2px">Intensivüberwachungspflichtige Patienten. Standardmässiger ICU-/IMC-Betrieb.</div></div>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px">
+                <div style="width:12px;height:12px;border-radius:50%;background:#2DC653;flex-shrink:0;margin-top:3px"></div>
+                <div><div style="font-weight:600;font-size:13px;color:#2DC653">Geringe Komplexität — NEMS &lt; 18</div><div class="text-sm text-muted" style="margin-top:2px">Stabile Patienten mit überwachender Betreuung. Tiefer Interventionsbedarf.</div></div>
+              </div>
+              <div style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:#A0AEC0;line-height:1.5">
+                Der NEMS-Score bewertet 9 Kategorien pflegerischer Interventionen (0–9 Pkt. je). Maximalwert: 40 Pkt. Durchschnittswert aller Patienten pro Abteilung in der aktuellen Schicht.
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -591,7 +631,7 @@
       </div>
 
       <!-- Barthel-Index Legende -->
-      <div class="card">
+      <div class="card mb-20">
         <div class="card-header">
           <i class="bi bi-info-circle" style="color:var(--kispi-blue-mid)"></i>
           <h3>Barthel-Index — Kategorien &amp; Interpretation</h3>
@@ -622,6 +662,48 @@
         </div>
       </div>
 
+      <!-- NEMS-Score Legende -->
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-heart-pulse" style="color:#E63946"></i>
+          <h3>NEMS-Score — Kategorien &amp; Interpretation</h3>
+          <span class="text-sm text-muted" style="margin-left:auto">Nine Equivalents of nursing Manpower use Score · nur IPS &amp; IMC</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px">
+            <div style="padding:14px;border-radius:8px;background:#FFF5F5;border-left:4px solid #E63946">
+              <div style="font-weight:700;color:#E63946;margin-bottom:4px">≥ 25 Punkte</div>
+              <div style="font-weight:600">Hohe Komplexität</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Kritisch kranke Patienten mit maximaler Pflege- und Überwachungsintensität. Erhöhter Nurse-to-Patient-Ratio erforderlich.</div>
+            </div>
+            <div style="padding:14px;border-radius:8px;background:#FFF8EE;border-left:4px solid #F7941D">
+              <div style="font-weight:700;color:#F7941D;margin-bottom:4px">18–24 Punkte</div>
+              <div style="font-weight:600">Mittlere Komplexität</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Intensivüberwachungspflichtige Patienten. Standardmässiger ICU-/IMC-Betrieb, reguläre Personalplanung.</div>
+            </div>
+            <div style="padding:14px;border-radius:8px;background:#F0FFF4;border-left:4px solid #2DC653">
+              <div style="font-weight:700;color:#2DC653;margin-bottom:4px">&lt; 18 Punkte</div>
+              <div style="font-weight:600">Geringe Komplexität</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Stabile Patienten mit überwachender Betreuung. Tiefer Interventionsbedarf, günstige Personalplanung möglich.</div>
+            </div>
+          </div>
+          <div style="background:#F7F9FC;border-radius:8px;padding:14px">
+            <div style="font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-light);margin-bottom:10px">Bewertete Interventionskategorien (je 0–1 Pkt., max. 40 Pkt. gesamt)</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px 16px">
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Basismonitoring</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Erweit. Monitoring (ZVK/Art.)</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Beatmung / Atemhilfe</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Bronchialtoilette</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Vasoaktive Medikamente</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Intravenöse Medikation</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Spezif. Pflegeinterventionen</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Versorgung von Drainagen</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Mobilisation &amp; Lagerung</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- ══════════════════════════════════════════════════════
@@ -645,17 +727,6 @@
               <option value="bearbeitung">In Bearbeitung</option>
               <option value="erledigt">Erledigt</option>
               <option value="abgelehnt">Abgelehnt</option>
-            </select>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Kategorie:</label>
-            <select id="bedarf-filter-kategorie" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
-              <option value="all">Alle Kategorien</option>
-              <option value="personal">Personalbedarf</option>
-              <option value="material">Verbrauchsmaterial</option>
-              <option value="geraet">Medizingeräte</option>
-              <option value="infrastruktur">Infrastruktur / IT</option>
-              <option value="sonstiges">Sonstiges</option>
             </select>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -1092,21 +1163,12 @@
     <div class="modal-body">
       <div class="form-grid">
 
-        <!-- Abteilung + Kategorie -->
-        <div class="form-group">
+        <!-- Abteilung -->
+        <div class="form-group" style="grid-column:1/-1">
           <label for="bedarf-dept">Abteilung</label>
           <select id="bedarf-dept"></select>
         </div>
-        <div class="form-group">
-          <label for="bedarf-kategorie">Kategorie</label>
-          <select id="bedarf-kategorie">
-            <option value="personal">Personalbedarf</option>
-            <option value="material">Verbrauchsmaterial</option>
-            <option value="geraet">Medizingeräte</option>
-            <option value="infrastruktur">Infrastruktur / IT</option>
-            <option value="sonstiges">Sonstiges</option>
-          </select>
-        </div>
+        <input type="hidden" id="bedarf-kategorie" value="personal">
 
         <!-- Priorität + Gewünschtes Datum -->
         <div class="form-group">
@@ -1171,9 +1233,9 @@
 </div>
 
 <!-- Scripts -->
-<script src="js/data.js?v=20260524h"></script>
-<script src="js/charts.js?v=20260524h"></script>
-<script src="js/app.js?v=20260524h"></script>
+<script src="js/data.js?v=20260524i"></script>
+<script src="js/charts.js?v=20260524i"></script>
+<script src="js/app.js?v=20260524i"></script>
 
 </body>
 </html>

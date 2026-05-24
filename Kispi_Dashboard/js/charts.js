@@ -637,6 +637,105 @@ function buildForecastOccChart(canvasId, forecastDays, horizon) {
   });
 }
 
+// ── NEMS-Score IPS & IMC ─────────────────────────────────────
+
+function buildNemsChart(canvasId, shiftData) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  const ipsData = shiftData.find(d => d.department_id === 'ips');
+  const imcData = shiftData.find(d => DEPARTMENTS.find(x => x.id === d.department_id)?.type === 'imc');
+
+  const ipsNems = ipsData?.nems_average ?? null;
+  const imcNems = imcData?.nems_average ?? null;
+
+  const nemsColor = n => n >= 25 ? '#E63946' : n >= 18 ? '#F7941D' : '#2DC653';
+
+  charts[canvasId] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: ['IPS — Intensivpflege', 'IMC — Intermediate Care'],
+      datasets: [
+        {
+          label: 'Ø NEMS-Score',
+          data: [ipsNems, imcNems],
+          backgroundColor: [
+            ipsNems !== null ? nemsColor(ipsNems) + 'BB' : '#E2E8F0',
+            imcNems !== null ? nemsColor(imcNems) + 'BB' : '#E2E8F0',
+          ],
+          borderColor: [
+            ipsNems !== null ? nemsColor(ipsNems) : '#CBD5E0',
+            imcNems !== null ? nemsColor(imcNems) : '#CBD5E0',
+          ],
+          borderWidth: 2,
+          borderRadius: 7,
+          borderSkipped: false,
+        },
+        {
+          type: 'line',
+          label: 'Mittlere Komplexität (≥ 18)',
+          data: [18, 18],
+          borderColor: '#F7941D',
+          borderDash: [6, 4],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        },
+        {
+          type: 'line',
+          label: 'Hohe Komplexität (≥ 25)',
+          data: [25, 25],
+          borderColor: '#E63946',
+          borderDash: [6, 4],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { boxWidth: 18, padding: 16, font: { size: 11 } },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.type === 'line') return ' ' + ctx.dataset.label;
+              const n = ctx.parsed.y;
+              if (n === null) return ' Keine Daten';
+              const lvl = n >= 25 ? 'Hohe Komplexität' : n >= 18 ? 'Mittlere Komplexität' : 'Geringe Komplexität';
+              return ` NEMS Ø ${n} — ${lvl}`;
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 40,
+          grid: { color: '#F0F4F8' },
+          title: {
+            display: true,
+            text: 'NEMS-Score (max. 40 Punkte)',
+            font: { size: 11 },
+            color: '#718096',
+          },
+          ticks: { stepSize: 5 },
+        },
+        x: { grid: { display: false } },
+      },
+    },
+  });
+}
+
 function getISOWeek(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
