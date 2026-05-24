@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css?v=20260524e">
+  <link rel="stylesheet" href="css/styles.css?v=20260524f">
 </head>
 <body>
 
@@ -95,6 +95,12 @@
     <div class="nav-item" data-page="forecast">
       <i class="bi bi-graph-up-arrow nav-icon"></i>
       <span class="nav-label">Prognose</span>
+    </div>
+
+    <div class="nav-item" data-page="bedarfsmeldungen">
+      <i class="bi bi-clipboard2-plus-fill nav-icon"></i>
+      <span class="nav-label">Bedarfsmeldungen</span>
+      <span class="nav-badge" id="nav-bedarf-badge" style="display:none">0</span>
     </div>
 
     <div class="nav-section-label" style="margin-top:12px">Aktionen</div>
@@ -610,6 +616,67 @@
     </section>
 
     <!-- ══════════════════════════════════════════════════════
+         SEITE: BEDARFSMELDUNGEN
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-bedarfsmeldungen" class="page">
+
+      <!-- KPI Row -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px" id="bedarf-kpi-row">
+        <!-- JS -->
+      </div>
+
+      <!-- Filter + Action Bar -->
+      <div class="card mb-20">
+        <div class="card-body" style="padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Status:</label>
+            <select id="bedarf-filter-status" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle</option>
+              <option value="offen">Offen</option>
+              <option value="bearbeitung">In Bearbeitung</option>
+              <option value="erledigt">Erledigt</option>
+              <option value="abgelehnt">Abgelehnt</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Kategorie:</label>
+            <select id="bedarf-filter-kategorie" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle Kategorien</option>
+              <option value="personal">Personalbedarf</option>
+              <option value="material">Verbrauchsmaterial</option>
+              <option value="geraet">Medizingeräte</option>
+              <option value="infrastruktur">Infrastruktur / IT</option>
+              <option value="sonstiges">Sonstiges</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Priorität:</label>
+            <select id="bedarf-filter-prioritaet" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle Prioritäten</option>
+              <option value="sofort">Sofort</option>
+              <option value="dringlich">Dringlich</option>
+              <option value="normal">Normal</option>
+              <option value="geplant">Geplant</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Abteilung:</label>
+            <select id="bedarf-filter-dept" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle Abteilungen</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="openBedarfForm()" style="margin-left:auto">
+            <i class="bi bi-plus-lg"></i> Neue Bedarfsmeldung
+          </button>
+        </div>
+      </div>
+
+      <!-- List -->
+      <div id="bedarf-list"><!-- JS --></div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
          SEITE: PROGNOSE
     ══════════════════════════════════════════════════════ -->
     <section id="page-forecast" class="page">
@@ -1003,10 +1070,101 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: BEDARFSMELDUNG ERFASSEN / BEARBEITEN
+══════════════════════════════════════════════════════════ -->
+<div id="bedarf-modal-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-header">
+      <i class="bi bi-clipboard2-plus-fill" style="font-size:20px;color:var(--kispi-teal)"></i>
+      <h2 id="bedarf-modal-title">Neue Bedarfsmeldung</h2>
+      <button class="modal-close" onclick="closeBedarfForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+
+        <!-- Abteilung + Kategorie -->
+        <div class="form-group">
+          <label for="bedarf-dept">Abteilung</label>
+          <select id="bedarf-dept"></select>
+        </div>
+        <div class="form-group">
+          <label for="bedarf-kategorie">Kategorie</label>
+          <select id="bedarf-kategorie">
+            <option value="personal">Personalbedarf</option>
+            <option value="material">Verbrauchsmaterial</option>
+            <option value="geraet">Medizingeräte</option>
+            <option value="infrastruktur">Infrastruktur / IT</option>
+            <option value="sonstiges">Sonstiges</option>
+          </select>
+        </div>
+
+        <!-- Priorität + Gewünschtes Datum -->
+        <div class="form-group">
+          <label for="bedarf-prioritaet">Priorität</label>
+          <select id="bedarf-prioritaet">
+            <option value="sofort">Sofort</option>
+            <option value="dringlich">Dringlich</option>
+            <option value="normal" selected>Normal</option>
+            <option value="geplant">Geplant</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="bedarf-datum">Gewünschtes Datum</label>
+          <input type="date" id="bedarf-datum">
+        </div>
+
+        <!-- Titel -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="bedarf-titel">Bezeichnung / Titel</label>
+          <input type="text" id="bedarf-titel" placeholder="Kurze Beschreibung des Bedarfs">
+        </div>
+
+        <!-- Beschreibung -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="bedarf-beschreibung">Beschreibung</label>
+          <textarea id="bedarf-beschreibung" rows="3" placeholder="Detaillierte Angaben zum Bedarf, Hintergrund, Dringlichkeit…"></textarea>
+        </div>
+
+        <!-- Menge + Status (bei Bearbeitung) -->
+        <div class="form-group">
+          <label for="bedarf-menge">Menge / Anzahl</label>
+          <input type="text" id="bedarf-menge" placeholder="z.B. 2 Pflegepersonen oder 5 Kartons">
+        </div>
+        <div class="form-group">
+          <label for="bedarf-status">Status</label>
+          <select id="bedarf-status">
+            <option value="offen">Offen</option>
+            <option value="bearbeitung">In Bearbeitung</option>
+            <option value="erledigt">Erledigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+          </select>
+        </div>
+
+        <!-- Notizen -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="bedarf-notizen">Interne Notizen (optional)</label>
+          <textarea id="bedarf-notizen" rows="2" placeholder="Massnahmen, Rückmeldungen, nächste Schritte…"></textarea>
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeBedarfForm()">Abbrechen</button>
+      <button class="btn-danger" id="bedarf-delete-btn" onclick="deleteBedarfEntry()" style="margin-right:auto;display:none">
+        <i class="bi bi-trash"></i> Löschen
+      </button>
+      <button class="btn-primary" id="bedarf-submit-btn" onclick="submitBedarfForm()">
+        <i class="bi bi-check-lg"></i> Speichern
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts -->
-<script src="js/data.js?v=20260524e"></script>
-<script src="js/charts.js?v=20260524e"></script>
-<script src="js/app.js?v=20260524e"></script>
+<script src="js/data.js?v=20260524f"></script>
+<script src="js/charts.js?v=20260524f"></script>
+<script src="js/app.js?v=20260524f"></script>
 
 </body>
 </html>

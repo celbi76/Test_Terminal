@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     buildHistDeptSelect();
     renderAllPages();
     updateAlertBadge();
+    updateBedarfBadge();
     startAutoRefresh();
     showLoading(false);
   }, 600);
@@ -94,23 +95,25 @@ function navigateTo(pageId) {
     el.classList.toggle('active', el.id === `page-${pageId}`));
 
   const titles = {
-    overview:   ['Klinikübersicht',    'Echtzeit-Dashboard'],
-    stations:   ['Stationen',          'Belegung · Barthel-Index · Personal'],
-    staffing:   ['Personal & Pool',    'IST/SOLL · Skill-Grade-Mix · Pool-Management'],
-    or:         ['OP-Planung',         'Geplante Eingriffe & postop. Verlegung'],
-    historical: ['Historische Daten',  'Trends & Abweichungsanalyse'],
-    info:       ['Kompetenzen',        'Berufsgruppen & Kompetenzprofile'],
-    forecast:   ['Prognose',           'Prospektive Klinikauslastung & Personalbedarf'],
+    overview:          ['Klinikübersicht',    'Echtzeit-Dashboard'],
+    stations:          ['Stationen',          'Belegung · Barthel-Index · Personal'],
+    staffing:          ['Personal & Pool',    'IST/SOLL · Skill-Grade-Mix · Pool-Management'],
+    or:                ['OP-Planung',         'Geplante Eingriffe & postop. Verlegung'],
+    historical:        ['Historische Daten',  'Trends & Abweichungsanalyse'],
+    info:              ['Kompetenzen',        'Berufsgruppen & Kompetenzprofile'],
+    forecast:          ['Prognose',           'Prospektive Klinikauslastung & Personalbedarf'],
+    bedarfsmeldungen:  ['Bedarfsmeldungen',   'Ressourcen- & Personalbedarf verwalten'],
   };
   const [main, sub] = titles[pageId] || ['Dashboard', ''];
   setEl('page-main-title', main);
   setEl('page-sub-title',  sub);
 
-  if (pageId === 'historical') renderHistoricalPage();
-  if (pageId === 'staffing')   renderStaffingPage();
-  if (pageId === 'or')         renderORPage();
-  if (pageId === 'info')       renderInfoPage();
-  if (pageId === 'forecast')   renderForecastPage();
+  if (pageId === 'historical')       renderHistoricalPage();
+  if (pageId === 'staffing')         renderStaffingPage();
+  if (pageId === 'or')               renderORPage();
+  if (pageId === 'info')             renderInfoPage();
+  if (pageId === 'forecast')         renderForecastPage();
+  if (pageId === 'bedarfsmeldungen') renderBedarfsmeldungenPage();
 }
 
 // ── Sidebar ──────────────────────────────────────────────────
@@ -1175,6 +1178,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'or-emergency-modal-overlay')
       e.target.classList.remove('open');
   });
+
+  // Bedarfsmeldung modal close + filter listeners
+  document.getElementById('bedarf-modal-overlay')?.addEventListener('click', e => {
+    if (e.target.id === 'bedarf-modal-overlay') closeBedarfForm();
+  });
+  ['bedarf-filter-status','bedarf-filter-kategorie','bedarf-filter-prioritaet','bedarf-filter-dept'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', renderBedarfsmeldungenPage);
+  });
 });
 
 // ── DATA ENTRY MODAL ─────────────────────────────────────────
@@ -1367,6 +1378,271 @@ function submitDataEntry() {
   closeDataEntry();
   const isToday = entryDate === localDateStr();
   showToast(`${dept.name} · ${entryDate} · Schicht ${selectedShift} gespeichert${isToday ? ' (Live-Dashboard aktualisiert)' : ' (Rückschau)'}.`);
+}
+
+// ── BEDARFSMELDUNGEN PAGE ─────────────────────────────────────
+
+let bedarfEditId = null;
+
+function renderBedarfsmeldungenPage() {
+  const all        = AppState.getBedarfsmeldungen();
+  const statusSel  = document.getElementById('bedarf-filter-status')?.value    || 'all';
+  const katSel     = document.getElementById('bedarf-filter-kategorie')?.value  || 'all';
+  const prioSel    = document.getElementById('bedarf-filter-prioritaet')?.value || 'all';
+  const deptSel    = document.getElementById('bedarf-filter-dept')?.value       || 'all';
+
+  // Build KPI row
+  const kpiRow = document.getElementById('bedarf-kpi-row');
+  if (kpiRow) {
+    const total     = all.length;
+    const offen     = all.filter(e => e.status === 'offen').length;
+    const sofort    = all.filter(e => e.prioritaet === 'sofort' && e.status !== 'erledigt' && e.status !== 'abgelehnt').length;
+    const bearb     = all.filter(e => e.status === 'bearbeitung').length;
+    const erledigt  = all.filter(e => e.status === 'erledigt').length;
+    kpiRow.innerHTML = `
+      <div class="kpi-card kpi-blue">
+        <span class="kpi-icon"><i class="bi bi-clipboard2-list"></i></span>
+        <div class="kpi-label">Meldungen Total</div>
+        <div class="kpi-value">${total}</div>
+        <div class="kpi-sub">alle Einträge</div>
+      </div>
+      <div class="kpi-card kpi-danger">
+        <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+        <div class="kpi-label">Offen</div>
+        <div class="kpi-value">${offen}</div>
+        <div class="kpi-sub">Bearbeitung ausstehend</div>
+      </div>
+      <div class="kpi-card" style="border-left-color:#E63946">
+        <span class="kpi-icon" style="color:#E63946"><i class="bi bi-lightning-fill"></i></span>
+        <div class="kpi-label">Sofort / Dringlich</div>
+        <div class="kpi-value" style="color:#E63946">${sofort}</div>
+        <div class="kpi-sub">aktiv & höchste Priorität</div>
+      </div>
+      <div class="kpi-card kpi-warn">
+        <span class="kpi-icon"><i class="bi bi-arrow-repeat"></i></span>
+        <div class="kpi-label">In Bearbeitung</div>
+        <div class="kpi-value">${bearb}</div>
+        <div class="kpi-sub">wird bearbeitet</div>
+      </div>
+      <div class="kpi-card kpi-green">
+        <span class="kpi-icon"><i class="bi bi-check-circle-fill"></i></span>
+        <div class="kpi-label">Erledigt</div>
+        <div class="kpi-value">${erledigt}</div>
+        <div class="kpi-sub">abgeschlossen</div>
+      </div>`;
+  }
+
+  // Build dept filter options (once)
+  const deptSel2 = document.getElementById('bedarf-filter-dept');
+  if (deptSel2 && deptSel2.options.length <= 1) {
+    DEPARTMENTS.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${d.name} — ${d.fullName}`;
+      deptSel2.appendChild(opt);
+    });
+  }
+
+  // Apply filters
+  const filtered = all.filter(e =>
+    (statusSel === 'all' || e.status === statusSel) &&
+    (katSel    === 'all' || e.kategorie === katSel) &&
+    (prioSel   === 'all' || e.prioritaet === prioSel) &&
+    (deptSel   === 'all' || e.department_id === deptSel)
+  );
+
+  const container = document.getElementById('bedarf-list');
+  if (!container) return;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="card"><div class="card-body"><div class="empty-state"><span class="empty-icon">📋</span><p>Keine Bedarfsmeldungen für diese Filter</p></div></div></div>`;
+    return;
+  }
+
+  // Sort: offen+bearbeitung first, then by priority weight, then by date desc
+  const prioOrder = { sofort: 0, dringlich: 1, normal: 2, geplant: 3 };
+  const statOrder = { offen: 0, bearbeitung: 1, erledigt: 2, abgelehnt: 3 };
+  const sorted = [...filtered].sort((a, b) => {
+    const sd = (statOrder[a.status] ?? 9) - (statOrder[b.status] ?? 9);
+    if (sd !== 0) return sd;
+    const pd = (prioOrder[a.prioritaet] ?? 9) - (prioOrder[b.prioritaet] ?? 9);
+    if (pd !== 0) return pd;
+    return (b.erstellt_am || '').localeCompare(a.erstellt_am || '');
+  });
+
+  container.innerHTML = sorted.map(e => buildBedarfItemHtml(e)).join('');
+
+  // Update nav badge
+  updateBedarfBadge();
+}
+
+function buildBedarfItemHtml(e) {
+  const dept   = DEPARTMENTS.find(d => d.id === e.department_id);
+  const kat    = BEDARFSMELDUNG_KATEGORIEN.find(k => k.id === e.kategorie) || BEDARFSMELDUNG_KATEGORIEN[4];
+  const prio   = BEDARFSMELDUNG_PRIORITAETEN.find(p => p.id === e.prioritaet) || BEDARFSMELDUNG_PRIORITAETEN[2];
+  const status = BEDARFSMELDUNG_STATUS_LIST.find(s => s.id === e.status) || BEDARFSMELDUNG_STATUS_LIST[0];
+
+  const erstelltDt = e.erstellt_am ? new Date(e.erstellt_am).toLocaleDateString('de-CH', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+  const updatedDt  = e.updated_at  ? new Date(e.updated_at).toLocaleDateString('de-CH',  { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : null;
+
+  const isDone = e.status === 'erledigt' || e.status === 'abgelehnt';
+
+  return `
+    <div class="bedarf-item${isDone ? ' bedarf-item-done' : ''}" style="border-left-color:${prio.color}">
+      <div class="bedarf-item-header">
+        <div class="bedarf-kat-icon" style="background:${kat.color}22;color:${kat.color}">
+          <i class="bi ${kat.icon}"></i>
+        </div>
+        <div class="bedarf-item-meta">
+          <div class="bedarf-item-dept" style="color:${dept?.color || '#718096'}">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dept?.color || '#718096'};margin-right:4px"></span>
+            ${dept?.name || e.department_id}
+            <span style="color:var(--text-light);font-weight:400;margin-left:4px">${dept?.fullName || ''}</span>
+          </div>
+          <div class="bedarf-item-id">${e.id} · ${erstelltDt}${e.erstellt_von ? ` · ${e.erstellt_von}` : ''}</div>
+        </div>
+        <div class="bedarf-item-badges">
+          <span class="bedarf-badge" style="background:${prio.bg};color:${prio.color}">${prio.label}</span>
+          <span class="bedarf-badge" style="background:${status.bg};color:${status.color}">${status.label}</span>
+        </div>
+        <button class="btn-icon bedarf-edit-btn" onclick="openBedarfForm('${e.id}')" title="Bearbeiten">
+          <i class="bi bi-pencil"></i>
+        </button>
+      </div>
+
+      <div class="bedarf-item-body">
+        <div class="bedarf-item-titel">${e.titel}</div>
+        <div class="bedarf-item-beschreibung">${e.beschreibung}</div>
+        ${e.menge && e.menge !== '—' ? `<div class="bedarf-item-menge"><i class="bi bi-boxes" style="color:var(--text-light);margin-right:4px"></i>${e.menge}</div>` : ''}
+        ${e.notizen ? `<div class="bedarf-item-notizen"><i class="bi bi-chat-left-text" style="margin-right:4px;color:var(--text-light)"></i>${e.notizen}</div>` : ''}
+        ${updatedDt ? `<div style="font-size:10px;color:var(--text-light);margin-top:6px">Zuletzt aktualisiert: ${updatedDt}</div>` : ''}
+      </div>
+
+      ${!isDone ? `
+      <div class="bedarf-item-actions">
+        ${e.status === 'offen' ? `
+          <button class="bedarf-action-btn bedarf-action-process" onclick="quickStatusBedarf('${e.id}','bearbeitung')">
+            <i class="bi bi-arrow-repeat"></i> In Bearbeitung nehmen
+          </button>` : ''}
+        ${e.status === 'bearbeitung' ? `
+          <button class="bedarf-action-btn bedarf-action-done" onclick="quickStatusBedarf('${e.id}','erledigt')">
+            <i class="bi bi-check-lg"></i> Als erledigt markieren
+          </button>` : ''}
+        <button class="bedarf-action-btn bedarf-action-reject" onclick="quickStatusBedarf('${e.id}','abgelehnt')">
+          <i class="bi bi-x-lg"></i> Ablehnen
+        </button>
+      </div>` : ''}
+    </div>`;
+}
+
+function updateBedarfBadge() {
+  const badge = document.getElementById('nav-bedarf-badge');
+  if (!badge) return;
+  const count = AppState.getBedarfsmeldungen().filter(e => e.status === 'offen' || e.status === 'bearbeitung').length;
+  badge.textContent = count;
+  badge.style.display = count > 0 ? '' : 'none';
+}
+
+function quickStatusBedarf(id, status) {
+  AppState.updateBedarfsmeldungStatus(id, status);
+  renderBedarfsmeldungenPage();
+  const statusLabel = BEDARFSMELDUNG_STATUS_LIST.find(s => s.id === status)?.label || status;
+  showToast(`Status auf «${statusLabel}» gesetzt.`);
+}
+
+function openBedarfForm(id) {
+  bedarfEditId = id || null;
+  const modal   = document.getElementById('bedarf-modal-overlay');
+  const title   = document.getElementById('bedarf-modal-title');
+  const delBtn  = document.getElementById('bedarf-delete-btn');
+  if (!modal) return;
+
+  // Populate dept select
+  const deptSel = document.getElementById('bedarf-dept');
+  if (deptSel && deptSel.options.length === 0) {
+    DEPARTMENTS.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${d.name} — ${d.fullName}`;
+      deptSel.appendChild(opt);
+    });
+  }
+
+  if (id) {
+    const e = AppState.getBedarfsmeldungen().find(x => x.id === id);
+    if (!e) return;
+    title.textContent = 'Bedarfsmeldung bearbeiten';
+    delBtn.style.display = '';
+    setInputVal('bedarf-dept',        e.department_id || '');
+    setInputVal('bedarf-kategorie',   e.kategorie     || 'sonstiges');
+    setInputVal('bedarf-prioritaet',  e.prioritaet    || 'normal');
+    setInputVal('bedarf-datum',       e.gewuenschtes_datum || '');
+    setInputVal('bedarf-titel',       e.titel         || '');
+    setInputVal('bedarf-beschreibung',e.beschreibung  || '');
+    setInputVal('bedarf-menge',       e.menge !== '—' ? (e.menge || '') : '');
+    setInputVal('bedarf-status',      e.status        || 'offen');
+    setInputVal('bedarf-notizen',     e.notizen       || '');
+  } else {
+    title.textContent = 'Neue Bedarfsmeldung';
+    delBtn.style.display = 'none';
+    setInputVal('bedarf-dept',        '');
+    setInputVal('bedarf-kategorie',   'personal');
+    setInputVal('bedarf-prioritaet',  'normal');
+    setInputVal('bedarf-datum',       localDateStr());
+    setInputVal('bedarf-titel',       '');
+    setInputVal('bedarf-beschreibung','');
+    setInputVal('bedarf-menge',       '');
+    setInputVal('bedarf-status',      'offen');
+    setInputVal('bedarf-notizen',     '');
+  }
+  modal.classList.add('open');
+}
+
+function closeBedarfForm() {
+  document.getElementById('bedarf-modal-overlay')?.classList.remove('open');
+  bedarfEditId = null;
+}
+
+function submitBedarfForm() {
+  const dept  = getInputVal('bedarf-dept');
+  const titel = getInputVal('bedarf-titel').trim();
+  if (!dept)  { alert('Bitte Abteilung wählen.');     return; }
+  if (!titel) { alert('Bitte Bezeichnung eingeben.'); return; }
+
+  const entry = {
+    id:                bedarfEditId || `BM-${Date.now()}`,
+    department_id:     dept,
+    kategorie:         getInputVal('bedarf-kategorie'),
+    prioritaet:        getInputVal('bedarf-prioritaet'),
+    status:            getInputVal('bedarf-status'),
+    titel,
+    beschreibung:      getInputVal('bedarf-beschreibung'),
+    menge:             getInputVal('bedarf-menge') || '—',
+    gewuenschtes_datum:getInputVal('bedarf-datum'),
+    erstellt_von:      bedarfEditId
+                         ? (AppState.getBedarfsmeldungen().find(x => x.id === bedarfEditId)?.erstellt_von || 'Pflegeleitung')
+                         : 'Pflegeleitung',
+    erstellt_am:       bedarfEditId
+                         ? (AppState.getBedarfsmeldungen().find(x => x.id === bedarfEditId)?.erstellt_am || new Date().toISOString())
+                         : new Date().toISOString(),
+    updated_at:        bedarfEditId ? new Date().toISOString() : null,
+    notizen:           getInputVal('bedarf-notizen'),
+  };
+
+  AppState.saveBedarfsmeldung(entry);
+  closeBedarfForm();
+  renderBedarfsmeldungenPage();
+  showToast(`Bedarfsmeldung «${titel}» ${bedarfEditId ? 'aktualisiert' : 'erfasst'}.`);
+}
+
+function deleteBedarfEntry() {
+  if (!bedarfEditId) return;
+  const e = AppState.getBedarfsmeldungen().find(x => x.id === bedarfEditId);
+  if (!confirm(`Bedarfsmeldung «${e?.titel}» wirklich löschen?`)) return;
+  AppState.deleteBedarfsmeldung(bedarfEditId);
+  closeBedarfForm();
+  renderBedarfsmeldungenPage();
+  showToast('Bedarfsmeldung gelöscht.');
 }
 
 // ── Toast ─────────────────────────────────────────────────────
