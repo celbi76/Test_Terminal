@@ -2,10 +2,12 @@
 // KISPI DASHBOARD — Haupt-Applikationslogik
 // ============================================================
 
-let clockTimer   = null;
-let historyDays  = 30;
-let selectedDept = null;
-let selectedShift= null;
+let clockTimer      = null;
+let historyDays     = 30;
+let selectedDept    = null;
+let selectedShift   = null;
+let forecastMode    = 'short';
+let forecastHorizon = '7d';
 
 function localDateStr(date) {
   const d = date || new Date();
@@ -98,6 +100,7 @@ function navigateTo(pageId) {
     or:         ['OP-Planung',         'Geplante Eingriffe & postop. Verlegung'],
     historical: ['Historische Daten',  'Trends & Abweichungsanalyse'],
     info:       ['Kompetenzen',        'Berufsgruppen & Kompetenzprofile'],
+    forecast:   ['Prognose',           'Prospektive Klinikauslastung & Personalbedarf'],
   };
   const [main, sub] = titles[pageId] || ['Dashboard', ''];
   setEl('page-main-title', main);
@@ -107,6 +110,7 @@ function navigateTo(pageId) {
   if (pageId === 'staffing')   renderStaffingPage();
   if (pageId === 'or')         renderORPage();
   if (pageId === 'info')       renderInfoPage();
+  if (pageId === 'forecast')   renderForecastPage();
 }
 
 // ── Sidebar ──────────────────────────────────────────────────
@@ -920,6 +924,120 @@ function submitEmergencyProcedure() {
   buildORTimelineGrid();
   renderORKPIs();
   showToast(`Notfall "${proc.procedure}" angemeldet.`);
+}
+
+// ── FORECAST PAGE ─────────────────────────────────────────────
+
+function setForecastMode(mode) {
+  forecastMode = mode;
+  renderForecastPage();
+}
+
+function setForecastHorizon(horizon) {
+  forecastHorizon = horizon;
+  renderForecastPage();
+}
+
+function renderForecastPage() {
+  const data = AppState.getForecast(forecastMode, forecastHorizon);
+  const days = data.days;
+  if (!days.length) return;
+
+  // Toggle button states
+  ['short', 'long'].forEach(m => {
+    document.getElementById(`fc-mode-${m}`)?.classList.toggle('active', forecastMode === m);
+  });
+  ['7d', '3m'].forEach(h => {
+    const el = document.getElementById(`fc-hz-${h}`);
+    el?.classList.toggle('active', forecastHorizon === h);
+  });
+
+  // Titles
+  const horizonLabel = forecastHorizon === '3m' ? '— Nächste 3 Monate' : '— Nächste 7 Tage';
+  setEl('fc-chart-title', horizonLabel);
+  setEl('fc-chart-method',
+    forecastMode === 'long'
+      ? 'Basis: 90-Tage-Durchschnitt + Saisonfaktor (Vorjahresschätzung)'
+      : 'Basis: Letzte 30 Tage — Wochentagsdurchschnitt');
+  setEl('fc-baseline-info',
+    `Analysierte Schichten: ${forecastMode === 'short' ? '30' : '90'} Tage historische Belegungsdaten`);
+
+  // KPI: avg projected occupancy
+  const avgOcc = Math.round(days.reduce((s, d) => s + d.avgOccPct, 0) / days.length);
+  setEl('fc-kpi-occ', avgOcc);
+  setEl('fc-kpi-occ-sub', forecastHorizon === '3m' ? 'Ø über nächste 3 Monate' : 'Ø über nächste 7 Tage');
+
+  // KPI: peak department
+  const peakDept = DEPARTMENTS.map(dept => ({
+    dept,
+    avgOcc: Math.round(days.reduce((s, d) => s + (d.perDept[dept.id]?.projOccPct || 0), 0) / days.length),
+  })).sort((a, b) => b.avgOcc - a.avgOcc)[0];
+  setEl('fc-kpi-peak-dept', peakDept?.dept.name || '—');
+  setEl('fc-kpi-peak-val', peakDept ? `Proj. Ø ${peakDept.avgOcc}% Auslastung` : '');
+
+  // KPI: total required nurses per day
+  const avgNurses = Math.round(days.reduce((s, d) => s + d.totalNurses, 0) / days.length);
+  setEl('fc-kpi-nurses', avgNurses);
+  setEl('fc-kpi-nurses-sub', 'Qual. Pflegepersonen / Tag (alle Abt.)');
+
+  // KPI: avg complexity index
+  const avgCI = Math.round(days.reduce((s, d) => s + d.avgComplexity, 0) / days.length);
+  setEl('fc-kpi-complexity', `${avgCI} / 100`);
+  setEl('fc-kpi-complexity-sub',
+    avgCI >= 60 ? 'Hohe Komplexität' : avgCI >= 40 ? 'Mittlere Komplexität' : 'Geringe Komplexität');
+
+  // Chart
+  buildForecastOccChart('chart-forecast-occ', days, forecastHorizon);
+
+  // Staffing table
+  const tbody = document.getElementById('fc-staff-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = DEPARTMENTS.map(dept => {
+    const deptDays = days.map(d => d.perDept[dept.id]).filter(Boolean);
+    if (!deptDays.length) return '';
+
+    const avgOccPct  = Math.round(deptDays.reduce((s, d) => s + d.projOccPct,    0) / deptDays.length);
+    const avgBeds    = Math.round(deptDays.reduce((s, d) => s + d.projBeds,       0) / deptDays.length);
+    const avgNursesD = Math.round(deptDays.reduce((s, d) => s + d.reqNurses,      0) / deptDays.length);
+    const avgCI2     = Math.round(deptDays.reduce((s, d) => s + d.complexityIdx,  0) / deptDays.length);
+    const repDay     = deptDays[0];
+
+    const complexityStr = repDay.avgNems    != null ? `NEMS ${repDay.avgNems}`
+                        : repDay.avgBarthel != null ? `Barthel ${repDay.avgBarthel}`
+                        : '—';
+
+    const currentDept = AppState.currentShiftData.find(d => d.department_id === dept.id);
+    const currentOcc  = currentDept?.occupancy_pct || 0;
+    const diff        = avgOccPct - currentOcc;
+    const trendColor  = diff > 5 ? '#E63946' : diff < -5 ? '#2DC653' : '#F7941D';
+    const ciColor     = avgCI2 >= 60 ? '#E63946' : avgCI2 >= 40 ? '#F7941D' : '#2DC653';
+
+    return `<tr>
+      <td>
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dept.color}"></span>
+          <strong>${dept.name}</strong>
+        </span>
+        <div style="font-size:10px;color:var(--text-muted)">${dept.fullName}</div>
+      </td>
+      <td class="text-center">
+        <div style="font-weight:700;font-size:15px">${avgOccPct}%</div>
+        <div style="font-size:10px;color:var(--text-muted)">proj. Ø</div>
+      </td>
+      <td class="text-center"><strong>${avgBeds}</strong> / ${dept.beds}</td>
+      <td class="text-center"><strong>${avgNursesD}</strong></td>
+      <td class="text-center">
+        <span style="color:${ciColor};font-weight:700">${repDay.complexityLabel}</span>
+        <div style="font-size:10px;color:var(--text-muted)">${avgCI2} / 100</div>
+      </td>
+      <td class="text-center" style="color:var(--text-mid)">${complexityStr}</td>
+      <td class="text-center">
+        <span style="color:${trendColor};font-weight:700">${diff > 0 ? '+' : ''}${diff}%</span>
+        <span style="font-size:10px;color:var(--text-muted)"> vs. Heute</span>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ── HISTORICAL PAGE ───────────────────────────────────────────

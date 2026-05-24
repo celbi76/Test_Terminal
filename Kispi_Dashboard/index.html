@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=20260524b">
 </head>
 <body>
 
@@ -90,6 +90,11 @@
     <div class="nav-item" data-page="info">
       <i class="bi bi-mortarboard-fill nav-icon"></i>
       <span class="nav-label">Kompetenzen</span>
+    </div>
+
+    <div class="nav-item" data-page="forecast">
+      <i class="bi bi-graph-up-arrow nav-icon"></i>
+      <span class="nav-label">Prognose</span>
     </div>
 
     <div class="nav-section-label" style="margin-top:12px">Aktionen</div>
@@ -174,11 +179,24 @@
         <!-- KPI-Karten (rechts) -->
         <div style="display:flex;flex-direction:column;gap:12px">
 
+          <!-- Barthel + NEMS kombiniert -->
           <div class="kpi-card kpi-blue">
             <span class="kpi-icon"><i class="bi bi-activity"></i></span>
             <div class="kpi-label">Ø Barthel-Index</div>
             <div class="kpi-value"><span id="kpi-barthel-val">—</span></div>
             <div class="kpi-sub" id="kpi-barthel-sub"></div>
+            <div style="border-top:1px solid rgba(255,255,255,0.25);margin-top:10px;padding-top:10px;display:flex;gap:10px">
+              <div style="flex:1">
+                <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;opacity:0.8;color:#E63946">IPS Ø NEMS</div>
+                <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2" id="kpi-ips-nems">—</div>
+                <div style="font-size:9px;opacity:0.75" id="kpi-ips-nems-level"></div>
+              </div>
+              <div style="flex:1">
+                <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;opacity:0.8;color:#F7941D">IMC Ø NEMS</div>
+                <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2" id="kpi-imc-nems">—</div>
+                <div style="font-size:9px;opacity:0.75" id="kpi-imc-nems-level"></div>
+              </div>
+            </div>
           </div>
 
           <div class="kpi-card kpi-green" id="kpi-card-coverage">
@@ -201,20 +219,6 @@
             <div class="kpi-label">Warnungen</div>
             <div class="kpi-value"><span id="kpi-alerts">—</span></div>
             <div class="kpi-sub">Aktuelle Alerts</div>
-          </div>
-
-          <!-- NEMS row: IPS + IMC side by side -->
-          <div style="display:flex;gap:8px">
-            <div class="kpi-card" style="flex:1;border-left:4px solid #E63946;padding:10px 12px">
-              <div class="kpi-label" style="color:#E63946;font-size:10px">IPS — Ø NEMS</div>
-              <div class="kpi-value" style="font-size:22px" id="kpi-ips-nems">—</div>
-              <div class="kpi-sub" id="kpi-ips-nems-level"></div>
-            </div>
-            <div class="kpi-card" style="flex:1;border-left:4px solid #F7941D;padding:10px 12px">
-              <div class="kpi-label" style="color:#F7941D;font-size:10px">IMC — Ø NEMS</div>
-              <div class="kpi-value" style="font-size:22px" id="kpi-imc-nems">—</div>
-              <div class="kpi-sub" id="kpi-imc-nems-level"></div>
-            </div>
           </div>
 
         </div>
@@ -601,6 +605,101 @@
 
     </section>
 
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: PROGNOSE
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-forecast" class="page">
+
+      <!-- Controls bar -->
+      <div class="card mb-20">
+        <div class="card-body" style="padding:14px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Baseline-Methode</div>
+            <div class="date-filter">
+              <button class="date-filter-btn active" id="fc-mode-short" onclick="setForecastMode('short')">
+                <i class="bi bi-clock-history"></i> Kurzfristig <span style="opacity:0.7">(30 Tage)</span>
+              </button>
+              <button class="date-filter-btn" id="fc-mode-long" onclick="setForecastMode('long')">
+                <i class="bi bi-calendar4-range"></i> Langfristig <span style="opacity:0.7">(Vorjahr)</span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Zeithorizont</div>
+            <div class="date-filter">
+              <button class="date-filter-btn active" id="fc-hz-7d" onclick="setForecastHorizon('7d')">7 Tage</button>
+              <button class="date-filter-btn" id="fc-hz-3m" onclick="setForecastHorizon('3m')">3 Monate</button>
+            </div>
+          </div>
+          <div style="margin-left:auto;font-size:11px;color:var(--text-muted)" id="fc-baseline-info"></div>
+        </div>
+      </div>
+
+      <!-- KPI row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="kpi-card kpi-blue">
+          <span class="kpi-icon"><i class="bi bi-graph-up"></i></span>
+          <div class="kpi-label">Proj. Ø Auslastung</div>
+          <div class="kpi-value"><span id="fc-kpi-occ">—</span><span class="kpi-unit">%</span></div>
+          <div class="kpi-sub" id="fc-kpi-occ-sub"></div>
+        </div>
+        <div class="kpi-card kpi-warn">
+          <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+          <div class="kpi-label">Kritischste Abt.</div>
+          <div class="kpi-value" style="font-size:20px;line-height:1.2" id="fc-kpi-peak-dept">—</div>
+          <div class="kpi-sub" id="fc-kpi-peak-val"></div>
+        </div>
+        <div class="kpi-card kpi-green">
+          <span class="kpi-icon"><i class="bi bi-people-fill"></i></span>
+          <div class="kpi-label">Ø Personalbedarf / Tag</div>
+          <div class="kpi-value"><span id="fc-kpi-nurses">—</span><span class="kpi-unit">Pers.</span></div>
+          <div class="kpi-sub" id="fc-kpi-nurses-sub"></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #8E44AD">
+          <span class="kpi-icon" style="color:#8E44AD"><i class="bi bi-activity"></i></span>
+          <div class="kpi-label">Ø Komplexitätsindex</div>
+          <div class="kpi-value"><span id="fc-kpi-complexity">—</span></div>
+          <div class="kpi-sub" id="fc-kpi-complexity-sub"></div>
+        </div>
+      </div>
+
+      <!-- Forecast chart -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <i class="bi bi-graph-up-arrow" style="color:var(--kispi-teal)"></i>
+          <h3>Belegungsprognose <span id="fc-chart-title">— Nächste 7 Tage</span></h3>
+          <span class="text-sm text-muted" style="margin-left:auto" id="fc-chart-method"></span>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap-lg"><canvas id="chart-forecast-occ"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Staffing needs table -->
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-people-fill" style="color:var(--success)"></i>
+          <h3>Personalbedarf-Prognose — Pro Abteilung</h3>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="belegung-table">
+            <thead>
+              <tr>
+                <th>Abteilung</th>
+                <th class="text-center">Proj. Auslastung</th>
+                <th class="text-center">Proj. Betten belegt</th>
+                <th class="text-center">Qual. Pflegepersonen</th>
+                <th class="text-center">Komplexität</th>
+                <th class="text-center">Ø NEMS / Barthel</th>
+                <th class="text-center">Trend vs. Heute</th>
+              </tr>
+            </thead>
+            <tbody id="fc-staff-tbody"><!-- JS --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </div><!-- end page-content -->
 </main>
 
@@ -901,9 +1000,9 @@
 </div>
 
 <!-- Scripts -->
-<script src="js/data.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/app.js"></script>
+<script src="js/data.js?v=20260524b"></script>
+<script src="js/charts.js?v=20260524b"></script>
+<script src="js/app.js?v=20260524b"></script>
 
 </body>
 </html>
