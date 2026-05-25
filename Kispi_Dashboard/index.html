@@ -1488,32 +1488,39 @@
       <!-- Section B: Freizeit / Überstunden -->
       <div id="rel-section-free" style="display:none">
         <div class="form-group" style="margin-bottom:16px">
-          <label class="form-label">Art der Massnahme <span style="color:#E63946">*</span></label>
+          <label class="form-label">Art der Massnahme <span style="color:#E63946">*</span> <span style="font-weight:400;color:var(--text-light)">(Mehrfachauswahl möglich)</span></label>
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
-            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:background 0.1s" id="rel-comp-opt-1">
-              <input type="radio" name="rel-comp-type" value="freizeit" onchange="updateReleaseEmailPreview()" style="margin-top:2px;accent-color:#2CB3E3">
+
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px">
+              <input type="checkbox" id="rel-comp-betrieb" value="betrieb" onchange="updateReleaseEmailPreview()" style="margin-top:3px;accent-color:#2CB3E3;width:15px;height:15px;flex-shrink:0">
               <div>
-                <div style="font-weight:600;font-size:13px">Freizeit gewähren</div>
-                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Geleistete Stunden werden als Freizeit kompensiert</div>
+                <div style="font-weight:600;font-size:13px">Frei geben (betrieblich angeordnet)</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Mitarbeitende/r wird für diesen Dienst betrieblich freigestellt</div>
               </div>
             </label>
-            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:background 0.1s" id="rel-comp-opt-2">
-              <input type="radio" name="rel-comp-type" value="auszahlung" onchange="updateReleaseEmailPreview()" style="margin-top:2px;accent-color:#2CB3E3">
+
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px">
+              <input type="checkbox" id="rel-comp-uez" value="uez" onchange="updateReleaseEmailPreview()" style="margin-top:3px;accent-color:#2CB3E3;width:15px;height:15px;flex-shrink:0">
               <div>
-                <div style="font-weight:600;font-size:13px">Überstunden ausbezahlen</div>
-                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Überstunden werden mit dem nächsten Lohn vergütet</div>
+                <div style="font-weight:600;font-size:13px">Überstunden-Kompensation</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Geleistete Mehrarbeit wird als Kompensationszeit angerechnet</div>
               </div>
             </label>
-            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:background 0.1s" id="rel-comp-opt-3">
-              <input type="radio" name="rel-comp-type" value="beides" onchange="updateReleaseEmailPreview()" style="margin-top:2px;accent-color:#2CB3E3">
-              <div>
-                <div style="font-weight:600;font-size:13px">Freizeit + Überstunden-Kompensation</div>
-                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Teilweise Freizeit, teilweise Auszahlung (wird separat geregelt)</div>
+
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px">
+              <input type="checkbox" id="rel-comp-other" value="other" onchange="toggleRelCompOther();updateReleaseEmailPreview()" style="margin-top:3px;accent-color:#2CB3E3;width:15px;height:15px;flex-shrink:0">
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:13px">Individuelle Abmachung / Sonstiges</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Freie Eingabe für individuelle Regelungen</div>
+                <textarea id="rel-comp-other-text" style="display:none;width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;min-height:70px"
+                  placeholder="z.B. Anfrage, ob an einem anderen Tag dafür ein Dienst übernommen werden kann…"
+                  oninput="updateReleaseEmailPreview()"></textarea>
               </div>
             </label>
+
           </div>
           <div id="rel-comp-err" style="display:none;font-size:11px;color:#E63946;margin-top:6px">
-            <i class="bi bi-exclamation-triangle-fill"></i> Bitte eine Massnahme auswählen.
+            <i class="bi bi-exclamation-triangle-fill"></i> Bitte mindestens eine Massnahme auswählen.
           </div>
         </div>
       </div>
@@ -1596,7 +1603,7 @@
 <!-- Scripts -->
 <script src="js/data.js?v=20260525g"></script>
 <script src="js/charts.js?v=20260524j"></script>
-<script src="js/app.js?v=20260525l"></script>
+<script src="js/app.js?v=20260525m"></script>
 
 </body>
 </html>

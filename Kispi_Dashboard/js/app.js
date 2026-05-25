@@ -1060,8 +1060,12 @@ function openPoolReleaseModal(deptId) {
   const shiftSel = document.getElementById('pool-release-target-shift');
   if (shiftSel) shiftSel.value = d.shift || 'F';
 
-  // Reset radio buttons
-  document.querySelectorAll('input[name="rel-comp-type"]').forEach(r => r.checked = false);
+  // Reset checkboxes + hide other-text
+  ['rel-comp-betrieb','rel-comp-uez','rel-comp-other'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.checked = false;
+  });
+  const otherTa = document.getElementById('rel-comp-other-text');
+  if (otherTa) { otherTa.style.display = 'none'; otherTa.value = ''; }
   // Reset note
   const noteEl = document.getElementById('pool-release-note');
   if (noteEl) noteEl.value = '';
@@ -1072,6 +1076,20 @@ function openPoolReleaseModal(deptId) {
   // Default to Zuweisung
   setReleaseAction('assign');
   document.getElementById('pool-release-modal-overlay').classList.add('open');
+}
+
+function toggleRelCompOther() {
+  const checked = document.getElementById('rel-comp-other')?.checked;
+  const ta = document.getElementById('rel-comp-other-text');
+  if (ta) {
+    ta.style.display = checked ? 'block' : 'none';
+    if (checked) ta.focus();
+  }
+  // Hide error if any box is now checked
+  const anyChecked = ['rel-comp-betrieb','rel-comp-uez','rel-comp-other']
+    .some(id => document.getElementById(id)?.checked);
+  const err = document.getElementById('rel-comp-err');
+  if (err && anyChecked) err.style.display = 'none';
 }
 
 function setReleaseAction(type) {
@@ -1106,6 +1124,11 @@ function setReleaseAction(type) {
 
 function updateReleaseEmailPreview() {
   if (!poolReleaseCtx) return;
+  // Clear the "please select" error as soon as any option is ticked
+  const anyChecked = ['rel-comp-betrieb','rel-comp-uez','rel-comp-other']
+    .some(id => document.getElementById(id)?.checked);
+  const compErr = document.getElementById('rel-comp-err');
+  if (compErr && anyChecked) compErr.style.display = 'none';
   const note    = (document.getElementById('pool-release-note')?.value || '').trim();
   const { deptName, count } = poolReleaseCtx;
   const today   = new Date().toLocaleDateString('de-CH', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1120,13 +1143,20 @@ function updateReleaseEmailPreview() {
       ? `Du wirst für den <strong>${shiftCfg?.label}</strong> der Abteilung <strong>${targetDept.name}</strong> (${targetDept.fullName}) eingeplant.`
       : `Du stehst für den nächsten Dienst wieder im Pool zur Verfügung.`;
   } else {
-    const sel = document.querySelector('input[name="rel-comp-type"]:checked')?.value;
-    const compMap = {
-      freizeit:   'Deine geleisteten Stunden werden als <strong>Freizeit</strong> kompensiert.',
-      auszahlung: 'Deine Überstunden werden mit dem nächsten Lohn <strong>ausbezahlt</strong>.',
-      beides:     'Deine Überstunden werden teilweise als <strong>Freizeit</strong> kompensiert und teilweise <strong>ausbezahlt</strong>. Details werden separat geregelt.',
-    };
-    actionText = sel ? compMap[sel] : '<em style="color:var(--text-light)">(Bitte Massnahme auswählen)</em>';
+    const parts = [];
+    if (document.getElementById('rel-comp-betrieb')?.checked)
+      parts.push('Du wirst für diesen Dienst <strong>betrieblich freigestellt</strong>.');
+    if (document.getElementById('rel-comp-uez')?.checked)
+      parts.push('Die geleistete Mehrarbeit wird dir als <strong>Überstunden-Kompensation</strong> angerechnet.');
+    const otherChecked = document.getElementById('rel-comp-other')?.checked;
+    const otherText = (document.getElementById('rel-comp-other-text')?.value || '').trim();
+    if (otherChecked && otherText)
+      parts.push(`<em>${otherText}</em>`);
+    else if (otherChecked)
+      parts.push('<em>(Individuelle Abmachung — Details folgen)</em>');
+    actionText = parts.length
+      ? parts.join(' ')
+      : '<em style="color:var(--text-light)">(Bitte mindestens eine Massnahme auswählen)</em>';
   }
 
   const previewEl = document.getElementById('pool-release-email-preview');
@@ -1144,10 +1174,11 @@ function closePoolReleaseModal() {
 }
 
 function confirmPoolReleaseModal() {
-  // Validate: if 'free' action, a compensation type must be selected
+  // Validate: if 'free' action, at least one checkbox must be checked
   if (poolReleaseAction === 'free') {
-    const sel = document.querySelector('input[name="rel-comp-type"]:checked');
-    if (!sel) {
+    const anyChecked = ['rel-comp-betrieb','rel-comp-uez','rel-comp-other']
+      .some(id => document.getElementById(id)?.checked);
+    if (!anyChecked) {
       const err = document.getElementById('rel-comp-err');
       if (err) err.style.display = 'block';
       return;
@@ -1178,10 +1209,14 @@ function confirmPoolReleaseModal() {
     relEl.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Freigaben</p></div>';
   }
 
+  const chosenMeasures = [];
+  if (document.getElementById('rel-comp-betrieb')?.checked) chosenMeasures.push('Betriebliche Freistellung');
+  if (document.getElementById('rel-comp-uez')?.checked)     chosenMeasures.push('ÜZ-Kompensation');
+  if (document.getElementById('rel-comp-other')?.checked)   chosenMeasures.push('Individuelle Abmachung');
   const msg = action === 'assign' && targetDeptName
     ? `Freigabe bestätigt. Zuweisung an ${targetDeptName}. E-Mail gesendet.`
-    : action === 'free'
-    ? `Freigabe bestätigt. ${compType === 'freizeit' ? 'Freizeit' : compType === 'auszahlung' ? 'Überstunden-Auszahlung' : 'Freizeit + Auszahlung'} veranlasst. E-Mail gesendet.`
+    : action === 'free' && chosenMeasures.length
+    ? `Freigabe bestätigt. ${chosenMeasures.join(' + ')}. E-Mail gesendet.`
     : `Freigabe bestätigt. E-Mail an Mitarbeitenden gesendet.`;
   showToast(msg);
 }
