@@ -706,6 +706,85 @@ const ASA_CLASSES = ['I', 'II', 'III', 'IV', 'V'];
 const ANESTHESIA_TYPES = ['Allgemeinanästhesie', 'Regionalanästhesie', 'Lokalanästhesie', 'Kombiniert', 'Spinalanästhesie'];
 const EMERGENCY_LEVELS = ['Sofort (S0)', 'Dringlich (S1)', 'Nicht-dringlich (S2)'];
 
+// ── Pool-Ressourcen Generator ────────────────────────────────
+
+const POOL_ROLE_GROUPS = [
+  {
+    id: 'qual', label: 'Qualifizierte Pflege',
+    roles: [
+      { id: 'pfn_hf',  label: 'Dipl. Pflegefachperson HF', shortLabel: 'PFP HF' },
+      { id: 'exp_int', label: 'Experte/in NDS HF Intensiv',  shortLabel: 'Exp. Int.' },
+      { id: 'exp_nf',  label: 'Experte/in NDS HF Notfall',   shortLabel: 'Exp. NF' },
+    ]
+  },
+  {
+    id: 'ausb', label: 'Ausbildung',
+    roles: [
+      { id: 'stud_hf3', label: 'Student·in HF 3. Jahr', shortLabel: 'Stud. HF 3.J' },
+      { id: 'stud_hf2', label: 'Student·in HF 2. Jahr', shortLabel: 'Stud. HF 2.J' },
+      { id: 'stud_hf1', label: 'Student·in HF 1. Jahr', shortLabel: 'Stud. HF 1.J' },
+    ]
+  },
+  {
+    id: 'asst', label: 'Assistenz',
+    roles: [
+      { id: 'fage_efz', label: 'FaGe EFZ',              shortLabel: 'FaGe EFZ' },
+      { id: 'lern_fa2', label: 'Lernende FaGe 2. Jahr', shortLabel: 'Lern. FaGe 2.J' },
+      { id: 'pfh_ags',  label: 'Pflegehilfe / AGS',     shortLabel: 'PFH / AGS' },
+    ]
+  }
+];
+
+// Base pool availability per role per shift type
+const POOL_BASE = {
+  pfn_hf:   { F: 5, S: 4, N: 2 },
+  exp_int:  { F: 2, S: 1, N: 1 },
+  exp_nf:   { F: 1, S: 1, N: 0 },
+  stud_hf3: { F: 3, S: 2, N: 1 },
+  stud_hf2: { F: 2, S: 2, N: 0 },
+  stud_hf1: { F: 2, S: 1, N: 0 },
+  fage_efz: { F: 3, S: 2, N: 1 },
+  lern_fa2: { F: 2, S: 1, N: 0 },
+  pfh_ags:  { F: 2, S: 2, N: 1 },
+};
+
+function generatePoolResources() {
+  const today  = new Date();
+  const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const allRoles = POOL_ROLE_GROUPS.flatMap(g => g.roles);
+  const days = [];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    const dateStr   = d.toISOString().split('T')[0];
+    const dateLabel = `${weekdays[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
+
+    const shifts = {};
+    ['F', 'S', 'N'].forEach(shiftId => {
+      const byRole = {};
+      let totalAvail = 0, totalAssigned = 0;
+      allRoles.forEach((role, ri) => {
+        let base = POOL_BASE[role.id]?.[shiftId] ?? 0;
+        if (isWeekend) base = Math.floor(base * 0.6);
+        // Deterministic variance using day+shift+role index
+        const seed = ((i * 3 + ['F','S','N'].indexOf(shiftId)) * allRoles.length + ri) % 5;
+        const avail    = Math.max(0, base + (seed === 4 ? 1 : seed === 0 ? -1 : 0));
+        const assigned = Math.min(avail, Math.floor(avail * 0.25) + (seed === 2 && avail > 0 ? 1 : 0));
+        byRole[role.id] = { available: avail, assigned };
+        totalAvail    += avail;
+        totalAssigned += assigned;
+      });
+      shifts[shiftId] = { byRole, total_available: totalAvail, total_assigned: totalAssigned };
+    });
+
+    days.push({ date: dateStr, dateLabel, isWeekend, dayIndex: i, shifts });
+  }
+
+  return { roleGroups: POOL_ROLE_GROUPS, days };
+}
+
 // ── Globaler App-State ───────────────────────────────────────
 
 const AppState = {
@@ -714,12 +793,14 @@ const AppState = {
   orProcedures:     [],
   anticipated:      [],
   alerts:           [],
+  poolResources:    null,
   lastRefresh:      null,
 
   init() {
     this.currentShiftData = generateCurrentShiftData();
     this.historicalData   = generateHistoricalData();
     this.orProcedures     = generateORProcedures();
+    this.poolResources    = generatePoolResources();
     this.lastRefresh      = new Date();
     // Merge custom/modified procedures from localStorage
     const custom = this.getCustomProcedures();
@@ -749,6 +830,7 @@ const AppState = {
     this.historicalData   = generateHistoricalData();
     this._mergeShiftHistory();
     this.anticipated      = generateAnticipatedOccupancy(this.historicalData, this.orProcedures);
+    this.poolResources    = generatePoolResources();
     this.lastRefresh      = new Date();
     this.buildAlerts();
   },
