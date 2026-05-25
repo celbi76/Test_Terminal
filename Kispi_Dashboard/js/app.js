@@ -931,41 +931,181 @@ function renderPoolReservationsList() {
   container.innerHTML = html;
 }
 
+// Track cards dismissed in this session (reset on page reload)
+const _handledPoolActions = new Set();
+
 function renderPoolCards() {
   const reqEl = document.getElementById('pool-requests-container');
   const relEl = document.getElementById('pool-releases-container');
 
-  const requests = AppState.currentShiftData.filter(d => d.pool_request);
-  const releases = AppState.currentShiftData.filter(d => d.pool_release);
+  const requests = AppState.currentShiftData.filter(d => d.pool_request && !_handledPoolActions.has(`req-${d.department_id}`));
+  const releases = AppState.currentShiftData.filter(d => d.pool_release && !_handledPoolActions.has(`rel-${d.department_id}`));
 
   if (reqEl) reqEl.innerHTML = requests.length ? requests.map(d => {
     const dept = DEPARTMENTS.find(x => x.id === d.department_id);
-    return `<div class="pool-card">
+    return `<div class="pool-card" id="pool-req-card-${dept.id}">
       <div class="pool-card-header"><span class="station-dot" style="background:${dept.color}"></span><span class="pool-card-dept">${dept.name}</span></div>
       <span class="pool-card-count">${d.pool_request_count}</span>
       <span class="pool-card-unit">Person${d.pool_request_count>1?'en':''} benötigt</span>
       <div class="pool-card-reason">Belegung: ${d.occupancy_pct}% · Barthel Ø: ${d.barthel_avg_score ?? 'NEMS'} · Abdeckung: ${d.staff_coverage_pct}%</div>
-      <button class="pool-action-btn confirm" onclick="confirmPoolRequest('${d.department_id}')">Pool-Anfrage bestätigen</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="pool-action-btn confirm" style="flex:1" onclick="confirmPoolRequest('${dept.id}')">
+          <i class="bi bi-check-circle-fill"></i> Anfrage bestätigen
+        </button>
+        <button class="pool-action-btn" style="flex:1;background:#FEF2F2;color:#E63946;border:1px solid #FECACA" onclick="openPoolReqReject('${dept.id}')">
+          <i class="bi bi-slash-circle"></i> Ablehnen
+        </button>
+      </div>
     </div>`;
   }).join('') : '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Pool-Anfragen</p></div>';
 
   if (relEl) relEl.innerHTML = releases.length ? releases.map(d => {
     const dept = DEPARTMENTS.find(x => x.id === d.department_id);
-    return `<div class="pool-card release">
+    return `<div class="pool-card release" id="pool-rel-card-${dept.id}">
       <div class="pool-card-header"><span class="station-dot" style="background:${dept.color}"></span><span class="pool-card-dept">${dept.name}</span></div>
       <span class="pool-card-count">${d.pool_release_count}</span>
       <span class="pool-card-unit">Person${d.pool_release_count>1?'en':''} freigeben</span>
       <div class="pool-card-reason">Belegung: ${d.occupancy_pct}% · Abdeckung: ${d.staff_coverage_pct}%</div>
-      <button class="pool-action-btn release-btn" onclick="confirmPoolRelease('${d.department_id}')">Freigabe bestätigen</button>
+      <button class="pool-action-btn release-btn" onclick="openPoolReleaseModal('${dept.id}')">
+        <i class="bi bi-person-up"></i> Freigabe bestätigen
+      </button>
     </div>`;
   }).join('') : '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Freigaben</p></div>';
 }
 
 function confirmPoolRequest(deptId) {
-  showToast(`Pool-Anfrage für ${DEPARTMENTS.find(x=>x.id===deptId)?.name} weitergeleitet.`);
+  _handledPoolActions.add(`req-${deptId}`);
+  const card = document.getElementById(`pool-req-card-${deptId}`);
+  if (card) card.remove();
+  const reqEl = document.getElementById('pool-requests-container');
+  if (reqEl && !reqEl.querySelector('.pool-card')) {
+    reqEl.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Pool-Anfragen</p></div>';
+  }
+  showToast(`Pool-Anfrage von ${DEPARTMENTS.find(x=>x.id===deptId)?.name} bestätigt und weitergeleitet.`);
 }
-function confirmPoolRelease(deptId) {
-  showToast(`Personalfreigabe für ${DEPARTMENTS.find(x=>x.id===deptId)?.name} bestätigt.`);
+
+// ── Pool-Anfrage ablehnen ─────────────────────────────────
+let poolReqRejectCtx = null;
+
+function openPoolReqReject(deptId) {
+  const d    = AppState.currentShiftData.find(x => x.department_id === deptId);
+  const dept = DEPARTMENTS.find(x => x.id === deptId);
+  if (!d || !dept) return;
+  poolReqRejectCtx = { deptId, deptName: dept.name };
+  const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === d.shift) || POOL_SHIFTS_CFG[0];
+  setEl('pool-req-reject-dept',   `${dept.name} — ${dept.fullName}`);
+  setEl('pool-req-reject-detail', `${d.pool_request_count} Person${d.pool_request_count>1?'en':''} angefragt · ${shiftCfg.label} · Belegung ${d.occupancy_pct}%`);
+  const ta  = document.getElementById('pool-req-reject-reason');
+  const err = document.getElementById('pool-req-reject-err');
+  const btn = document.getElementById('pool-req-reject-btn');
+  if (ta)  ta.value = '';
+  if (err) err.style.display = 'none';
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }
+  document.getElementById('pool-req-reject-overlay').classList.add('active');
+}
+
+function closePoolReqReject() {
+  poolReqRejectCtx = null;
+  document.getElementById('pool-req-reject-overlay').classList.remove('active');
+}
+
+function validatePoolReqRejectForm() {
+  const val = (document.getElementById('pool-req-reject-reason')?.value || '').trim();
+  const btn = document.getElementById('pool-req-reject-btn');
+  if (btn) { btn.disabled = !val; btn.style.opacity = val ? '1' : '0.5'; btn.style.cursor = val ? 'pointer' : 'not-allowed'; }
+}
+
+function confirmPoolReqReject() {
+  const reason = (document.getElementById('pool-req-reject-reason')?.value || '').trim();
+  if (!reason) {
+    const err = document.getElementById('pool-req-reject-err');
+    if (err) err.style.display = 'block';
+    document.getElementById('pool-req-reject-reason')?.focus();
+    return;
+  }
+  const deptId = poolReqRejectCtx?.deptId;
+  closePoolReqReject();
+  _handledPoolActions.add(`req-${deptId}`);
+  const card = document.getElementById(`pool-req-card-${deptId}`);
+  if (card) card.remove();
+  const reqEl = document.getElementById('pool-requests-container');
+  if (reqEl && !reqEl.querySelector('.pool-card')) {
+    reqEl.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Pool-Anfragen</p></div>';
+  }
+  showToast(`Pool-Anfrage von ${DEPARTMENTS.find(x=>x.id===deptId)?.name} abgelehnt.`);
+}
+
+// ── Personalfreigabe Modal ────────────────────────────────
+let poolReleaseCtx = null;
+
+function openPoolReleaseModal(deptId) {
+  const d    = AppState.currentShiftData.find(x => x.department_id === deptId);
+  const dept = DEPARTMENTS.find(x => x.id === deptId);
+  if (!d || !dept) return;
+  const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === d.shift) || POOL_SHIFTS_CFG[0];
+  poolReleaseCtx = { deptId, deptName: dept.name, count: d.pool_release_count, shift: d.shift, shiftLabel: shiftCfg.label };
+
+  setEl('pool-release-dept-info',  `${dept.name} — ${dept.fullName}`);
+  setEl('pool-release-shift-info', `${d.pool_release_count} Person${d.pool_release_count>1?'en':''} · ${shiftCfg.label} · Belegung ${d.occupancy_pct}%`);
+
+  // Fill target dept dropdown (exclude source dept)
+  const sel = document.getElementById('pool-release-target-dept');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Zurück in den Pool —</option>' +
+      DEPARTMENTS.filter(x => x.id !== deptId)
+        .map(x => `<option value="${x.id}">${x.name} — ${x.fullName}</option>`).join('');
+  }
+  // Pre-select same shift
+  const shiftSel = document.getElementById('pool-release-target-shift');
+  if (shiftSel) shiftSel.value = d.shift || 'F';
+  // Clear note
+  const noteEl = document.getElementById('pool-release-note');
+  if (noteEl) noteEl.value = '';
+
+  updateReleaseEmailPreview();
+  document.getElementById('pool-release-modal-overlay').classList.add('active');
+}
+
+function updateReleaseEmailPreview() {
+  if (!poolReleaseCtx) return;
+  const targetDeptId = document.getElementById('pool-release-target-dept')?.value;
+  const targetShiftId = document.getElementById('pool-release-target-shift')?.value || 'F';
+  const note = (document.getElementById('pool-release-note')?.value || '').trim();
+  const targetDept = DEPARTMENTS.find(x => x.id === targetDeptId);
+  const shiftCfg   = POOL_SHIFTS_CFG.find(x => x.id === targetShiftId);
+  const { deptName, count } = poolReleaseCtx;
+  const today = new Date().toLocaleDateString('de-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  let assignment = targetDept
+    ? `Du wirst für den <strong>${shiftCfg?.label}</strong> der Abteilung <strong>${targetDept.name}</strong> (${targetDept.fullName}) eingeplant.`
+    : `Du stehst für den nächsten Dienst wieder im Pool zur Verfügung.`;
+
+  const previewEl = document.getElementById('pool-release-email-preview');
+  if (previewEl) previewEl.innerHTML = `
+    <em>Betreff: Dienstübergabe Kinderspital Zürich — ${today}</em><br><br>
+    Guten Tag,<br><br>
+    Du wirst von der Abteilung <strong>${deptName}</strong> freigestellt.<br>
+    ${assignment}${note ? `<br><br>Notiz: <em>${note}</em>` : ''}<br><br>
+    Bei Fragen wende dich bitte an die Pool-MA oder die Pflegedienstleitung.
+  `;
+}
+
+function closePoolReleaseModal() {
+  poolReleaseCtx = null;
+  document.getElementById('pool-release-modal-overlay').classList.remove('active');
+}
+
+function confirmPoolReleaseModal() {
+  const deptId = poolReleaseCtx?.deptId;
+  closePoolReleaseModal();
+  _handledPoolActions.add(`rel-${deptId}`);
+  const card = document.getElementById(`pool-rel-card-${deptId}`);
+  if (card) card.remove();
+  const relEl = document.getElementById('pool-releases-container');
+  if (relEl && !relEl.querySelector('.pool-card')) {
+    relEl.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Freigaben</p></div>';
+  }
+  showToast(`Freigabe bestätigt. E-Mail an Mitarbeitenden gesendet.`);
 }
 
 // ── OR PAGE ──────────────────────────────────────────────────
