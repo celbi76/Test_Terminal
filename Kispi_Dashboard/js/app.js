@@ -582,6 +582,16 @@ function renderStaffingPage() {
 
 // ── POOL PAGE ─────────────────────────────────────────────────
 
+let poolDayActive = 0;
+let poolReserveCtx = null; // { date, dateLabel, shift, shiftLabel, role_id, role_label, freeSlots }
+
+function setPoolDay(idx) {
+  poolDayActive = idx;
+  const days = AppState.poolResources?.days || [];
+  days.forEach((_, i) => document.getElementById(`pool-day-tab-${i}`)?.classList.toggle('active', i === idx));
+  buildPoolResourcesTable();
+}
+
 function renderPoolPage() {
   const data = AppState.poolResources;
   if (!data) return;
@@ -595,7 +605,18 @@ function renderPoolPage() {
   setEl('pool-kpi-s',     Math.round(tS / 7));
   setEl('pool-kpi-n',     Math.round(tN / 7));
 
+  // Build day tabs
+  const tabContainer = document.getElementById('pool-day-tabs');
+  if (tabContainer) {
+    tabContainer.innerHTML = days.map((d, i) => `
+      <button class="date-filter-btn${i === 0 ? ' active' : ''}" id="pool-day-tab-${i}" onclick="setPoolDay(${i})">
+        ${d.dateLabel}${d.isWeekend ? ' <span style="font-size:9px;opacity:0.65">WE</span>' : ''}
+      </button>`).join('');
+  }
+
+  poolDayActive = 0;
   buildPoolResourcesTable();
+  renderPoolReservationsList();
   renderPoolCards();
   renderPoolBedarfList();
 }
@@ -650,17 +671,24 @@ function renderPoolBedarfList() {
   container.innerHTML = sorted.map(e => buildBedarfItemHtml(e)).join('');
 }
 
+const POOL_SHIFTS_CFG = [
+  { id: 'F', label: 'Frühdienst',  color: '#2CB3E3', bg: 'rgba(44,179,227,0.09)'  },
+  { id: 'S', label: 'Spätdienst',  color: '#F7941D', bg: 'rgba(247,148,29,0.09)'  },
+  { id: 'N', label: 'Nachtdienst', color: '#5A67D8', bg: 'rgba(90,103,216,0.09)'  },
+];
+
 function buildPoolResourcesTable() {
   const data = AppState.poolResources;
   if (!data) return;
   const { roleGroups, days } = data;
+  const day      = days[poolDayActive];
+  if (!day) return;
   const allRoles = roleGroups.flatMap(g => g.roles);
 
-  const SHIFTS_CFG = [
-    { id: 'F', label: 'Frühdienst',  short: 'F',  color: '#2CB3E3', bg: 'rgba(44,179,227,0.08)' },
-    { id: 'S', label: 'Spätdienst',  short: 'S',  color: '#F7941D', bg: 'rgba(247,148,29,0.08)'  },
-    { id: 'N', label: 'Nachtdienst', short: 'N',  color: '#5A67D8', bg: 'rgba(90,103,216,0.08)'  },
-  ];
+  // Active reservations for this day
+  const resvs = AppState.getPoolReservations().filter(r => r.date === day.date && r.status === 'aktiv');
+  const resMap = {}; // key: `${shiftId}_${roleId}` → count
+  resvs.forEach(r => { const k = `${r.shift}_${r.role_id}`; resMap[k] = (resMap[k] || 0) + 1; });
 
   const thead = document.getElementById('pool-resources-thead');
   const tbody = document.getElementById('pool-resources-tbody');
@@ -669,10 +697,10 @@ function buildPoolResourcesTable() {
   if (thead) {
     thead.innerHTML = `
       <tr>
-        <th rowspan="2" style="white-space:nowrap">Datum</th>
         <th rowspan="2" style="white-space:nowrap">Schicht</th>
         ${roleGroups.map(g => `<th colspan="${g.roles.length}" style="text-align:center;font-size:10px;color:var(--text-light);border-bottom:1px solid #E2E8F0;letter-spacing:0.5px">${g.label.toUpperCase()}</th>`).join('')}
-        <th rowspan="2" style="white-space:nowrap;text-align:center">Total</th>
+        <th rowspan="2" style="text-align:center;white-space:nowrap">Frei</th>
+        <th rowspan="2" style="text-align:center;white-space:nowrap">Reserviert</th>
       </tr>
       <tr>
         ${allRoles.map(r => `<th style="font-size:10px;text-align:center;border-top:1px solid #E2E8F0;white-space:nowrap">${r.shortLabel}</th>`).join('')}
@@ -680,50 +708,157 @@ function buildPoolResourcesTable() {
   }
 
   if (tbody) {
-    tbody.innerHTML = days.map((day, di) => {
-      const dayBg = day.isWeekend ? '#F0F4F8' : (di % 2 === 0 ? '#FFFFFF' : '#FAFBFC');
-      return SHIFTS_CFG.map((sc, si) => {
-        const s      = day.shifts[sc.id];
-        const tColor = s.total_available >= 15 ? 'var(--success)' : s.total_available >= 8 ? 'var(--warning)' : 'var(--danger)';
-        const cells  = allRoles.map(r => {
-          const avail = s.byRole[r.id]?.available ?? 0;
-          return `<td style="text-align:center;color:${avail === 0 ? '#CBD5E0' : 'var(--text-dark)'}">${avail || '—'}</td>`;
-        }).join('');
+    tbody.innerHTML = POOL_SHIFTS_CFG.map(sc => {
+      const s       = day.shifts[sc.id];
+      const shiftRes = Object.entries(resMap).filter(([k]) => k.startsWith(sc.id + '_')).reduce((a,[,v])=>a+v, 0);
+      const free    = Math.max(0, s.total_available - shiftRes);
+      const fColor  = free >= 12 ? 'var(--success)' : free >= 5 ? 'var(--warning)' : 'var(--danger)';
 
-        const dateCell = si === 0 ? `<td rowspan="3" style="vertical-align:middle;background:${dayBg};font-weight:600;white-space:nowrap;border-right:2px solid #E2E8F0;padding:8px 12px">
-          ${day.dateLabel}
-          ${day.isWeekend ? `<span style="display:block;margin-top:4px;font-size:9px;background:#EDF2FF;color:#5A67D8;border-radius:4px;padding:1px 6px;font-weight:700;width:fit-content">WE</span>` : ''}
-          ${day.dayIndex === 0 ? `<span style="display:block;margin-top:4px;font-size:9px;background:#E6FFF0;color:#1A7A3A;border-radius:4px;padding:1px 6px;font-weight:700;width:fit-content">Heute</span>` : ''}
-        </td>` : '';
-
-        const topBorder = si === 0 ? 'border-top:2px solid #CBD5E0' : '';
-        return `<tr style="background:${dayBg}">
-          ${dateCell}
-          <td style="white-space:nowrap;${topBorder}">
-            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:${sc.color};background:${sc.bg};padding:2px 8px;border-radius:10px">${sc.label}</span>
-          </td>
-          ${cells}
-          <td style="text-align:center;font-weight:700;color:${tColor};${topBorder}">${s.total_available}</td>
-        </tr>`;
+      const cells = allRoles.map(r => {
+        const total = s.byRole[r.id]?.available ?? 0;
+        const res   = resMap[`${sc.id}_${r.id}`] || 0;
+        const avail = Math.max(0, total - res);
+        if (total === 0) return `<td style="text-align:center;color:#CBD5E0">—</td>`;
+        const clickable = avail > 0;
+        const clickAttr = clickable
+          ? `onclick="openPoolReserve('${day.date}','${day.dateLabel}','${sc.id}','${sc.label}','${r.id}','${r.label}',${avail})" title="Klicken zum Reservieren" style="cursor:pointer;text-align:center"`
+          : `style="text-align:center"`;
+        const badge = res > 0 ? `<span style="font-size:9px;color:#E63946;margin-left:2px">-${res}</span>` : '';
+        return `<td ${clickAttr}>
+          <span style="font-weight:700;color:${clickable ? sc.color : '#A0AEC0'};${clickable?'text-decoration:underline dotted':''};">${avail}</span>${badge}
+        </td>`;
       }).join('');
+
+      return `<tr>
+        <td style="background:${sc.bg};white-space:nowrap;padding:7px 12px">
+          <span style="font-size:12px;font-weight:700;color:${sc.color}">${sc.label}</span>
+          <div style="font-size:10px;color:var(--text-light);margin-top:1px">${SHIFTS.find(x=>x.id===sc.id)?.time || ''}</div>
+        </td>
+        ${cells}
+        <td style="text-align:center;font-weight:700;color:${fColor}">${free}</td>
+        <td style="text-align:center;color:${shiftRes > 0 ? '#E63946' : '#A0AEC0'};font-weight:${shiftRes > 0 ? '700' : '400'}">${shiftRes || '—'}</td>
+      </tr>`;
     }).join('');
   }
 
   if (tfoot) {
-    tfoot.innerHTML = SHIFTS_CFG.map(sc => {
-      const roleSums = allRoles.map(r => {
-        const sum = days.reduce((acc, d) => acc + (d.shifts[sc.id].byRole[r.id]?.available || 0), 0);
-        return `<td style="text-align:center"><strong>${sum}</strong></td>`;
-      }).join('');
-      const gTotal = days.reduce((acc, d) => acc + d.shifts[sc.id].total_available, 0);
-      return `<tr class="staffing-total-row">
-        <td colspan="1"><strong>Total 7 Tage</strong></td>
-        <td><span style="font-size:11px;font-weight:700;color:${sc.color}">${sc.label}</span></td>
-        ${roleSums}
-        <td style="text-align:center"><strong>${gTotal}</strong></td>
-      </tr>`;
+    const roleSums = allRoles.map(r => {
+      const sum = POOL_SHIFTS_CFG.reduce((acc, sc) => {
+        const total = day.shifts[sc.id].byRole[r.id]?.available || 0;
+        const res   = resMap[`${sc.id}_${r.id}`] || 0;
+        return acc + Math.max(0, total - res);
+      }, 0);
+      return `<td style="text-align:center"><strong>${sum || '—'}</strong></td>`;
     }).join('');
+    const grandFree = POOL_SHIFTS_CFG.reduce((acc, sc) => {
+      const shiftRes = Object.entries(resMap).filter(([k])=>k.startsWith(sc.id+'_')).reduce((a,[,v])=>a+v,0);
+      return acc + Math.max(0, day.shifts[sc.id].total_available - shiftRes);
+    }, 0);
+    const grandRes  = Object.values(resMap).reduce((a,v)=>a+v, 0);
+    tfoot.innerHTML = `<tr class="staffing-total-row">
+      <td><strong>Total Tag</strong></td>
+      ${roleSums}
+      <td style="text-align:center"><strong>${grandFree}</strong></td>
+      <td style="text-align:center;color:${grandRes>0?'#E63946':'#A0AEC0'};font-weight:${grandRes>0?'700':'400'}">${grandRes || '—'}</td>
+    </tr>`;
   }
+}
+
+// ── Pool Reservation Modal ─────────────────────────────────────
+
+function openPoolReserve(date, dateLabel, shift, shiftLabel, roleId, roleLabel, freeSlots) {
+  poolReserveCtx = { date, dateLabel, shift, shiftLabel, role_id: roleId, role_label: roleLabel, freeSlots };
+  const overlay = document.getElementById('pool-reserve-overlay');
+  if (!overlay) return;
+
+  setEl('pool-reserve-info-role',  roleLabel);
+  setEl('pool-reserve-info-shift', `${shiftLabel} · ${date}`);
+  setEl('pool-reserve-info-free',  `${freeSlots} verfügbar`);
+
+  // Populate dept dropdown
+  const deptSel = document.getElementById('pool-reserve-dept');
+  if (deptSel) {
+    deptSel.innerHTML = '<option value="">— Abteilung wählen —</option>' +
+      DEPARTMENTS.map(d => `<option value="${d.id}">${d.name} — ${d.fullName}</option>`).join('');
+  }
+  document.getElementById('pool-reserve-note').value = '';
+  overlay.classList.add('open');
+}
+
+function closePoolReserve() {
+  document.getElementById('pool-reserve-overlay')?.classList.remove('open');
+  poolReserveCtx = null;
+}
+
+function confirmPoolReservation() {
+  const ctx    = poolReserveCtx;
+  const dept   = document.getElementById('pool-reserve-dept')?.value;
+  const note   = document.getElementById('pool-reserve-note')?.value?.trim();
+  if (!ctx || !dept) { showToast('Bitte eine Abteilung wählen.'); return; }
+  const deptObj = DEPARTMENTS.find(d => d.id === dept);
+  AppState.savePoolReservation({
+    id:           `res_${Date.now()}`,
+    date:         ctx.date,
+    dateLabel:    ctx.dateLabel,
+    shift:        ctx.shift,
+    shiftLabel:   ctx.shiftLabel,
+    role_id:      ctx.role_id,
+    role_label:   ctx.role_label,
+    dept_id:      dept,
+    dept_name:    deptObj?.name || dept,
+    reserved_by:  'Pflegeleitung',
+    reserved_at:  new Date().toISOString(),
+    status:       'aktiv',
+    notes:        note,
+  });
+  closePoolReserve();
+  buildPoolResourcesTable();
+  renderPoolReservationsList();
+  showToast(`${ctx.role_label} für ${deptObj?.name} (${ctx.shiftLabel}) reserviert.`);
+}
+
+function releasePoolReservation(id) {
+  AppState.releasePoolReservation(id);
+  buildPoolResourcesTable();
+  renderPoolReservationsList();
+  showToast('Pool-Ressource freigegeben.');
+}
+
+function renderPoolReservationsList() {
+  const container = document.getElementById('pool-reservations-list');
+  if (!container) return;
+  const all    = AppState.getPoolReservations();
+  const active = all.filter(r => r.status === 'aktiv').sort((a,b)=>a.date.localeCompare(b.date));
+  const freed  = all.filter(r => r.status === 'freigegeben').slice(-3);
+
+  if (!active.length && !freed.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:20px"><span class="empty-icon">✅</span><p>Keine aktiven Reservationen</p></div>`;
+    return;
+  }
+
+  const renderRow = (r, isFreed) => {
+    const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === r.shift);
+    const dept     = DEPARTMENTS.find(d => d.id === r.dept_id);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F0F0F0;${isFreed?'opacity:0.5':''}">
+      <span style="width:8px;height:8px;border-radius:50%;background:${dept?.color||'#CBD5E0'};flex-shrink:0;display:inline-block"></span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px">${r.role_label}</div>
+        <div style="font-size:11px;color:var(--text-light)">${r.dateLabel} · <span style="color:${shiftCfg?.color}">${r.shiftLabel}</span> → ${dept?.name || r.dept_name}</div>
+        ${r.notes ? `<div style="font-size:11px;color:var(--text-light);font-style:italic">${r.notes}</div>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        ${isFreed
+          ? `<span class="badge badge-green" style="font-size:10px">Freigegeben</span>`
+          : `<div style="font-size:10px;color:var(--text-light);text-align:right;margin-right:4px">Freigabe durch<br><strong>Pool-MA · PDL</strong></div>
+             <button class="btn-secondary" style="padding:4px 10px;font-size:11px" onclick="releasePoolReservation('${r.id}')">
+               <i class="bi bi-person-dash-fill"></i> Freigeben
+             </button>`}
+      </div>
+    </div>`;
+  };
+
+  container.innerHTML = active.map(r => renderRow(r, false)).join('') +
+    (freed.length ? `<div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;padding-top:4px">Zuletzt freigegeben</div>` + freed.map(r => renderRow(r, true)).join('') : '');
 }
 
 function renderPoolCards() {
