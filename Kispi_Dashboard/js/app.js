@@ -1499,15 +1499,14 @@ function buildForecastStaffingDetail() {
   if (thead) {
     thead.innerHTML = `
       <tr>
-        <th rowspan="2" style="white-space:nowrap;min-width:80px">Tag</th>
-        <th rowspan="2" style="white-space:nowrap;min-width:100px">Schicht</th>
-        <th rowspan="2" class="text-center" style="min-width:70px">Proj.<br>Betten</th>
-        <th rowspan="2" class="text-center" style="min-width:60px;border-left:2px solid var(--border)">Total<br>Pflege</th>
-        ${roles.map(r => `<th class="text-center" style="min-width:80px;font-size:11px;line-height:1.3">${r.label}</th>`).join('')}
-      </tr>
-      <tr>
-        <th style="border-left:2px solid var(--border)"></th>
-        ${roles.map(r => `<th class="text-center" style="font-size:10px;color:var(--text-muted);font-weight:500;padding:2px 8px">${(r.fraction * 100).toFixed(0)}% Anteil</th>`).join('')}
+        <th style="white-space:nowrap;min-width:80px">Tag</th>
+        <th style="white-space:nowrap;min-width:100px">Schicht</th>
+        <th class="text-center" style="min-width:70px">Proj.<br>Betten</th>
+        <th class="text-center" style="min-width:60px;border-left:2px solid var(--border)">Total<br>Pflege</th>
+        ${roles.map(r => `<th class="text-center" style="min-width:80px;font-size:11px;line-height:1.4">
+          ${r.label}<br>
+          <span style="font-size:10px;color:var(--text-muted);font-weight:500">${(r.fraction * 100).toFixed(0)}% Anteil</span>
+        </th>`).join('')}
       </tr>`;
   }
 
