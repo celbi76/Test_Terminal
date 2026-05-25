@@ -8,6 +8,7 @@ let selectedDept    = null;
 let selectedShift   = null;
 let forecastMode    = 'short';
 let forecastHorizon = '7d';
+let fcDeptActive    = 'ips';
 
 function localDateStr(date) {
   const d = date || new Date();
@@ -1330,7 +1331,7 @@ function renderForecastPage() {
   // KPI: total required nurses per day
   const avgNurses = Math.round(days.reduce((s, d) => s + d.totalNurses, 0) / days.length);
   setEl('fc-kpi-nurses', avgNurses);
-  setEl('fc-kpi-nurses-sub', 'Qual. Pflegepersonen / Tag (alle Abt.)');
+  setEl('fc-kpi-nurses-sub', 'Qual. Pflege / Schicht (alle Abt.)');
 
   // KPI: avg complexity index
   const avgCI = Math.round(days.reduce((s, d) => s + d.avgComplexity, 0) / days.length);
@@ -1344,6 +1345,9 @@ function renderForecastPage() {
   // Staffing table
   const tbody = document.getElementById('fc-staff-tbody');
   if (!tbody) return;
+
+  // Call detailed breakdown (after tbody check so page is ready)
+  buildForecastStaffingDetail();
 
   tbody.innerHTML = DEPARTMENTS.map(dept => {
     const deptDays = days.map(d => d.perDept[dept.id]).filter(Boolean);
@@ -1389,6 +1393,102 @@ function renderForecastPage() {
         <span style="font-size:10px;color:var(--text-muted)"> vs. Heute</span>
       </td>
     </tr>`;
+  }).join('');
+}
+
+// ── FORECAST DETAIL TABLE ────────────────────────────────────
+
+function setFcDept(deptId) {
+  fcDeptActive = deptId;
+  buildForecastStaffingDetail();
+}
+
+function buildForecastStaffingDetail() {
+  const data = AppState.getForecast(forecastMode, forecastHorizon);
+  // Always show next 7 days for readability (3m horizon still shows first week)
+  const days = data.days.slice(0, 7);
+  const dept = DEPARTMENTS.find(d => d.id === fcDeptActive);
+  if (!dept) return;
+
+  // ── Dept tabs ──────────────────────────────────────────────
+  const tabsEl = document.getElementById('fc-dept-tabs');
+  if (tabsEl) {
+    tabsEl.innerHTML = DEPARTMENTS.map(d => {
+      const isActive = d.id === fcDeptActive;
+      const activeStyle = isActive
+        ? `background:${d.color};border-color:${d.color};color:#fff`
+        : '';
+      return `<button class="date-filter-btn${isActive ? ' active' : ''}" onclick="setFcDept('${d.id}')" style="${activeStyle}">
+        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${isActive ? '#fff' : d.color};margin-right:5px;vertical-align:middle"></span>${d.name}
+      </button>`;
+    }).join('');
+  }
+
+  const roles = FORECAST_ROLE_FACTORS[dept.type] || FORECAST_ROLE_FACTORS.ward;
+
+  // ── thead ──────────────────────────────────────────────────
+  const thead = document.getElementById('fc-dept-thead');
+  if (thead) {
+    thead.innerHTML = `
+      <tr>
+        <th rowspan="2" style="white-space:nowrap;min-width:80px">Tag</th>
+        <th rowspan="2" style="white-space:nowrap;min-width:100px">Schicht</th>
+        <th rowspan="2" class="text-center" style="min-width:70px">Proj.<br>Betten</th>
+        <th rowspan="2" class="text-center" style="min-width:60px;border-left:2px solid var(--border)">Total<br>Pflege</th>
+        ${roles.map(r => `<th class="text-center" style="min-width:80px;font-size:11px;line-height:1.3">${r.label}</th>`).join('')}
+      </tr>
+      <tr>
+        <th style="border-left:2px solid var(--border)"></th>
+        ${roles.map(r => `<th class="text-center" style="font-size:10px;color:var(--text-muted);font-weight:500;padding:2px 8px">${(r.fraction * 100).toFixed(0)}% Anteil</th>`).join('')}
+      </tr>`;
+  }
+
+  // ── tbody ──────────────────────────────────────────────────
+  const tbody = document.getElementById('fc-dept-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = days.map((day) => {
+    const deptDay = day.perDept[dept.id];
+    if (!deptDay) return '';
+    const { projBeds, reqNurses } = deptDay;
+    const isWE = day.isWeekend;
+
+    return POOL_SHIFTS_CFG.map((sh, si) => {
+      const sf = FORECAST_SHIFT_FACTORS[sh.id];
+      const shiftTotal = Math.max(1, Math.ceil(reqNurses * sf));
+
+      const roleCells = roles.map(r => {
+        const n = Math.max(1, Math.round(shiftTotal * r.fraction));
+        return `<td class="text-center" style="font-size:13px;font-weight:600">${n}</td>`;
+      }).join('');
+
+      const dayLabel = si === 0
+        ? `<td rowspan="3" style="font-weight:700;vertical-align:middle;font-size:12px;white-space:nowrap;${isWE ? 'color:var(--text-muted)' : ''}">
+             ${day.label}${isWE ? '<div style="font-size:10px;color:var(--text-light);font-weight:400">Wochenende</div>' : ''}
+           </td>`
+        : '';
+
+      const bedsCell = si === 0
+        ? `<td rowspan="3" class="text-center" style="vertical-align:middle;font-weight:700;font-size:15px">${projBeds}
+             <div style="font-size:10px;color:var(--text-muted);font-weight:400">/ ${dept.beds}</div>
+           </td>`
+        : '';
+
+      const shiftBg = `background:${sh.bg}`;
+      const sfLabel = sh.id === 'F' ? '07–16 Uhr' : sh.id === 'S' ? '15–23 Uhr' : '22–07 Uhr';
+
+      return `<tr style="${shiftBg}">
+        ${dayLabel}
+        <td style="white-space:nowrap;padding:7px 10px">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${sh.color};margin-right:5px;vertical-align:middle"></span>
+          <span style="font-size:12px;color:${sh.color};font-weight:700">${sh.label}</span>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:1px;padding-left:13px">${sfLabel} · ×${sf.toFixed(2)}</div>
+        </td>
+        ${bedsCell}
+        <td class="text-center" style="border-left:2px solid var(--border);font-weight:700;font-size:15px;color:${sh.color}">${shiftTotal}</td>
+        ${roleCells}
+      </tr>`;
+    }).join('');
   }).join('');
 }
 

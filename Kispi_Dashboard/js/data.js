@@ -706,6 +706,46 @@ const ASA_CLASSES = ['I', 'II', 'III', 'IV', 'V'];
 const ANESTHESIA_TYPES = ['Allgemeinanästhesie', 'Regionalanästhesie', 'Lokalanästhesie', 'Kombiniert', 'Spinalanästhesie'];
 const EMERGENCY_LEVELS = ['Sofort (S0)', 'Dringlich (S1)', 'Nicht-dringlich (S2)'];
 
+// ── Prognose Personalplanung — Rollen-Schlüssel ─────────────
+// Fraction of reqNurses per role per dept type; SHIFT_FACTORS applied per shift
+
+const FORECAST_SHIFT_FACTORS = { F: 1.0, S: 0.85, N: 0.65 };
+
+const FORECAST_ROLE_FACTORS = {
+  icu: [
+    { id: 'exp_int',  label: 'Exp. NDS HF Intensiv', fraction: 0.40 },
+    { id: 'pfn_hf',   label: 'Dipl. PFP HF',          fraction: 0.35 },
+    { id: 'stud_int', label: 'Stud. NDS Intensiv',     fraction: 0.15 },
+    { id: 'fage_efz', label: 'FaGe EFZ',               fraction: 0.10 },
+  ],
+  imc: [
+    { id: 'exp_int',  label: 'Exp. NDS HF Intensiv', fraction: 0.30 },
+    { id: 'pfn_hf',   label: 'Dipl. PFP HF',          fraction: 0.40 },
+    { id: 'stud_int', label: 'Stud. NDS Intensiv',     fraction: 0.15 },
+    { id: 'fage_efz', label: 'FaGe EFZ',               fraction: 0.15 },
+  ],
+  nicu: [
+    { id: 'exp_int',  label: 'Exp. NDS HF Intensiv', fraction: 0.42 },
+    { id: 'pfn_hf',   label: 'Dipl. PFP HF',          fraction: 0.33 },
+    { id: 'stud_int', label: 'Stud. NDS Intensiv',     fraction: 0.15 },
+    { id: 'fage_efz', label: 'FaGe EFZ',               fraction: 0.10 },
+  ],
+  emergency: [
+    { id: 'exp_nf',   label: 'Exp. NDS HF Notfall', fraction: 0.30 },
+    { id: 'pfn_hf',   label: 'Dipl. PFP HF',          fraction: 0.35 },
+    { id: 'stud_nf',  label: 'Stud. NDS Notfall',      fraction: 0.15 },
+    { id: 'fage_efz', label: 'FaGe EFZ',               fraction: 0.15 },
+    { id: 'pfh_ags',  label: 'Pflegehilfe / AGS',       fraction: 0.05 },
+  ],
+  ward: [
+    { id: 'pfn_hf',   label: 'Dipl. PFP HF',     fraction: 0.45 },
+    { id: 'stud_hf3', label: 'Stud. HF 3.J',      fraction: 0.15 },
+    { id: 'stud_hf2', label: 'Stud. HF 2.J',      fraction: 0.15 },
+    { id: 'fage_efz', label: 'FaGe EFZ',           fraction: 0.15 },
+    { id: 'pfh_ags',  label: 'Pflegehilfe / AGS',  fraction: 0.10 },
+  ],
+};
+
 // ── Pool-Ressourcen Generator ────────────────────────────────
 
 const POOL_ROLE_GROUPS = [

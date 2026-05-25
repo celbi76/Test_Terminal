@@ -898,13 +898,36 @@
                 <th>Abteilung</th>
                 <th class="text-center">Proj. Auslastung</th>
                 <th class="text-center">Proj. Betten belegt</th>
-                <th class="text-center">Qual. Pflegepersonen</th>
+                <th class="text-center">Qual. Pflege / Schicht</th>
                 <th class="text-center">Komplexität</th>
                 <th class="text-center">Ø NEMS / Barthel</th>
                 <th class="text-center">Trend vs. Heute</th>
               </tr>
             </thead>
             <tbody id="fc-staff-tbody"><!-- JS --></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Detailed staffing forecast by department & shift -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <i class="bi bi-grid-3x3-gap-fill" style="color:var(--kispi-teal)"></i>
+          <h3>Detaillierter Personalbedarf — Abteilung, Schicht &amp; Kompetenz</h3>
+          <span class="text-sm text-muted" style="margin-left:auto">Nächste 7 Tage</span>
+        </div>
+        <div class="card-body" style="padding-bottom:8px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;padding:8px 10px;background:rgba(44,179,227,0.07);border-radius:6px;border-left:3px solid var(--kispi-teal)">
+            <i class="bi bi-info-circle"></i>
+            Basierend auf prognostizierter Belegung und Nurse-Patient-Ratio (IPS/Neo 1:1.2 · IMC 1:2.5 · Notfall fix 6 · Stationen 1:4.5).
+            Schichtfaktoren: Früh 100% · Spät 85% · Nacht 65%. Rollenanteil nach Abteilungstyp-Schlüssel.
+          </div>
+          <div class="date-filter" id="fc-dept-tabs" style="flex-wrap:wrap;gap:6px"><!-- JS --></div>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="belegung-table">
+            <thead id="fc-dept-thead"><!-- JS --></thead>
+            <tbody id="fc-dept-tbody"><!-- JS --></tbody>
           </table>
         </div>
       </div>
@@ -1361,9 +1384,9 @@
 </div>
 
 <!-- Scripts -->
-<script src="js/data.js?v=20260525e"></script>
+<script src="js/data.js?v=20260525f"></script>
 <script src="js/charts.js?v=20260524j"></script>
-<script src="js/app.js?v=20260525e"></script>
+<script src="js/app.js?v=20260525f"></script>
 
 </body>
 </html>
