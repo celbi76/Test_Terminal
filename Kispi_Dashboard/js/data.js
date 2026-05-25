@@ -869,6 +869,34 @@ const AppState = {
     this.buildAlerts();
   },
 
+  // ── Pool-Reservationen (localStorage) ───────────────────────
+
+  getPoolReservations() {
+    try { return JSON.parse(localStorage.getItem('kispi_pool_reservations') || '[]'); } catch { return []; }
+  },
+
+  savePoolReservation(entry) {
+    const list = this.getPoolReservations();
+    const i    = list.findIndex(r => r.id === entry.id);
+    if (i >= 0) list[i] = entry; else list.push(entry);
+    localStorage.setItem('kispi_pool_reservations', JSON.stringify(list));
+  },
+
+  releasePoolReservation(id) {
+    const list  = this.getPoolReservations();
+    const entry = list.find(r => r.id === id);
+    if (entry) {
+      entry.status      = 'freigegeben';
+      entry.released_at = new Date().toISOString();
+      localStorage.setItem('kispi_pool_reservations', JSON.stringify(list));
+    }
+  },
+
+  deletePoolReservation(id) {
+    const list = this.getPoolReservations().filter(r => r.id !== id);
+    localStorage.setItem('kispi_pool_reservations', JSON.stringify(list));
+  },
+
   // ── Shift History (localStorage) ────────────────────────────
 
   getShiftHistory() {

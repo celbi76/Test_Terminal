@@ -402,20 +402,35 @@
 
       <!-- Pool-Ressourcen 7-Tage-Tabelle -->
       <div class="card mb-20">
-        <div class="card-header">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
           <i class="bi bi-calendar-week" style="color:var(--kispi-teal)"></i>
-          <h3>Pool-Ressourcen — Nächste 7 Tage</h3>
+          <h3>Pool-Ressourcen — Verfügbarkeit</h3>
+          <div class="date-filter" id="pool-day-tabs" style="margin-left:16px"><!-- JS --></div>
           <button class="btn-primary" onclick="openBedarfForm()" style="margin-left:auto">
             <i class="bi bi-plus-lg"></i> Neue Bedarfsmeldung
           </button>
         </div>
-        <div class="card-body" style="padding:0;overflow-x:auto">
+        <div style="padding:6px 18px 0;font-size:11px;color:var(--text-light)">
+          <i class="bi bi-info-circle" style="margin-right:4px"></i>
+          Klicken Sie auf eine verfügbare Zahl, um diese Ressource für eine Station zu reservieren.
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto;padding-top:8px">
           <table class="staffing-table">
             <thead id="pool-resources-thead"><!-- JS --></thead>
             <tbody id="pool-resources-tbody"><!-- JS --></tbody>
             <tfoot id="pool-resources-tfoot"><!-- JS --></tfoot>
           </table>
         </div>
+      </div>
+
+      <!-- Aktive Reservationen -->
+      <div class="card mb-20">
+        <div class="card-header" style="border-left:4px solid #E63946">
+          <i class="bi bi-bookmark-check-fill" style="color:#E63946"></i>
+          <h3>Aktive Reservationen</h3>
+          <span style="font-size:11px;color:var(--text-light);margin-left:auto">Freigabe durch Pool-MA oder Pflegedienstleitung</span>
+        </div>
+        <div class="card-body" id="pool-reservations-list"><!-- JS --></div>
       </div>
 
       <!-- Pool-Anfragen & Freigaben -->
@@ -1303,10 +1318,52 @@
   </div>
 </div>
 
+<!-- Pool Reservation Modal -->
+<div id="pool-reserve-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-header">
+      <i class="bi bi-person-workspace" style="font-size:22px;color:var(--kispi-teal)"></i>
+      <h2>Pool-Ressource reservieren</h2>
+      <button class="modal-close" onclick="closePoolReserve()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Info Banner -->
+      <div style="background:#F0FAFB;border-left:4px solid var(--kispi-teal);border-radius:6px;padding:12px 14px;margin-bottom:20px">
+        <div style="font-size:12px;color:var(--text-light);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Ressource</div>
+        <div style="font-weight:700;font-size:15px" id="pool-reserve-info-role">—</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:4px" id="pool-reserve-info-shift">—</div>
+        <div style="font-size:11px;color:var(--kispi-teal);margin-top:4px;font-weight:600" id="pool-reserve-info-free">—</div>
+      </div>
+      <!-- Station -->
+      <div class="form-group">
+        <label class="form-label">Station / Abteilung <span style="color:#E63946">*</span></label>
+        <select id="pool-reserve-dept" class="form-control">
+          <option value="">— Abteilung wählen —</option>
+        </select>
+      </div>
+      <!-- Notiz -->
+      <div class="form-group">
+        <label class="form-label">Notiz / Begründung <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+        <input id="pool-reserve-note" class="form-control" type="text" placeholder="z.B. Ausfall Frühdienst, erhöhte Belegung…">
+      </div>
+      <div style="font-size:11px;color:var(--text-light);margin-top:4px;padding:8px 12px;background:#FFF8EE;border-radius:6px;border-left:3px solid #F7941D">
+        <i class="bi bi-shield-check" style="margin-right:4px;color:#F7941D"></i>
+        Freigabe erfolgt durch <strong>Pool-MA</strong> oder <strong>Pflegedienstleitung</strong>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closePoolReserve()">Abbrechen</button>
+      <button class="btn-primary" onclick="confirmPoolReservation()">
+        <i class="bi bi-bookmark-check-fill"></i> Reservieren
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts -->
-<script src="js/data.js?v=20260525c"></script>
+<script src="js/data.js?v=20260525e"></script>
 <script src="js/charts.js?v=20260524j"></script>
-<script src="js/app.js?v=20260525d"></script>
+<script src="js/app.js?v=20260525e"></script>
 
 </body>
 </html>
