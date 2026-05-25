@@ -1097,16 +1097,27 @@ function renderHistoricalPage() {
     if (!recs.length) return '';
     const avgOcc    = Math.round(recs.reduce((s,r)=>s+r.occupancy_pct,0)/recs.length);
     const maxOcc    = Math.max(...recs.map(r=>r.occupancy_pct));
-    const barRecs   = recs.filter(r=>r.barthel_avg !== null && r.barthel_avg !== undefined);
-    const avgBarVal = barRecs.length ? Math.round(barRecs.reduce((s,r)=>s+r.barthel_avg,0)/barRecs.length) : null;
+    const useNems   = dept.type === 'icu' || dept.type === 'imc';
     const avgAct    = Math.round(recs.reduce((s,r)=>s+r.staff_actual,0)/recs.length);
     const avgTgt    = Math.round(recs.reduce((s,r)=>s+r.staff_target,0)/recs.length);
     const poolCnt   = recs.filter(r=>r.pool_request).length;
-    const barColor  = avgBarVal !== null ? (avgBarVal<=30?'var(--danger)':avgBarVal<=80?'var(--warning)':'var(--success)') : '#718096';
+    let metricCell;
+    if (useNems) {
+      const nemsRecs = recs.filter(r=>r.nems_average !== null && r.nems_average !== undefined);
+      const avgNems  = nemsRecs.length ? Math.round(nemsRecs.reduce((s,r)=>s+r.nems_average,0)/nemsRecs.length) : null;
+      metricCell = avgNems !== null
+        ? `<td style="color:#F7941D">${avgNems} Pkt. <span style="font-size:10px;color:var(--text-light);font-weight:400">NEMS</span></td>`
+        : `<td style="color:#718096">—</td>`;
+    } else {
+      const barRecs  = recs.filter(r=>r.barthel_avg !== null && r.barthel_avg !== undefined);
+      const avgBar   = barRecs.length ? Math.round(barRecs.reduce((s,r)=>s+r.barthel_avg,0)/barRecs.length) : null;
+      const barColor = avgBar !== null ? (avgBar<=30?'var(--danger)':avgBar<=80?'var(--warning)':'var(--success)') : '#718096';
+      metricCell = `<td style="color:${barColor}">${avgBar !== null ? avgBar+' Pkt.' : '—'}</td>`;
+    }
     return `<tr>
       <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dept.color};margin-right:6px"></span>${dept.name}</td>
       <td>${avgOcc}%</td><td>${maxOcc}%</td>
-      <td style="color:${barColor}">${avgBarVal !== null ? avgBarVal+' Pkt.' : '—'}</td>
+      ${metricCell}
       <td>${avgAct}</td><td>${avgTgt}</td>
       <td>${poolCnt>0?`<span class="badge badge-yellow">${poolCnt}×</span>`:'<span class="badge badge-green">0</span>'}</td>
     </tr>`;
