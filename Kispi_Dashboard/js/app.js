@@ -582,16 +582,6 @@ function renderStaffingPage() {
 
 // ── POOL PAGE ─────────────────────────────────────────────────
 
-let poolShiftActive = 'F';
-
-function setPoolShift(shift) {
-  poolShiftActive = shift;
-  ['F','S','N'].forEach(s => {
-    document.getElementById(`pool-shift-${s}`)?.classList.toggle('active', s === shift);
-  });
-  buildPoolResourcesTable();
-}
-
 function renderPoolPage() {
   const data = AppState.poolResources;
   if (!data) return;
@@ -604,10 +594,6 @@ function renderPoolPage() {
   setEl('pool-kpi-f',     Math.round(tF / 7));
   setEl('pool-kpi-s',     Math.round(tS / 7));
   setEl('pool-kpi-n',     Math.round(tN / 7));
-
-  // Reset shift tab to Frühdienst on each page load
-  poolShiftActive = 'F';
-  ['F','S','N'].forEach(s => document.getElementById(`pool-shift-${s}`)?.classList.toggle('active', s === 'F'));
 
   buildPoolResourcesTable();
   renderPoolCards();
@@ -669,7 +655,12 @@ function buildPoolResourcesTable() {
   if (!data) return;
   const { roleGroups, days } = data;
   const allRoles = roleGroups.flatMap(g => g.roles);
-  const shift    = poolShiftActive;
+
+  const SHIFTS_CFG = [
+    { id: 'F', label: 'Frühdienst',  short: 'F',  color: '#2CB3E3', bg: 'rgba(44,179,227,0.08)' },
+    { id: 'S', label: 'Spätdienst',  short: 'S',  color: '#F7941D', bg: 'rgba(247,148,29,0.08)'  },
+    { id: 'N', label: 'Nachtdienst', short: 'N',  color: '#5A67D8', bg: 'rgba(90,103,216,0.08)'  },
+  ];
 
   const thead = document.getElementById('pool-resources-thead');
   const tbody = document.getElementById('pool-resources-tbody');
@@ -678,10 +669,10 @@ function buildPoolResourcesTable() {
   if (thead) {
     thead.innerHTML = `
       <tr>
-        <th rowspan="2">Datum</th>
+        <th rowspan="2" style="white-space:nowrap">Datum</th>
+        <th rowspan="2" style="white-space:nowrap">Schicht</th>
         ${roleGroups.map(g => `<th colspan="${g.roles.length}" style="text-align:center;font-size:10px;color:var(--text-light);border-bottom:1px solid #E2E8F0;letter-spacing:0.5px">${g.label.toUpperCase()}</th>`).join('')}
-        <th rowspan="2" style="white-space:nowrap">Total<br><span style="font-size:10px;font-weight:400;color:var(--text-light)">Verfügbar</span></th>
-        <th rowspan="2" style="white-space:nowrap">Bereits<br><span style="font-size:10px;font-weight:400;color:var(--text-light)">Eingeplant</span></th>
+        <th rowspan="2" style="white-space:nowrap;text-align:center">Total</th>
       </tr>
       <tr>
         ${allRoles.map(r => `<th style="font-size:10px;text-align:center;border-top:1px solid #E2E8F0;white-space:nowrap">${r.shortLabel}</th>`).join('')}
@@ -689,42 +680,49 @@ function buildPoolResourcesTable() {
   }
 
   if (tbody) {
-    tbody.innerHTML = days.map(day => {
-      const s       = day.shifts[shift];
-      const weStyle = day.isWeekend ? 'background:#F7FAFC' : '';
-      const tColor  = s.total_available >= 15 ? 'var(--success)' : s.total_available >= 8 ? 'var(--warning)' : 'var(--danger)';
-      const cells   = allRoles.map(r => {
-        const v   = s.byRole[r.id];
-        const col = !v?.available ? '#CBD5E0' : 'var(--text-dark)';
-        return `<td style="text-align:center;color:${col}">${v?.available ?? 0}</td>`;
+    tbody.innerHTML = days.map((day, di) => {
+      const dayBg = day.isWeekend ? '#F0F4F8' : (di % 2 === 0 ? '#FFFFFF' : '#FAFBFC');
+      return SHIFTS_CFG.map((sc, si) => {
+        const s      = day.shifts[sc.id];
+        const tColor = s.total_available >= 15 ? 'var(--success)' : s.total_available >= 8 ? 'var(--warning)' : 'var(--danger)';
+        const cells  = allRoles.map(r => {
+          const avail = s.byRole[r.id]?.available ?? 0;
+          return `<td style="text-align:center;color:${avail === 0 ? '#CBD5E0' : 'var(--text-dark)'}">${avail || '—'}</td>`;
+        }).join('');
+
+        const dateCell = si === 0 ? `<td rowspan="3" style="vertical-align:middle;background:${dayBg};font-weight:600;white-space:nowrap;border-right:2px solid #E2E8F0;padding:8px 12px">
+          ${day.dateLabel}
+          ${day.isWeekend ? `<span style="display:block;margin-top:4px;font-size:9px;background:#EDF2FF;color:#5A67D8;border-radius:4px;padding:1px 6px;font-weight:700;width:fit-content">WE</span>` : ''}
+          ${day.dayIndex === 0 ? `<span style="display:block;margin-top:4px;font-size:9px;background:#E6FFF0;color:#1A7A3A;border-radius:4px;padding:1px 6px;font-weight:700;width:fit-content">Heute</span>` : ''}
+        </td>` : '';
+
+        const topBorder = si === 0 ? 'border-top:2px solid #CBD5E0' : '';
+        return `<tr style="background:${dayBg}">
+          ${dateCell}
+          <td style="white-space:nowrap;${topBorder}">
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:${sc.color};background:${sc.bg};padding:2px 8px;border-radius:10px">${sc.label}</span>
+          </td>
+          ${cells}
+          <td style="text-align:center;font-weight:700;color:${tColor};${topBorder}">${s.total_available}</td>
+        </tr>`;
       }).join('');
-      return `<tr style="${weStyle}">
-        <td style="white-space:nowrap">
-          <strong>${day.dateLabel}</strong>
-          ${day.isWeekend ? '<span style="display:inline-block;font-size:9px;background:#EDF2FF;color:#5A67D8;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600">WE</span>' : ''}
-          ${day.dayIndex === 0 ? '<span class="badge badge-green" style="font-size:9px;padding:1px 5px;margin-left:4px">Heute</span>' : ''}
-        </td>
-        ${cells}
-        <td style="text-align:center;font-weight:700;color:${tColor}">${s.total_available}</td>
-        <td style="text-align:center;color:#718096">${s.total_assigned}</td>
-      </tr>`;
     }).join('');
   }
 
   if (tfoot) {
-    const roleSums = allRoles.map(r => {
-      const sum = days.reduce((acc, d) => acc + (d.shifts[shift].byRole[r.id]?.available || 0), 0);
-      return `<td style="text-align:center"><strong>${sum}</strong></td>`;
-    }).join('');
-    const gTotal    = days.reduce((acc, d) => acc + d.shifts[shift].total_available, 0);
-    const gAssigned = days.reduce((acc, d) => acc + d.shifts[shift].total_assigned, 0);
-    tfoot.innerHTML = `
-      <tr class="staffing-total-row">
-        <td><strong>Total 7 Tage</strong></td>
+    tfoot.innerHTML = SHIFTS_CFG.map(sc => {
+      const roleSums = allRoles.map(r => {
+        const sum = days.reduce((acc, d) => acc + (d.shifts[sc.id].byRole[r.id]?.available || 0), 0);
+        return `<td style="text-align:center"><strong>${sum}</strong></td>`;
+      }).join('');
+      const gTotal = days.reduce((acc, d) => acc + d.shifts[sc.id].total_available, 0);
+      return `<tr class="staffing-total-row">
+        <td colspan="1"><strong>Total 7 Tage</strong></td>
+        <td><span style="font-size:11px;font-weight:700;color:${sc.color}">${sc.label}</span></td>
         ${roleSums}
         <td style="text-align:center"><strong>${gTotal}</strong></td>
-        <td style="text-align:center"><strong>${gAssigned}</strong></td>
       </tr>`;
+    }).join('');
   }
 }
 
