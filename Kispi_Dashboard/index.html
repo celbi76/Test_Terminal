@@ -1431,51 +1431,115 @@
      MODAL: PERSONALFREIGABE BESTÄTIGEN
 ══════════════════════════════════════════════════════════ -->
 <div id="pool-release-modal-overlay" class="modal-overlay">
-  <div class="modal-box" style="max-width:480px">
+  <div class="modal-box" style="max-width:500px">
     <div class="modal-header" style="border-bottom-color:#2DC653">
       <i class="bi bi-person-up" style="font-size:22px;color:#2DC653"></i>
-      <h2>Personalfreigabe — Dienstübergabe</h2>
+      <h2>Personalfreigabe</h2>
       <button class="modal-close" onclick="closePoolReleaseModal()">✕</button>
     </div>
     <div class="modal-body">
+
       <!-- Info banner -->
       <div style="background:#F0FBF4;border-left:4px solid #2DC653;border-radius:6px;padding:12px 14px;margin-bottom:20px">
-        <div style="font-size:12px;color:#27AE60;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">Freizugebende Ressource</div>
+        <div style="font-size:11px;color:#27AE60;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">Freizugebende Ressource</div>
         <div style="font-weight:700;font-size:15px;color:#1A202C" id="pool-release-dept-info">—</div>
-        <div style="font-size:12px;color:var(--text-light);margin-top:4px" id="pool-release-shift-info">—</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:3px" id="pool-release-shift-info">—</div>
       </div>
-      <!-- Zuweisung -->
-      <div style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">Zuweisung</div>
-      <div class="form-group" style="margin-bottom:10px">
-        <label class="form-label">Zielabteilung <span style="font-weight:400;color:var(--text-light)">(optional — leer = zurück in Pool)</span></label>
-        <select id="pool-release-target-dept" class="form-control" onchange="updateReleaseEmailPreview()">
-          <option value="">— Zurück in den Pool —</option>
-        </select>
+
+      <!-- Action type selector -->
+      <div style="font-size:11px;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Massnahme wählen</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+        <div id="rel-action-card-assign" onclick="setReleaseAction('assign')"
+          style="border:2px solid #2DC653;background:#F0FBF4;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <i class="bi bi-building-fill-add" style="color:#2DC653;font-size:16px"></i>
+            <span style="font-weight:700;font-size:13px;color:#1A202C">Zuweisung</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-light);line-height:1.4">Mitarbeitenden direkt einer Abteilung &amp; einem Dienst zuweisen</div>
+        </div>
+        <div id="rel-action-card-free" onclick="setReleaseAction('free')"
+          style="border:2px solid var(--border);background:#F7F9FC;border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <i class="bi bi-calendar2-check" style="color:var(--text-mid);font-size:16px"></i>
+            <span style="font-weight:700;font-size:13px;color:#1A202C">Freizeit / Überstunden</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-light);line-height:1.4">Mitarbeitenden freistellen oder Überstunden kompensieren</div>
+        </div>
       </div>
-      <div class="form-group" style="margin-bottom:16px">
-        <label class="form-label">Zieldienst</label>
-        <select id="pool-release-target-shift" class="form-control" onchange="updateReleaseEmailPreview()">
-          <option value="F">🌅 Frühdienst (07:00–16:00)</option>
-          <option value="S">🌆 Spätdienst (15:30–23:15)</option>
-          <option value="N">🌙 Nachtdienst (22:45–07:15)</option>
-        </select>
+
+      <!-- Section A: Zuweisung zu Abteilung -->
+      <div id="rel-section-assign">
+        <div class="form-group" style="margin-bottom:10px">
+          <label class="form-label">Zielabteilung <span style="color:#E63946">*</span></label>
+          <select id="pool-release-target-dept" class="form-control" onchange="updateReleaseEmailPreview()">
+            <option value="">— Abteilung wählen —</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">Zieldienst</label>
+          <select id="pool-release-target-shift" class="form-control" onchange="updateReleaseEmailPreview()">
+            <option value="F">🌅 Frühdienst (07:00–16:00)</option>
+            <option value="S">🌆 Spätdienst (15:30–23:15)</option>
+            <option value="N">🌙 Nachtdienst (22:45–07:15)</option>
+          </select>
+        </div>
       </div>
-      <!-- E-Mail Notiz -->
-      <div style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em">E-Mail an Mitarbeitenden</div>
-      <div class="form-group" style="margin-bottom:12px">
-        <label class="form-label">Zusätzliche Notiz <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
-        <input id="pool-release-note" class="form-control" type="text" placeholder="z.B. Bitte direkt bei Stationsleitung melden…" oninput="updateReleaseEmailPreview()">
+
+      <!-- Section B: Freizeit / Überstunden -->
+      <div id="rel-section-free" style="display:none">
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">Art der Massnahme <span style="color:#E63946">*</span></label>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:background 0.1s" id="rel-comp-opt-1">
+              <input type="radio" name="rel-comp-type" value="freizeit" onchange="updateReleaseEmailPreview()" style="margin-top:2px;accent-color:#2CB3E3">
+              <div>
+                <div style="font-weight:600;font-size:13px">Freizeit gewähren</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Geleistete Stunden werden als Freizeit kompensiert</div>
+              </div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:background 0.1s" id="rel-comp-opt-2">
+              <input type="radio" name="rel-comp-type" value="auszahlung" onchange="updateReleaseEmailPreview()" style="margin-top:2px;accent-color:#2CB3E3">
+              <div>
+                <div style="font-weight:600;font-size:13px">Überstunden ausbezahlen</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Überstunden werden mit dem nächsten Lohn vergütet</div>
+              </div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:background 0.1s" id="rel-comp-opt-3">
+              <input type="radio" name="rel-comp-type" value="beides" onchange="updateReleaseEmailPreview()" style="margin-top:2px;accent-color:#2CB3E3">
+              <div>
+                <div style="font-weight:600;font-size:13px">Freizeit + Überstunden-Kompensation</div>
+                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Teilweise Freizeit, teilweise Auszahlung (wird separat geregelt)</div>
+              </div>
+            </label>
+          </div>
+          <div id="rel-comp-err" style="display:none;font-size:11px;color:#E63946;margin-top:6px">
+            <i class="bi bi-exclamation-triangle-fill"></i> Bitte eine Massnahme auswählen.
+          </div>
+        </div>
       </div>
+
+      <!-- Note (both sections) -->
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Notiz an Mitarbeitenden <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+        <input id="pool-release-note" class="form-control" type="text"
+          placeholder="z.B. Bitte bei HR melden, vielen Dank für den Einsatz…"
+          oninput="updateReleaseEmailPreview()">
+      </div>
+
       <!-- Email preview -->
-      <div style="background:#F7F9FC;border:1px solid #E2E8F0;border-radius:8px;padding:12px 14px;font-size:11px;color:var(--text-mid)">
-        <div style="font-weight:700;font-size:12px;margin-bottom:6px;color:var(--text-dark)"><i class="bi bi-envelope-fill" style="color:var(--kispi-teal);margin-right:4px"></i>E-Mail Vorschau</div>
+      <div style="background:#F7F9FC;border:1px solid #E2E8F0;border-radius:8px;padding:12px 14px;font-size:11px">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;color:var(--text-dark)">
+          <i class="bi bi-envelope-fill" style="color:var(--kispi-teal);margin-right:4px"></i>E-Mail Vorschau
+        </div>
         <div style="color:var(--text-light);margin-bottom:4px">An: Mitarbeitende/r (Pool)</div>
         <div id="pool-release-email-preview" style="line-height:1.6;color:var(--text-mid)">—</div>
       </div>
     </div>
+
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closePoolReleaseModal()">Abbrechen</button>
-      <button class="btn-primary" onclick="confirmPoolReleaseModal()" style="background:#2DC653;border-color:#2DC653">
+      <button id="pool-release-confirm-btn" class="btn-primary" onclick="confirmPoolReleaseModal()"
+        style="background:#2DC653;border-color:#2DC653">
         <i class="bi bi-send-check-fill"></i> Freigabe bestätigen &amp; E-Mail senden
       </button>
     </div>
@@ -1532,7 +1596,7 @@
 <!-- Scripts -->
 <script src="js/data.js?v=20260525g"></script>
 <script src="js/charts.js?v=20260524j"></script>
-<script src="js/app.js?v=20260525k"></script>
+<script src="js/app.js?v=20260525l"></script>
 
 </body>
 </html>

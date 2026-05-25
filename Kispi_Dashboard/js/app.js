@@ -1036,58 +1036,106 @@ function confirmPoolReqReject() {
 }
 
 // ── Personalfreigabe Modal ────────────────────────────────
-let poolReleaseCtx = null;
+let poolReleaseCtx  = null;
+let poolReleaseAction = 'assign'; // 'assign' | 'free'
 
 function openPoolReleaseModal(deptId) {
   const d    = AppState.currentShiftData.find(x => x.department_id === deptId);
   const dept = DEPARTMENTS.find(x => x.id === deptId);
   if (!d || !dept) return;
   const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === d.shift) || POOL_SHIFTS_CFG[0];
-  poolReleaseCtx = { deptId, deptName: dept.name, count: d.pool_release_count, shift: d.shift, shiftLabel: shiftCfg.label };
+  poolReleaseCtx = { deptId, deptName: dept.name, fullName: dept.fullName, count: d.pool_release_count, shift: d.shift, shiftLabel: shiftCfg.label, occPct: d.occupancy_pct };
 
   setEl('pool-release-dept-info',  `${dept.name} — ${dept.fullName}`);
-  setEl('pool-release-shift-info', `${d.pool_release_count} Person${d.pool_release_count>1?'en':''} · ${shiftCfg.label} · Belegung ${d.occupancy_pct}%`);
+  setEl('pool-release-shift-info', `${d.pool_release_count} Person${d.pool_release_count>1?'en':''} freizugeben · ${shiftCfg.label} · Belegung ${d.occupancy_pct}%`);
 
-  // Fill target dept dropdown (exclude source dept)
+  // Fill target dept dropdown
   const sel = document.getElementById('pool-release-target-dept');
   if (sel) {
-    sel.innerHTML = '<option value="">— Zurück in den Pool —</option>' +
+    sel.innerHTML = '<option value="">— Abteilung wählen —</option>' +
       DEPARTMENTS.filter(x => x.id !== deptId)
         .map(x => `<option value="${x.id}">${x.name} — ${x.fullName}</option>`).join('');
   }
   // Pre-select same shift
   const shiftSel = document.getElementById('pool-release-target-shift');
   if (shiftSel) shiftSel.value = d.shift || 'F';
-  // Clear note
+
+  // Reset radio buttons
+  document.querySelectorAll('input[name="rel-comp-type"]').forEach(r => r.checked = false);
+  // Reset note
   const noteEl = document.getElementById('pool-release-note');
   if (noteEl) noteEl.value = '';
+  // Hide errors
+  const compErr = document.getElementById('rel-comp-err');
+  if (compErr) compErr.style.display = 'none';
 
-  updateReleaseEmailPreview();
+  // Default to Zuweisung
+  setReleaseAction('assign');
   document.getElementById('pool-release-modal-overlay').classList.add('open');
+}
+
+function setReleaseAction(type) {
+  poolReleaseAction = type;
+
+  const cardAssign = document.getElementById('rel-action-card-assign');
+  const cardFree   = document.getElementById('rel-action-card-free');
+  const secAssign  = document.getElementById('rel-section-assign');
+  const secFree    = document.getElementById('rel-section-free');
+
+  if (type === 'assign') {
+    cardAssign.style.borderColor = '#2DC653';
+    cardAssign.style.background  = '#F0FBF4';
+    cardAssign.querySelector('i').style.color = '#2DC653';
+    cardFree.style.borderColor   = 'var(--border)';
+    cardFree.style.background    = '#F7F9FC';
+    cardFree.querySelector('i').style.color = 'var(--text-mid)';
+    secAssign.style.display = '';
+    secFree.style.display   = 'none';
+  } else {
+    cardFree.style.borderColor   = '#2CB3E3';
+    cardFree.style.background    = '#EBF8FF';
+    cardFree.querySelector('i').style.color = '#2CB3E3';
+    cardAssign.style.borderColor = 'var(--border)';
+    cardAssign.style.background  = '#F7F9FC';
+    cardAssign.querySelector('i').style.color = 'var(--text-mid)';
+    secFree.style.display   = '';
+    secAssign.style.display = 'none';
+  }
+  updateReleaseEmailPreview();
 }
 
 function updateReleaseEmailPreview() {
   if (!poolReleaseCtx) return;
-  const targetDeptId = document.getElementById('pool-release-target-dept')?.value;
-  const targetShiftId = document.getElementById('pool-release-target-shift')?.value || 'F';
-  const note = (document.getElementById('pool-release-note')?.value || '').trim();
-  const targetDept = DEPARTMENTS.find(x => x.id === targetDeptId);
-  const shiftCfg   = POOL_SHIFTS_CFG.find(x => x.id === targetShiftId);
+  const note    = (document.getElementById('pool-release-note')?.value || '').trim();
   const { deptName, count } = poolReleaseCtx;
-  const today = new Date().toLocaleDateString('de-CH', { weekday: 'long', day: 'numeric', month: 'long' });
+  const today   = new Date().toLocaleDateString('de-CH', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  let assignment = targetDept
-    ? `Du wirst für den <strong>${shiftCfg?.label}</strong> der Abteilung <strong>${targetDept.name}</strong> (${targetDept.fullName}) eingeplant.`
-    : `Du stehst für den nächsten Dienst wieder im Pool zur Verfügung.`;
+  let actionText = '';
+  if (poolReleaseAction === 'assign') {
+    const targetDeptId  = document.getElementById('pool-release-target-dept')?.value;
+    const targetShiftId = document.getElementById('pool-release-target-shift')?.value || 'F';
+    const targetDept    = DEPARTMENTS.find(x => x.id === targetDeptId);
+    const shiftCfg      = POOL_SHIFTS_CFG.find(x => x.id === targetShiftId);
+    actionText = targetDept
+      ? `Du wirst für den <strong>${shiftCfg?.label}</strong> der Abteilung <strong>${targetDept.name}</strong> (${targetDept.fullName}) eingeplant.`
+      : `Du stehst für den nächsten Dienst wieder im Pool zur Verfügung.`;
+  } else {
+    const sel = document.querySelector('input[name="rel-comp-type"]:checked')?.value;
+    const compMap = {
+      freizeit:   'Deine geleisteten Stunden werden als <strong>Freizeit</strong> kompensiert.',
+      auszahlung: 'Deine Überstunden werden mit dem nächsten Lohn <strong>ausbezahlt</strong>.',
+      beides:     'Deine Überstunden werden teilweise als <strong>Freizeit</strong> kompensiert und teilweise <strong>ausbezahlt</strong>. Details werden separat geregelt.',
+    };
+    actionText = sel ? compMap[sel] : '<em style="color:var(--text-light)">(Bitte Massnahme auswählen)</em>';
+  }
 
   const previewEl = document.getElementById('pool-release-email-preview');
-  if (previewEl) previewEl.innerHTML = `
-    <em>Betreff: Dienstübergabe Kinderspital Zürich — ${today}</em><br><br>
-    Guten Tag,<br><br>
-    Du wirst von der Abteilung <strong>${deptName}</strong> freigestellt.<br>
-    ${assignment}${note ? `<br><br>Notiz: <em>${note}</em>` : ''}<br><br>
-    Bei Fragen wende dich bitte an die Pool-MA oder die Pflegedienstleitung.
-  `;
+  if (previewEl) previewEl.innerHTML =
+    `<em>Betreff: Personalfreigabe Kinderspital Zürich — ${today}</em><br><br>` +
+    `Guten Tag,<br><br>` +
+    `Du wirst von der Abteilung <strong>${deptName}</strong> freigestellt.<br>${actionText}` +
+    (note ? `<br><br>Notiz: <em>${note}</em>` : '') +
+    `<br><br>Bei Fragen wende dich an die Pool-MA oder die Pflegedienstleitung.`;
 }
 
 function closePoolReleaseModal() {
@@ -1096,7 +1144,31 @@ function closePoolReleaseModal() {
 }
 
 function confirmPoolReleaseModal() {
+  // Validate: if 'free' action, a compensation type must be selected
+  if (poolReleaseAction === 'free') {
+    const sel = document.querySelector('input[name="rel-comp-type"]:checked');
+    if (!sel) {
+      const err = document.getElementById('rel-comp-err');
+      if (err) err.style.display = 'block';
+      return;
+    }
+  }
+  // Validate: if 'assign', a target dept must be selected
+  if (poolReleaseAction === 'assign') {
+    const targetDept = document.getElementById('pool-release-target-dept')?.value;
+    if (!targetDept) {
+      document.getElementById('pool-release-target-dept')?.focus();
+      return;
+    }
+  }
+
   const deptId = poolReleaseCtx?.deptId;
+  const action = poolReleaseAction;
+  const compType = document.querySelector('input[name="rel-comp-type"]:checked')?.value;
+  const targetDeptName = action === 'assign'
+    ? DEPARTMENTS.find(x => x.id === document.getElementById('pool-release-target-dept')?.value)?.name
+    : null;
+
   closePoolReleaseModal();
   _handledPoolActions.add(`rel-${deptId}`);
   const card = document.getElementById(`pool-rel-card-${deptId}`);
@@ -1105,7 +1177,13 @@ function confirmPoolReleaseModal() {
   if (relEl && !relEl.querySelector('.pool-card')) {
     relEl.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Freigaben</p></div>';
   }
-  showToast(`Freigabe bestätigt. E-Mail an Mitarbeitenden gesendet.`);
+
+  const msg = action === 'assign' && targetDeptName
+    ? `Freigabe bestätigt. Zuweisung an ${targetDeptName}. E-Mail gesendet.`
+    : action === 'free'
+    ? `Freigabe bestätigt. ${compType === 'freizeit' ? 'Freizeit' : compType === 'auszahlung' ? 'Überstunden-Auszahlung' : 'Freizeit + Auszahlung'} veranlasst. E-Mail gesendet.`
+    : `Freigabe bestätigt. E-Mail an Mitarbeitenden gesendet.`;
+  showToast(msg);
 }
 
 // ── OR PAGE ──────────────────────────────────────────────────
