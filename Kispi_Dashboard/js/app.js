@@ -1382,7 +1382,6 @@ function renderForecastPage() {
         <div style="font-size:10px;color:var(--text-muted)">proj. Ø</div>
       </td>
       <td class="text-center"><strong>${avgBeds}</strong> / ${dept.beds}</td>
-      <td class="text-center"><strong>${avgNursesD}</strong></td>
       <td class="text-center">
         <span style="color:${ciColor};font-weight:700">${repDay.complexityLabel}</span>
         <div style="font-size:10px;color:var(--text-muted)">${avgCI2} / 100</div>
