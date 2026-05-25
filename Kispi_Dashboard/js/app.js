@@ -132,7 +132,8 @@ function navigateTo(pageId) {
   const titles = {
     overview:          ['Klinikübersicht',    'Echtzeit-Dashboard'],
     stations:          ['Stationen',          'Belegung · Barthel-Index · Personal'],
-    staffing:          ['Personal & Pool',    'IST/SOLL · Skill-Grade-Mix · Pool-Management'],
+    staffing:          ['Personal',           'IST/SOLL · Skill-Grade-Mix'],
+    pool:              ['Pool',               'Ressourcen · Anfragen · Bedarfsmeldungen'],
     or:                ['OP-Planung',         'Geplante Eingriffe & postop. Verlegung'],
     historical:        ['Historische Daten',  'Trends & Abweichungsanalyse'],
     info:              ['Kompetenzen',        'Berufsgruppen & Kompetenzprofile'],
@@ -145,6 +146,7 @@ function navigateTo(pageId) {
 
   if (pageId === 'historical')       renderHistoricalPage();
   if (pageId === 'staffing')         renderStaffingPage();
+  if (pageId === 'pool')             renderPoolPage();
   if (pageId === 'or')               renderORPage();
   if (pageId === 'info')             renderInfoPage();
   if (pageId === 'forecast')         renderForecastPage();
@@ -576,7 +578,154 @@ function renderStaffingPage() {
 
   buildSkillMixChart('chart-skill-mix', AppState.currentShiftData);
   buildNurseRatioChart('chart-nurse-ratio', AppState.currentShiftData);
+}
+
+// ── POOL PAGE ─────────────────────────────────────────────────
+
+let poolShiftActive = 'F';
+
+function setPoolShift(shift) {
+  poolShiftActive = shift;
+  ['F','S','N'].forEach(s => {
+    document.getElementById(`pool-shift-${s}`)?.classList.toggle('active', s === shift);
+  });
+  buildPoolResourcesTable();
+}
+
+function renderPoolPage() {
+  const data = AppState.poolResources;
+  if (!data) return;
+
+  // KPIs
+  const days = data.days;
+  let tF = 0, tS = 0, tN = 0;
+  days.forEach(d => { tF += d.shifts.F.total_available; tS += d.shifts.S.total_available; tN += d.shifts.N.total_available; });
+  setEl('pool-kpi-total', tF + tS + tN);
+  setEl('pool-kpi-f',     Math.round(tF / 7));
+  setEl('pool-kpi-s',     Math.round(tS / 7));
+  setEl('pool-kpi-n',     Math.round(tN / 7));
+
+  // Reset shift tab to Frühdienst on each page load
+  poolShiftActive = 'F';
+  ['F','S','N'].forEach(s => document.getElementById(`pool-shift-${s}`)?.classList.toggle('active', s === 'F'));
+
+  buildPoolResourcesTable();
   renderPoolCards();
+  renderPoolBedarfList();
+}
+
+function renderPoolBedarfList() {
+  const all       = AppState.getBedarfsmeldungen();
+  const statusSel = document.getElementById('pool-bedarf-filter-status')?.value    || 'all';
+  const prioSel   = document.getElementById('pool-bedarf-filter-prioritaet')?.value || 'all';
+  const deptSel   = document.getElementById('pool-bedarf-filter-dept')?.value       || 'all';
+
+  // Populate dept dropdown once
+  const deptDd = document.getElementById('pool-bedarf-filter-dept');
+  if (deptDd && deptDd.options.length <= 1) {
+    DEPARTMENTS.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${d.name} — ${d.fullName}`;
+      deptDd.appendChild(opt);
+    });
+  }
+
+  // Badge
+  const openCount = all.filter(e => e.status === 'offen').length;
+  const badge = document.getElementById('pool-bedarf-badge');
+  if (badge) { badge.textContent = openCount; badge.style.display = openCount ? '' : 'none'; }
+  const navBadge = document.getElementById('nav-bedarf-badge');
+  if (navBadge) { navBadge.textContent = openCount; navBadge.style.display = openCount ? '' : 'none'; }
+
+  const filtered = all.filter(e =>
+    (statusSel === 'all' || e.status === statusSel) &&
+    (prioSel   === 'all' || e.prioritaet === prioSel) &&
+    (deptSel   === 'all' || e.department_id === deptSel)
+  );
+
+  const container = document.getElementById('pool-bedarf-list');
+  if (!container) return;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state" style="padding:24px"><span class="empty-icon">📋</span><p>Keine Bedarfsmeldungen für diese Filter</p></div>`;
+    return;
+  }
+
+  const prioOrder = { sofort: 0, dringlich: 1, normal: 2, geplant: 3 };
+  const statOrder = { offen: 0, bearbeitung: 1, erledigt: 2, abgelehnt: 3 };
+  const sorted = [...filtered].sort((a, b) => {
+    const sd = (statOrder[a.status] ?? 9) - (statOrder[b.status] ?? 9);
+    if (sd !== 0) return sd;
+    const pd = (prioOrder[a.prioritaet] ?? 9) - (prioOrder[b.prioritaet] ?? 9);
+    if (pd !== 0) return pd;
+    return (b.erstellt_am || '').localeCompare(a.erstellt_am || '');
+  });
+  container.innerHTML = sorted.map(e => buildBedarfItemHtml(e)).join('');
+}
+
+function buildPoolResourcesTable() {
+  const data = AppState.poolResources;
+  if (!data) return;
+  const { roleGroups, days } = data;
+  const allRoles = roleGroups.flatMap(g => g.roles);
+  const shift    = poolShiftActive;
+
+  const thead = document.getElementById('pool-resources-thead');
+  const tbody = document.getElementById('pool-resources-tbody');
+  const tfoot = document.getElementById('pool-resources-tfoot');
+
+  if (thead) {
+    thead.innerHTML = `
+      <tr>
+        <th rowspan="2">Datum</th>
+        ${roleGroups.map(g => `<th colspan="${g.roles.length}" style="text-align:center;font-size:10px;color:var(--text-light);border-bottom:1px solid #E2E8F0;letter-spacing:0.5px">${g.label.toUpperCase()}</th>`).join('')}
+        <th rowspan="2" style="white-space:nowrap">Total<br><span style="font-size:10px;font-weight:400;color:var(--text-light)">Verfügbar</span></th>
+        <th rowspan="2" style="white-space:nowrap">Bereits<br><span style="font-size:10px;font-weight:400;color:var(--text-light)">Eingeplant</span></th>
+      </tr>
+      <tr>
+        ${allRoles.map(r => `<th style="font-size:10px;text-align:center;border-top:1px solid #E2E8F0;white-space:nowrap">${r.shortLabel}</th>`).join('')}
+      </tr>`;
+  }
+
+  if (tbody) {
+    tbody.innerHTML = days.map(day => {
+      const s       = day.shifts[shift];
+      const weStyle = day.isWeekend ? 'background:#F7FAFC' : '';
+      const tColor  = s.total_available >= 15 ? 'var(--success)' : s.total_available >= 8 ? 'var(--warning)' : 'var(--danger)';
+      const cells   = allRoles.map(r => {
+        const v   = s.byRole[r.id];
+        const col = !v?.available ? '#CBD5E0' : 'var(--text-dark)';
+        return `<td style="text-align:center;color:${col}">${v?.available ?? 0}</td>`;
+      }).join('');
+      return `<tr style="${weStyle}">
+        <td style="white-space:nowrap">
+          <strong>${day.dateLabel}</strong>
+          ${day.isWeekend ? '<span style="display:inline-block;font-size:9px;background:#EDF2FF;color:#5A67D8;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600">WE</span>' : ''}
+          ${day.dayIndex === 0 ? '<span class="badge badge-green" style="font-size:9px;padding:1px 5px;margin-left:4px">Heute</span>' : ''}
+        </td>
+        ${cells}
+        <td style="text-align:center;font-weight:700;color:${tColor}">${s.total_available}</td>
+        <td style="text-align:center;color:#718096">${s.total_assigned}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  if (tfoot) {
+    const roleSums = allRoles.map(r => {
+      const sum = days.reduce((acc, d) => acc + (d.shifts[shift].byRole[r.id]?.available || 0), 0);
+      return `<td style="text-align:center"><strong>${sum}</strong></td>`;
+    }).join('');
+    const gTotal    = days.reduce((acc, d) => acc + d.shifts[shift].total_available, 0);
+    const gAssigned = days.reduce((acc, d) => acc + d.shifts[shift].total_assigned, 0);
+    tfoot.innerHTML = `
+      <tr class="staffing-total-row">
+        <td><strong>Total 7 Tage</strong></td>
+        ${roleSums}
+        <td style="text-align:center"><strong>${gTotal}</strong></td>
+        <td style="text-align:center"><strong>${gAssigned}</strong></td>
+      </tr>`;
+  }
 }
 
 function renderPoolCards() {
@@ -1264,6 +1413,9 @@ document.addEventListener('DOMContentLoaded', () => {
   ['bedarf-filter-status','bedarf-filter-prioritaet','bedarf-filter-dept'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', renderBedarfsmeldungenPage);
   });
+  ['pool-bedarf-filter-status','pool-bedarf-filter-prioritaet','pool-bedarf-filter-dept'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', renderPoolBedarfList);
+  });
 });
 
 // ── DATA ENTRY MODAL ─────────────────────────────────────────
@@ -1622,6 +1774,7 @@ function updateBedarfBadge() {
 function quickStatusBedarf(id, status) {
   AppState.updateBedarfsmeldungStatus(id, status);
   renderBedarfsmeldungenPage();
+  renderPoolBedarfList();
   const statusLabel = BEDARFSMELDUNG_STATUS_LIST.find(s => s.id === status)?.label || status;
   showToast(`Status auf «${statusLabel}» gesetzt.`);
 }
@@ -1706,6 +1859,7 @@ function submitBedarfForm() {
   AppState.saveBedarfsmeldung(entry);
   closeBedarfForm();
   renderBedarfsmeldungenPage();
+  renderPoolBedarfList();
   showToast(`Bedarfsmeldung «${titel}» ${bedarfEditId ? 'aktualisiert' : 'erfasst'}.`);
 }
 
@@ -1716,6 +1870,7 @@ function deleteBedarfEntry() {
   AppState.deleteBedarfsmeldung(bedarfEditId);
   closeBedarfForm();
   renderBedarfsmeldungenPage();
+  renderPoolBedarfList();
   showToast('Bedarfsmeldung gelöscht.');
 }
 
