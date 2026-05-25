@@ -842,12 +842,12 @@ function openPoolReject(id) {
   if (errEl) errEl.style.display = 'none';
   const btn = document.getElementById('pool-reject-confirm-btn');
   if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
-  document.getElementById('pool-reject-overlay').classList.add('active');
+  document.getElementById('pool-reject-overlay').classList.add('open');
 }
 
 function closePoolReject() {
   poolRejectId = null;
-  document.getElementById('pool-reject-overlay').classList.remove('active');
+  document.getElementById('pool-reject-overlay').classList.remove('open');
 }
 
 function validatePoolRejectForm() {
@@ -1001,12 +1001,12 @@ function openPoolReqReject(deptId) {
   if (ta)  ta.value = '';
   if (err) err.style.display = 'none';
   if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }
-  document.getElementById('pool-req-reject-overlay').classList.add('active');
+  document.getElementById('pool-req-reject-overlay').classList.add('open');
 }
 
 function closePoolReqReject() {
   poolReqRejectCtx = null;
-  document.getElementById('pool-req-reject-overlay').classList.remove('active');
+  document.getElementById('pool-req-reject-overlay').classList.remove('open');
 }
 
 function validatePoolReqRejectForm() {
@@ -1063,7 +1063,7 @@ function openPoolReleaseModal(deptId) {
   if (noteEl) noteEl.value = '';
 
   updateReleaseEmailPreview();
-  document.getElementById('pool-release-modal-overlay').classList.add('active');
+  document.getElementById('pool-release-modal-overlay').classList.add('open');
 }
 
 function updateReleaseEmailPreview() {
@@ -1092,7 +1092,7 @@ function updateReleaseEmailPreview() {
 
 function closePoolReleaseModal() {
   poolReleaseCtx = null;
-  document.getElementById('pool-release-modal-overlay').classList.remove('active');
+  document.getElementById('pool-release-modal-overlay').classList.remove('open');
 }
 
 function confirmPoolReleaseModal() {
