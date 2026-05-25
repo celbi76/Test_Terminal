@@ -1382,10 +1382,57 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: POOL-RESERVATION ABLEHNEN
+══════════════════════════════════════════════════════════ -->
+<div id="pool-reject-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header" style="border-bottom-color:#E63946">
+      <i class="bi bi-x-circle-fill" style="font-size:22px;color:#E63946"></i>
+      <h2>Reservation ablehnen</h2>
+      <button class="modal-close" onclick="closePoolReject()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Info banner -->
+      <div style="background:#FEF2F2;border-left:4px solid #E63946;border-radius:6px;padding:12px 14px;margin-bottom:20px">
+        <div style="font-size:12px;color:#C0392B;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Zu ablehnende Reservation</div>
+        <div style="font-weight:700;font-size:15px;color:#1A202C" id="pool-reject-info-role">—</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:4px" id="pool-reject-info-detail">—</div>
+      </div>
+      <!-- Reason (required) -->
+      <div class="form-group">
+        <label class="form-label">
+          Begründung / Bemerkung zum Entscheid
+          <span style="color:#E63946">*</span>
+          <span style="font-weight:400;color:var(--text-light)">(Pflichtfeld)</span>
+        </label>
+        <textarea id="pool-reject-reason" class="form-control" rows="4"
+          placeholder="z.B. Ressource bereits anderweitig verplant, Kompetenzprofil passt nicht zur Anforderung der Station…"
+          style="resize:vertical;min-height:90px"
+          oninput="validatePoolRejectForm()"></textarea>
+        <div id="pool-reject-reason-err" style="display:none;font-size:11px;color:#E63946;margin-top:4px">
+          <i class="bi bi-exclamation-triangle-fill"></i> Bitte eine Begründung eingeben, bevor die Reservation abgelehnt werden kann.
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-light);padding:8px 12px;background:#FFF8EE;border-radius:6px;border-left:3px solid #F7941D">
+        <i class="bi bi-shield-check" style="margin-right:4px;color:#F7941D"></i>
+        Die anfragende Person wird über die Ablehnung informiert. Die Begründung bleibt im System gespeichert.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closePoolReject()">Abbrechen</button>
+      <button id="pool-reject-confirm-btn" class="btn-danger" onclick="confirmPoolReject()" disabled
+        style="background:#E63946;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;opacity:0.5">
+        <i class="bi bi-x-circle"></i> Ablehnen
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts -->
-<script src="js/data.js?v=20260525f"></script>
+<script src="js/data.js?v=20260525g"></script>
 <script src="js/charts.js?v=20260524j"></script>
-<script src="js/app.js?v=20260525g"></script>
+<script src="js/app.js?v=20260525h"></script>
 
 </body>
 </html>

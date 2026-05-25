@@ -932,6 +932,17 @@ const AppState = {
     }
   },
 
+  rejectPoolReservation(id, reason) {
+    const list  = this.getPoolReservations();
+    const entry = list.find(r => r.id === id);
+    if (entry) {
+      entry.status       = 'abgelehnt';
+      entry.reject_reason = reason;
+      entry.rejected_at  = new Date().toISOString();
+      localStorage.setItem('kispi_pool_reservations', JSON.stringify(list));
+    }
+  },
+
   deletePoolReservation(id) {
     const list = this.getPoolReservations().filter(r => r.id !== id);
     localStorage.setItem('kispi_pool_reservations', JSON.stringify(list));

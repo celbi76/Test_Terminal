@@ -825,41 +825,110 @@ function releasePoolReservation(id) {
   showToast('Pool-Ressource freigegeben.');
 }
 
+// ── Pool-Reservation Ablehnen ─────────────────────────────
+let poolRejectId = null;
+
+function openPoolReject(id) {
+  poolRejectId = id;
+  const r       = AppState.getPoolReservations().find(x => x.id === id);
+  if (!r) return;
+  const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === r.shift);
+  const dept     = DEPARTMENTS.find(d => d.id === r.dept_id);
+  setEl('pool-reject-info-role',   r.role_label);
+  setEl('pool-reject-info-detail', `${r.dateLabel} · ${r.shiftLabel} → ${dept?.name || r.dept_name}`);
+  const ta = document.getElementById('pool-reject-reason');
+  if (ta) ta.value = '';
+  const errEl = document.getElementById('pool-reject-reason-err');
+  if (errEl) errEl.style.display = 'none';
+  const btn = document.getElementById('pool-reject-confirm-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+  document.getElementById('pool-reject-overlay').classList.add('active');
+}
+
+function closePoolReject() {
+  poolRejectId = null;
+  document.getElementById('pool-reject-overlay').classList.remove('active');
+}
+
+function validatePoolRejectForm() {
+  const val = (document.getElementById('pool-reject-reason')?.value || '').trim();
+  const btn = document.getElementById('pool-reject-confirm-btn');
+  const errEl = document.getElementById('pool-reject-reason-err');
+  if (btn) { btn.disabled = !val; btn.style.opacity = val ? '1' : '0.5'; btn.style.cursor = val ? 'pointer' : 'not-allowed'; }
+  if (errEl) errEl.style.display = val ? 'none' : 'none'; // shown only on submit attempt
+}
+
+function confirmPoolReject() {
+  const reason = (document.getElementById('pool-reject-reason')?.value || '').trim();
+  if (!reason) {
+    const errEl = document.getElementById('pool-reject-reason-err');
+    if (errEl) errEl.style.display = 'block';
+    document.getElementById('pool-reject-reason')?.focus();
+    return;
+  }
+  AppState.rejectPoolReservation(poolRejectId, reason);
+  closePoolReject();
+  buildPoolResourcesTable();
+  renderPoolReservationsList();
+  showToast('Reservation abgelehnt.');
+}
+
 function renderPoolReservationsList() {
   const container = document.getElementById('pool-reservations-list');
   if (!container) return;
-  const all    = AppState.getPoolReservations();
-  const active = all.filter(r => r.status === 'aktiv').sort((a,b)=>a.date.localeCompare(b.date));
-  const freed  = all.filter(r => r.status === 'freigegeben').slice(-3);
+  const all      = AppState.getPoolReservations();
+  const active   = all.filter(r => r.status === 'aktiv').sort((a,b)=>a.date.localeCompare(b.date));
+  const freed    = all.filter(r => r.status === 'freigegeben').slice(-3);
+  const rejected = all.filter(r => r.status === 'abgelehnt').slice(-3);
 
-  if (!active.length && !freed.length) {
+  if (!active.length && !freed.length && !rejected.length) {
     container.innerHTML = `<div class="empty-state" style="padding:20px"><span class="empty-icon">✅</span><p>Keine aktiven Reservationen</p></div>`;
     return;
   }
 
-  const renderRow = (r, isFreed) => {
+  const renderRow = (r, mode) => {
+    // mode: 'active' | 'freed' | 'rejected'
     const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === r.shift);
     const dept     = DEPARTMENTS.find(d => d.id === r.dept_id);
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F0F0F0;${isFreed?'opacity:0.5':''}">
-      <span style="width:8px;height:8px;border-radius:50%;background:${dept?.color||'#CBD5E0'};flex-shrink:0;display:inline-block"></span>
+    const dimmed   = mode !== 'active' ? 'opacity:0.6;' : '';
+    return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #F0F0F0;${dimmed}">
+      <span style="width:8px;height:8px;border-radius:50%;background:${dept?.color||'#CBD5E0'};flex-shrink:0;display:inline-block;margin-top:4px"></span>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:13px">${r.role_label}</div>
         <div style="font-size:11px;color:var(--text-light)">${r.dateLabel} · <span style="color:${shiftCfg?.color}">${r.shiftLabel}</span> → ${dept?.name || r.dept_name}</div>
-        ${r.notes ? `<div style="font-size:11px;color:var(--text-light);font-style:italic">${r.notes}</div>` : ''}
+        ${r.notes ? `<div style="font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px">${r.notes}</div>` : ''}
+        ${mode === 'rejected' && r.reject_reason
+          ? `<div style="font-size:11px;color:#E63946;margin-top:4px;padding:4px 8px;background:#FEF2F2;border-radius:4px;border-left:2px solid #E63946">
+               <i class="bi bi-chat-left-text" style="margin-right:3px"></i><em>${r.reject_reason}</em>
+             </div>`
+          : ''}
       </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-        ${isFreed
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-top:2px">
+        ${mode === 'freed'
           ? `<span class="badge badge-green" style="font-size:10px">Freigegeben</span>`
-          : `<div style="font-size:10px;color:var(--text-light);text-align:right;margin-right:4px">Freigabe durch<br><strong>Pool-MA · PDL</strong></div>
-             <button class="btn-secondary" style="padding:4px 10px;font-size:11px" onclick="releasePoolReservation('${r.id}')">
-               <i class="bi bi-person-dash-fill"></i> Freigeben
+          : mode === 'rejected'
+          ? `<span style="font-size:10px;font-weight:600;color:#E63946;background:#FEF2F2;padding:2px 8px;border-radius:4px;border:1px solid #FECACA">Abgelehnt</span>`
+          : `<div style="font-size:10px;color:var(--text-light);text-align:right;margin-right:2px">Freigabe durch<br><strong>Pool-MA · PDL</strong></div>
+             <button class="btn-secondary" style="padding:4px 10px;font-size:11px;white-space:nowrap" onclick="releasePoolReservation('${r.id}')">
+               <i class="bi bi-person-check-fill"></i> Freigeben
+             </button>
+             <button style="padding:4px 10px;font-size:11px;white-space:nowrap;background:#FEF2F2;color:#E63946;border:1px solid #FECACA;border-radius:6px;cursor:pointer;font-weight:600" onclick="openPoolReject('${r.id}')">
+               <i class="bi bi-x-circle"></i> Ablehnen
              </button>`}
       </div>
     </div>`;
   };
 
-  container.innerHTML = active.map(r => renderRow(r, false)).join('') +
-    (freed.length ? `<div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;padding-top:4px">Zuletzt freigegeben</div>` + freed.map(r => renderRow(r, true)).join('') : '');
+  let html = active.map(r => renderRow(r, 'active')).join('');
+  if (freed.length) {
+    html += `<div style="margin-top:10px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.5px;padding-top:6px;border-top:1px solid #F0F0F0">Zuletzt freigegeben</div>`;
+    html += freed.map(r => renderRow(r, 'freed')).join('');
+  }
+  if (rejected.length) {
+    html += `<div style="margin-top:10px;font-size:11px;font-weight:600;color:#E63946;text-transform:uppercase;letter-spacing:0.5px;padding-top:6px;border-top:1px solid #F0F0F0">Zuletzt abgelehnt</div>`;
+    html += rejected.map(r => renderRow(r, 'rejected')).join('');
+  }
+  container.innerHTML = html;
 }
 
 function renderPoolCards() {
