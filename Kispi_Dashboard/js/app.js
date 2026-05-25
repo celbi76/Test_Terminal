@@ -474,12 +474,23 @@ function renderStaffingPage() {
   // ── Thead (dynamisch per Berufsgruppe) ──────────────────────
   const thead = document.getElementById('staffing-thead');
   if (thead) {
-    thead.innerHTML = `<tr>
-      <th>Abteilung</th>
-      ${allRoles.map(r => `<th title="${r.label}">${ROLE_SHORT[r.id] || r.label}</th>`).join('')}
-      <th>IST Total</th><th>SOLL Total</th><th>Abdeckung</th>
-      <th>Betr. Betten</th><th>Nurse-to-Patient Ratio</th><th>Pool-Status</th>
-    </tr>`;
+    thead.innerHTML = `
+      <tr>
+        <th rowspan="2">Abteilung</th>
+        <th colspan="${allRoles.length}" style="text-align:center;border-bottom:1px solid #E2E8F0;font-size:10px;letter-spacing:0.5px;color:var(--text-light)">
+          BERUFSGRUPPEN —
+          <span style="color:var(--text-dark);font-weight:700">IST</span>
+          <span style="color:#A0AEC0;font-weight:400"> / SOLL</span>
+        </th>
+        <th rowspan="2" style="white-space:nowrap">IST / SOLL<br><span style="font-size:10px;font-weight:400;color:var(--text-light)">Total</span></th>
+        <th rowspan="2">Abdeckung</th>
+        <th rowspan="2" style="white-space:nowrap">Betr.<br>Betten</th>
+        <th rowspan="2" style="white-space:nowrap">Nurse-to-Patient</th>
+        <th rowspan="2">Pool-Status</th>
+      </tr>
+      <tr>
+        ${allRoles.map(r => `<th title="${r.label}" style="font-size:10px;font-weight:600;text-align:center;border-top:1px solid #E2E8F0">${ROLE_SHORT[r.id] || r.label}</th>`).join('')}
+      </tr>`;
   }
 
   // ── Tbody ───────────────────────────────────────────────────
@@ -490,15 +501,26 @@ function renderStaffingPage() {
       const qualNurses = ['exp_int','exp_nf','pfn_hf'].reduce((s, id) => s + (d.staff_actual_by_role?.[id] || 0), 0);
       const ratio  = qualNurses > 0 ? `1 : ${(d.beds_occupied / qualNurses).toFixed(1)}` : '—';
       const cColor = d.staff_coverage_pct >= 95 ? '#2DC653' : d.staff_coverage_pct >= 80 ? '#F7941D' : '#E63946';
+      const totalDiff = d.staff_actual_total - d.staff_target_total;
+      const totalColor = totalDiff >= 0 ? '#2DC653' : totalDiff >= -1 ? '#F7941D' : '#E63946';
       const roleCells = allRoles.map(r => {
-        const v = d.staff_actual_by_role?.[r.id];
-        return `<td style="text-align:center">${v !== undefined ? v : '<span style="color:#CBD5E0">—</span>'}</td>`;
+        const ist  = d.staff_actual_by_role?.[r.id];
+        const soll = d.staff_target_by_role?.[r.id];
+        if (ist === undefined && soll === undefined) {
+          return `<td style="text-align:center"><span style="color:#CBD5E0">—</span></td>`;
+        }
+        const diff = (ist ?? 0) - (soll ?? 0);
+        const istColor = diff >= 0 ? 'var(--text-dark)' : diff === -1 ? '#F7941D' : '#E63946';
+        return `<td style="text-align:center;white-space:nowrap">
+          <span style="font-weight:700;color:${istColor}">${ist ?? 0}</span><span style="color:#A0AEC0;font-size:11px"> / ${soll ?? 0}</span>
+        </td>`;
       }).join('');
       return `<tr>
         <td><span class="station-dot" style="background:${dept.color};display:inline-block;margin-right:6px"></span>${dept.name}</td>
         ${roleCells}
-        <td><strong>${d.staff_actual_total}</strong></td>
-        <td>${d.staff_target_total}</td>
+        <td style="text-align:center;white-space:nowrap">
+          <span style="font-weight:700;color:${totalColor}">${d.staff_actual_total}</span><span style="color:#A0AEC0;font-size:11px"> / ${d.staff_target_total}</span>
+        </td>
         <td>
           <div class="coverage-bar-wrap">
             <div class="coverage-bar"><div class="coverage-fill" style="width:${Math.min(d.staff_coverage_pct,100)}%;background:${cColor}"></div></div>
@@ -523,15 +545,24 @@ function renderStaffingPage() {
     const tSOLL = all.reduce((s, d) => s + d.staff_target_total, 0);
     const tCov  = Math.round((tIST / Math.max(tSOLL, 1)) * 100);
     const tCol  = tCov >= 95 ? '#2DC653' : tCov >= 80 ? '#F7941D' : '#E63946';
+    const tTotalDiff = tIST - tSOLL;
+    const tTotalColor = tTotalDiff >= 0 ? '#2DC653' : tTotalDiff >= -2 ? '#F7941D' : '#E63946';
     const roleTotals = allRoles.map(r => {
-      const sum = all.reduce((s, d) => s + (d.staff_actual_by_role?.[r.id] || 0), 0);
-      return `<td style="text-align:center"><strong>${sum > 0 ? sum : '—'}</strong></td>`;
+      const sumIST  = all.reduce((s, d) => s + (d.staff_actual_by_role?.[r.id] || 0), 0);
+      const sumSOLL = all.reduce((s, d) => s + (d.staff_target_by_role?.[r.id] || 0), 0);
+      const diff    = sumIST - sumSOLL;
+      const col     = diff >= 0 ? 'var(--text-dark)' : diff === -1 ? '#F7941D' : '#E63946';
+      return `<td style="text-align:center;white-space:nowrap">
+        <strong style="color:${col}">${sumIST > 0 ? sumIST : '—'}</strong><span style="color:#A0AEC0;font-size:11px"> / ${sumSOLL > 0 ? sumSOLL : '—'}</span>
+      </td>`;
     }).join('');
     tfoot.innerHTML = `
       <tr class="staffing-total-row">
         <td><strong>Total Klinik</strong></td>
         ${roleTotals}
-        <td><strong>${tIST}</strong></td><td><strong>${tSOLL}</strong></td>
+        <td style="text-align:center;white-space:nowrap">
+          <strong style="color:${tTotalColor}">${tIST}</strong><span style="color:#A0AEC0;font-size:11px"> / ${tSOLL}</span>
+        </td>
         <td>
           <div class="coverage-bar-wrap">
             <div class="coverage-bar"><div class="coverage-fill" style="width:${Math.min(tCov,100)}%;background:${tCol}"></div></div>
