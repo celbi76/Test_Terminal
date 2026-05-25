@@ -329,6 +329,10 @@ function renderStationGrid() {
         </div>
         ${d.pool_request ? `<div class="pool-badge request" style="margin-top:6px">⚠ Pool +${d.pool_request_count}</div>` : ''}
         ${d.pool_release ? `<div class="pool-badge release" style="margin-top:6px">✓ Freigabe ${d.pool_release_count}</div>` : ''}
+        ${(() => { const a = getAssignmentsForDept(dept.id); return a.total > 0
+          ? `<div style="margin-top:6px;font-size:10px;font-weight:700;background:linear-gradient(90deg,#2CB3E3,#F7941D);color:#fff;padding:2px 7px;border-radius:4px;display:inline-block">
+               <i class="bi bi-person-plus-fill"></i> +${a.total} zugewiesen
+             </div>` : ''; })()}
       </div>`;
     }).join('');
   });
@@ -354,6 +358,16 @@ function updateAlertBadge() {
   const navBadge = document.getElementById('nav-alert-badge');
   if (badge)    { badge.textContent = AppState.alerts.length; badge.style.display = AppState.alerts.length ? '' : 'none'; }
   if (navBadge) navBadge.textContent = AppState.alerts.length;
+}
+
+// ── Assignment helpers ────────────────────────────────────────
+// Returns all active pool reservations + transfers assigned to a dept
+function getAssignmentsForDept(deptId) {
+  const poolRes   = AppState.getPoolReservations()
+    .filter(r => r.dept_id === deptId && r.status === 'aktiv');
+  const transfers = AppState.getStaffTransfers()
+    .filter(t => t.dept_id === deptId);
+  return { poolRes, transfers, total: poolRes.length + transfers.reduce((s,t) => s + (t.count||1), 0) };
 }
 
 // ── STATIONS PAGE ────────────────────────────────────────────
@@ -434,6 +448,33 @@ function renderStationsPage() {
           ? `<span class="pool-badge release">✓ Freigabe: ${d.pool_release_count}</span>`
           : '';
 
+      // Assigned resources (pool reservations + transfers)
+      const { poolRes, transfers } = getAssignmentsForDept(dept.id);
+      const assignSection = (poolRes.length || transfers.length) ? (() => {
+        const poolRows = poolRes.map(r => {
+          const sc = POOL_SHIFTS_CFG.find(x => x.id === r.shift);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(44,179,227,0.1)">
+            <span style="font-size:10px;font-weight:700;background:#2CB3E3;color:#fff;padding:1px 6px;border-radius:4px;letter-spacing:0.4px;flex-shrink:0">POOL</span>
+            <span style="font-size:12px;font-weight:600;flex:1">${r.role_label}</span>
+            <span style="font-size:10px;color:${sc?.color||'var(--text-muted)'};">${r.dateLabel} · ${sc?.label||r.shiftLabel}</span>
+          </div>`;
+        }).join('');
+        const transferRows = transfers.map(t => {
+          const sc = POOL_SHIFTS_CFG.find(x => x.id === t.shift);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(247,148,29,0.1)">
+            <span style="font-size:10px;font-weight:700;background:#F7941D;color:#fff;padding:1px 6px;border-radius:4px;letter-spacing:0.4px;flex-shrink:0">TRANSFER</span>
+            <span style="font-size:12px;font-weight:600;flex:1">${t.count} Person${t.count>1?'en':''} von ${t.source_dept_name}</span>
+            <span style="font-size:10px;color:${sc?.color||'var(--text-muted)'};">${sc?.label||t.shiftLabel}</span>
+          </div>`;
+        }).join('');
+        return `
+          <div class="divider"></div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-mid);margin-bottom:6px">
+            <i class="bi bi-person-plus-fill" style="margin-right:4px;color:#2CB3E3"></i>Zugewiesene Ressourcen
+          </div>
+          ${poolRows}${transferRows}`;
+      })() : '';
+
       return `<div class="station-detail-card" style="border-top-color:${dept.color}">
         <div class="station-detail-header">
           <div>
@@ -462,6 +503,7 @@ function renderStationsPage() {
           </div>
           ${staffRows}
           <div style="margin-top:8px">${poolSection}</div>
+          ${assignSection}
         </div>
       </div>`;
     }).join('');
@@ -815,6 +857,9 @@ function confirmPoolReservation() {
   closePoolReserve();
   buildPoolResourcesTable();
   renderPoolReservationsList();
+  // Refresh station views so the assigned resource shows immediately
+  renderStationGrid();
+  renderStationsPage();
   showToast(`${ctx.role_label} für ${deptObj?.name} (${ctx.shiftLabel}) reserviert.`);
 }
 
@@ -1193,14 +1238,33 @@ function confirmPoolReleaseModal() {
     }
   }
 
-  const deptId = poolReleaseCtx?.deptId;
-  const action = poolReleaseAction;
-  const compType = document.querySelector('input[name="rel-comp-type"]:checked')?.value;
-  const targetDeptName = action === 'assign'
-    ? DEPARTMENTS.find(x => x.id === document.getElementById('pool-release-target-dept')?.value)?.name
-    : null;
+  const deptId        = poolReleaseCtx?.deptId;
+  const action        = poolReleaseAction;
+  const targetDeptId  = action === 'assign' ? document.getElementById('pool-release-target-dept')?.value : null;
+  const targetShiftId = action === 'assign' ? (document.getElementById('pool-release-target-shift')?.value || poolReleaseCtx?.shift || 'F') : null;
+  const targetDeptObj = targetDeptId ? DEPARTMENTS.find(x => x.id === targetDeptId) : null;
+  const releaseNote   = (document.getElementById('pool-release-note')?.value || '').trim();
+
+  // Save a transfer assignment so the target station shows it
+  if (action === 'assign' && targetDeptId) {
+    AppState.saveStaffTransfer({
+      id:               `transfer_${Date.now()}`,
+      type:             'transfer',
+      dept_id:          targetDeptId,
+      dept_name:        targetDeptObj?.name || targetDeptId,
+      count:            poolReleaseCtx?.count || 1,
+      shift:            targetShiftId,
+      shiftLabel:       POOL_SHIFTS_CFG.find(x => x.id === targetShiftId)?.label || targetShiftId,
+      source_dept_id:   deptId,
+      source_dept_name: poolReleaseCtx?.deptName || deptId,
+      notes:            releaseNote,
+      assigned_at:      new Date().toISOString(),
+    });
+  }
 
   closePoolReleaseModal();
+  // Refresh station views so transfer shows up immediately
+  if (action === 'assign') { renderStationGrid(); renderStationsPage(); }
   _handledPoolActions.add(`rel-${deptId}`);
   const card = document.getElementById(`pool-rel-card-${deptId}`);
   if (card) card.remove();
@@ -1213,8 +1277,8 @@ function confirmPoolReleaseModal() {
   if (document.getElementById('rel-comp-betrieb')?.checked) chosenMeasures.push('Betriebliche Freistellung');
   if (document.getElementById('rel-comp-uez')?.checked)     chosenMeasures.push('ÜZ-Kompensation');
   if (document.getElementById('rel-comp-other')?.checked)   chosenMeasures.push('Individuelle Abmachung');
-  const msg = action === 'assign' && targetDeptName
-    ? `Freigabe bestätigt. Zuweisung an ${targetDeptName}. E-Mail gesendet.`
+  const msg = action === 'assign' && targetDeptObj
+    ? `Freigabe bestätigt. Zuweisung an ${targetDeptObj.name}. E-Mail gesendet.`
     : action === 'free' && chosenMeasures.length
     ? `Freigabe bestätigt. ${chosenMeasures.join(' + ')}. E-Mail gesendet.`
     : `Freigabe bestätigt. E-Mail an Mitarbeitenden gesendet.`;

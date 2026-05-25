@@ -932,6 +932,20 @@ const AppState = {
     }
   },
 
+  // ── Staff Transfers (from Personalfreigabe → Zuweisung) ─────
+  getStaffTransfers() {
+    try { return JSON.parse(localStorage.getItem('kispi_staff_transfers') || '[]'); } catch { return []; }
+  },
+  saveStaffTransfer(entry) {
+    const list = this.getStaffTransfers();
+    list.push(entry);
+    localStorage.setItem('kispi_staff_transfers', JSON.stringify(list));
+  },
+  removeStaffTransfer(id) {
+    const list = this.getStaffTransfers().filter(t => t.id !== id);
+    localStorage.setItem('kispi_staff_transfers', JSON.stringify(list));
+  },
+
   rejectPoolReservation(id, reason) {
     const list  = this.getPoolReservations();
     const entry = list.find(r => r.id === id);
