@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { getFullStockData, getCandlesForPeriod } from '../services/marketApi'
 
 const cache = new Map()
@@ -19,17 +19,17 @@ export function useStockData(ticker, assetType = 'stock') {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!ticker) return
-    const key = `${ticker}-${assetType}`
-    const cached = getCached(key)
+    const cacheKey = `${ticker}-${assetType}`
+    const cached = getCached(cacheKey)
     if (cached) { setData(cached); return }
 
     setLoading(true)
     setError(null)
     try {
       const result = await getFullStockData(ticker, assetType)
-      cache.set(key, { data: result, ts: Date.now() })
+      cache.set(cacheKey, { data: result, ts: Date.now() })
       setData(result)
     } catch (e) {
       setError(e.message)
@@ -38,37 +38,42 @@ export function useStockData(ticker, assetType = 'stock') {
     }
   }, [ticker, assetType])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { fetchData() }, [fetchData])
 
-  return { data, loading, error, refetch: fetch }
+  return { data, loading, error, refetch: fetchData }
 }
 
-export function useMultiQuotes(positions) {
+// Accepts: array of ticker strings, OR array of { ticker, assetType } objects
+export function useMultiQuotes(items) {
   const [quotes, setQuotes] = useState({})
   const [loading, setLoading] = useState(false)
-  const prevKey = useRef('')
+  const prevKeyRef = useRef('')
 
-  // Accept either array of tickers (legacy) or array of position objects
-  const normalized = positions.map((p) =>
-    typeof p === 'string' ? { ticker: p, assetType: 'stock' } : p
+  const normalized = useMemo(() =>
+    (items ?? []).map((p) =>
+      typeof p === 'string' ? { ticker: p, assetType: 'stock' } : p
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(items)]
   )
 
   const key = normalized.map((p) => `${p.ticker}:${p.assetType}`).sort().join(',')
 
   useEffect(() => {
     if (!normalized.length) return
-    if (key === prevKey.current) return
-    prevKey.current = key
+    if (key === prevKeyRef.current) return
+    prevKeyRef.current = key
 
     setLoading(true)
-    Promise.allSettled(normalized.map((p) => getFullStockData(p.ticker, p.assetType))).then((results) => {
+    const toFetch = [...normalized]
+    Promise.allSettled(toFetch.map((p) => getFullStockData(p.ticker, p.assetType))).then((results) => {
       const newQuotes = {}
-      normalized.forEach((p, i) => {
+      toFetch.forEach((p, i) => {
         if (results[i].status === 'fulfilled') {
           newQuotes[p.ticker] = results[i].value
         }
       })
-      setQuotes(newQuotes)
+      setQuotes((prev) => ({ ...prev, ...newQuotes }))
       setLoading(false)
     })
   }, [key])
@@ -81,23 +86,23 @@ export function useCandles(ticker, period = '1J', assetType = 'stock') {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const key = `${ticker}-${period}-${assetType}`
+  const cacheKey = `${ticker}-${period}-${assetType}`
 
   useEffect(() => {
     if (!ticker) return
-    const cached = getCached(key)
+    const cached = getCached(cacheKey)
     if (cached) { setCandles(cached); return }
 
     setLoading(true)
     setError(null)
     getCandlesForPeriod(ticker, period, assetType)
       .then((data) => {
-        cache.set(key, { data, ts: Date.now() })
+        cache.set(cacheKey, { data, ts: Date.now() })
         setCandles(data)
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
-  }, [key])
+  }, [cacheKey])
 
   return { candles, loading, error }
 }
