@@ -159,41 +159,61 @@ export default function Dashboard() {
                     <div>Fügen Sie Portfolio-Positionen hinzu um die Sektorverteilung zu sehen.</div>
                   </div>
                 ) : (
-                  <div className="h-96">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={sectorData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={80}
-                          outerRadius={140}
-                          paddingAngle={3}
-                          dataKey="value"
-                        >
-                          {sectorData.map((entry, index) => (
-                            <Cell
-                              key={index}
-                              fill={getSectorColor(entry.name)}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value) => [formatCurrency(value, 0), 'Wert']}
-                          contentStyle={{
-                            backgroundColor: '#1e293b',
-                            border: '1px solid #334155',
-                            borderRadius: '8px',
-                            color: '#e2e8f0',
-                          }}
-                        />
-                        <Legend
-                          formatter={(value) => (
-                            <span style={{ color: '#94a3b8', fontSize: '12px' }}>{value}</span>
-                          )}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    <div className="h-80 flex-1">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={sectorData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={70}
+                            outerRadius={120}
+                            paddingAngle={4}
+                            dataKey="value"
+                            label={({ name, percent }) =>
+                              percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''
+                            }
+                            labelLine={false}
+                          >
+                            {sectorData.map((entry, index) => (
+                              <Cell key={index} fill={getSectorColor(entry.name)} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value, name) => [formatCurrency(value, 0), name]}
+                            contentStyle={{
+                              backgroundColor: '#1e293b',
+                              border: '1px solid #334155',
+                              borderRadius: '8px',
+                              color: '#e2e8f0',
+                              fontSize: '13px',
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {/* Custom Legend */}
+                    <div className="flex flex-col justify-center gap-2 min-w-[200px]">
+                      {sectorData
+                        .sort((a, b) => b.value - a.value)
+                        .map((entry) => {
+                          const total = sectorData.reduce((s, e) => s + e.value, 0)
+                          const pct = ((entry.value / total) * 100).toFixed(1)
+                          return (
+                            <div key={entry.name} className="flex items-center gap-3">
+                              <div
+                                className="w-3 h-3 rounded-full shrink-0"
+                                style={{ backgroundColor: getSectorColor(entry.name) }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-slate-300 text-sm truncate">{entry.name}</div>
+                                <div className="text-slate-500 text-xs">{formatCurrency(entry.value, 0)} · {pct}%</div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
                   </div>
                 )}
               </div>

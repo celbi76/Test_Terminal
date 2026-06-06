@@ -62,20 +62,55 @@ export function formatMarketCap(value) {
   return `$${value.toFixed(0)}M`
 }
 
+const SECTOR_COLORS = [
+  '#6366f1', // Indigo
+  '#f59e0b', // Amber
+  '#10b981', // Emerald
+  '#ef4444', // Red
+  '#3b82f6', // Blue
+  '#f97316', // Orange
+  '#ec4899', // Pink
+  '#14b8a6', // Teal
+  '#a855f7', // Purple
+  '#eab308', // Yellow
+  '#06b6d4', // Cyan
+  '#84cc16', // Lime
+  '#e11d48', // Rose
+  '#0ea5e9', // Sky
+  '#d97706', // Dark Amber
+]
+
+const NAMED_COLORS = {
+  'Technology': '#6366f1',
+  'Electronic Technology': '#818cf8',
+  'Health Technology': '#06b6d4',
+  'Health Services': '#0891b2',
+  'Finance': '#f59e0b',
+  'Financial Services': '#d97706',
+  'Consumer Cyclical': '#f97316',
+  'Consumer Non-Durables': '#fb923c',
+  'Retail Trade': '#ec4899',
+  'Energy Minerals': '#84cc16',
+  'Energy': '#65a30d',
+  'Industrial Services': '#14b8a6',
+  'Producer Manufacturing': '#0d9488',
+  'Process Industries': '#a855f7',
+  'Transportation': '#8b5cf6',
+  'Utilities': '#0ea5e9',
+  'Communications': '#10b981',
+  'Real Estate': '#e11d48',
+  'Krypto': '#f97316',
+  'Unbekannt': '#64748b',
+}
+
+const sectorColorCache = new Map()
+
 export function getSectorColor(sector) {
-  const colors = {
-    'Technology': '#6366f1',
-    'Health Technology': '#06b6d4',
-    'Finance': '#f59e0b',
-    'Consumer Cyclical': '#f97316',
-    'Energy Minerals': '#84cc16',
-    'Retail Trade': '#ec4899',
-    'Consumer Non-Durables': '#8b5cf6',
-    'Industrial Services': '#14b8a6',
-    'Electronic Technology': '#3b82f6',
-    'Process Industries': '#a78bfa',
-  }
-  return colors[sector] ?? '#64748b'
+  if (NAMED_COLORS[sector]) return NAMED_COLORS[sector]
+  if (sectorColorCache.has(sector)) return sectorColorCache.get(sector)
+  const color = SECTOR_COLORS[sectorColorCache.size % SECTOR_COLORS.length]
+  sectorColorCache.set(sector, color)
+  return color
 }
 
 export function candlesToChartData(candles) {
