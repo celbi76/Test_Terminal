@@ -32,8 +32,8 @@ export default function PortfolioTable({ onSelectTicker }) {
   const [showModal, setShowModal] = useState(false)
   const [sortBy, setSortBy] = useState('value')
 
-  const tickers = [...new Set(positions.map((p) => p.ticker))]
-  const { quotes, loading: quotesLoading } = useMultiQuotes(tickers)
+  const positionRefs = positions.map((p) => ({ ticker: p.ticker, assetType: p.assetType ?? 'stock' }))
+  const { quotes, loading: quotesLoading } = useMultiQuotes(positionRefs)
 
   const totals = calcPortfolioTotals(
     positions,
@@ -140,7 +140,17 @@ export default function PortfolioTable({ onSelectTicker }) {
                     className="border-b border-slate-700/50 hover:bg-slate-700/30 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-bold text-white">{pos.ticker}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-white">
+                          {pos.assetType === 'crypto' ? pos.ticker.split(':')[1]?.replace('USDT','') ?? pos.ticker : pos.ticker}
+                        </span>
+                        {pos.assetType === 'crypto' && (
+                          <span className="text-xs bg-orange-900/50 text-orange-400 px-1 py-0.5 rounded font-medium">Crypto</span>
+                        )}
+                        {pos.assetType === 'stock' && pos.ticker.startsWith('ETF') && (
+                          <span className="text-xs bg-amber-900/50 text-amber-400 px-1 py-0.5 rounded font-medium">ETF</span>
+                        )}
+                      </div>
                       <div className="text-slate-500 text-xs truncate max-w-[120px]">{pos.name}</div>
                     </td>
                     <td className="px-4 py-3 text-right text-white font-mono">

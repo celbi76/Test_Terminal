@@ -14,68 +14,74 @@ function getCached(key) {
   return entry.data
 }
 
-export function useStockData(ticker) {
+export function useStockData(ticker, assetType = 'stock') {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
     if (!ticker) return
-    const cached = getCached(ticker)
+    const key = `${ticker}-${assetType}`
+    const cached = getCached(key)
     if (cached) { setData(cached); return }
 
     setLoading(true)
     setError(null)
     try {
-      const result = await getFullStockData(ticker)
-      cache.set(ticker, { data: result, ts: Date.now() })
+      const result = await getFullStockData(ticker, assetType)
+      cache.set(key, { data: result, ts: Date.now() })
       setData(result)
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [ticker])
+  }, [ticker, assetType])
 
   useEffect(() => { fetch() }, [fetch])
 
   return { data, loading, error, refetch: fetch }
 }
 
-export function useMultiQuotes(tickers) {
+export function useMultiQuotes(positions) {
   const [quotes, setQuotes] = useState({})
   const [loading, setLoading] = useState(false)
-  const prevTickers = useRef([])
+  const prevKey = useRef('')
+
+  // Accept either array of tickers (legacy) or array of position objects
+  const normalized = positions.map((p) =>
+    typeof p === 'string' ? { ticker: p, assetType: 'stock' } : p
+  )
+
+  const key = normalized.map((p) => `${p.ticker}:${p.assetType}`).sort().join(',')
 
   useEffect(() => {
-    if (!tickers.length) return
-    const sorted = [...tickers].sort().join(',')
-    const prevSorted = [...prevTickers.current].sort().join(',')
-    if (sorted === prevSorted) return
-    prevTickers.current = tickers
+    if (!normalized.length) return
+    if (key === prevKey.current) return
+    prevKey.current = key
 
     setLoading(true)
-    Promise.allSettled(tickers.map((t) => getFullStockData(t))).then((results) => {
+    Promise.allSettled(normalized.map((p) => getFullStockData(p.ticker, p.assetType))).then((results) => {
       const newQuotes = {}
-      tickers.forEach((t, i) => {
+      normalized.forEach((p, i) => {
         if (results[i].status === 'fulfilled') {
-          newQuotes[t] = results[i].value
+          newQuotes[p.ticker] = results[i].value
         }
       })
       setQuotes(newQuotes)
       setLoading(false)
     })
-  }, [tickers.join(',')])
+  }, [key])
 
   return { quotes, loading }
 }
 
-export function useCandles(ticker, period = '1J') {
+export function useCandles(ticker, period = '1J', assetType = 'stock') {
   const [candles, setCandles] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const key = `${ticker}-${period}`
+  const key = `${ticker}-${period}-${assetType}`
 
   useEffect(() => {
     if (!ticker) return
@@ -84,7 +90,7 @@ export function useCandles(ticker, period = '1J') {
 
     setLoading(true)
     setError(null)
-    getCandlesForPeriod(ticker, period)
+    getCandlesForPeriod(ticker, period, assetType)
       .then((data) => {
         cache.set(key, { data, ts: Date.now() })
         setCandles(data)

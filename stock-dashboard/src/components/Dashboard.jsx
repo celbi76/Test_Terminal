@@ -42,12 +42,14 @@ export default function Dashboard() {
   const [showWatchlistModal, setShowWatchlistModal] = useState(false)
   const [activeTab, setActiveTab] = useState('portfolio')
 
-  const tickers = [...new Set(positions.map((p) => p.ticker))]
-  const { quotes } = useMultiQuotes(tickers)
+  const positionRefs = positions.map((p) => ({ ticker: p.ticker, assetType: p.assetType ?? 'stock' }))
+  const { quotes } = useMultiQuotes(positionRefs)
 
   const sectorData = positions.reduce((acc, pos) => {
     const profile = quotes[pos.ticker]?.profile
-    const sector = profile?.finnhubIndustry ?? 'Unbekannt'
+    const sector = pos.assetType === 'crypto'
+      ? 'Krypto'
+      : profile?.finnhubIndustry ?? 'Unbekannt'
     const price = quotes[pos.ticker]?.quote?.c ?? pos.purchasePrice
     const value = price * pos.shares
     const existing = acc.find((a) => a.name === sector)

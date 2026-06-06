@@ -14,6 +14,7 @@ const usePortfolioStore = create(
             ...state.positions,
             {
               id: crypto.randomUUID(),
+              assetType: 'stock',
               ...position,
               addedAt: new Date().toISOString(),
             },

@@ -30,11 +30,18 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function StockDetail({ ticker, onClose }) {
   const [period, setPeriod] = useState('1J')
-  const { data: stockData, loading: dataLoading } = useStockData(ticker)
-  const { candles, loading: candlesLoading } = useCandles(ticker, period)
 
   const positions = usePortfolioStore((s) => s.positions)
   const position = positions.find((p) => p.ticker === ticker)
+  const assetType = position?.assetType ?? 'stock'
+
+  const { data: stockData, loading: dataLoading } = useStockData(ticker, assetType)
+  const { candles, loading: candlesLoading } = useCandles(ticker, period, assetType)
+
+  const isCrypto = assetType === 'crypto'
+  const displayTicker = isCrypto
+    ? ticker.split(':')[1]?.replace('USDT', '') ?? ticker
+    : ticker
 
   const q = stockData?.quote
   const p = stockData?.profile
@@ -66,10 +73,15 @@ export default function StockDetail({ ticker, onClose }) {
                   onError={(e) => e.target.style.display = 'none'}
                 />
               )}
-              <h2 className="text-xl font-bold text-white">{ticker}</h2>
+              <h2 className="text-xl font-bold text-white">{displayTicker}</h2>
+              {isCrypto && (
+                <span className="text-xs bg-orange-900/50 text-orange-400 px-2 py-0.5 rounded font-medium">Crypto</span>
+              )}
               <span className="text-slate-400 text-sm">{p?.exchange ?? ''}</span>
             </div>
-            <div className="text-slate-400 text-sm mt-0.5">{p?.name ?? ''}</div>
+            <div className="text-slate-400 text-sm mt-0.5">
+              {isCrypto ? position?.name ?? displayTicker : p?.name ?? ''}
+            </div>
             {p?.finnhubIndustry && (
               <div className="text-xs text-indigo-400 mt-0.5">{p.finnhubIndustry}</div>
             )}
@@ -198,31 +210,48 @@ export default function StockDetail({ ticker, onClose }) {
           </div>
 
           {/* Key Metrics */}
-          <div>
-            <h3 className="text-white font-medium mb-3">Kennzahlen</h3>
-            <div className="grid grid-cols-2 gap-x-6">
-              <div>
-                <KennzahlRow label="Marktkapitalisierung" value={formatMarketCap(p?.marketCapitalization)} />
-                <KennzahlRow label="KGV (P/E TTM)" value={formatNumber(f?.peBasicExclExtraTTM)} />
-                <KennzahlRow label="KBV (P/B)" value={formatNumber(f?.pbQuarterly)} />
-                <KennzahlRow label="KUV (P/S)" value={formatNumber(f?.psTTM)} />
-                <KennzahlRow label="Dividendenrendite" value={f?.dividendYieldIndicatedAnnual ? formatPct(f.dividendYieldIndicatedAnnual, 2) : '—'} />
-              </div>
-              <div>
-                <KennzahlRow label="52W Hoch" value={formatCurrency(f?.['52WeekHigh'] ?? q?.h)} />
-                <KennzahlRow label="52W Tief" value={formatCurrency(f?.['52WeekLow'] ?? q?.l)} />
-                <KennzahlRow label="ROE" value={f?.roeTTM != null ? formatPct(f.roeTTM * 100) : '—'} />
-                <KennzahlRow label="Verschuldung (D/E)" value={formatNumber(f?.totalDebt_totalEquityQuarterly)} />
-                <KennzahlRow label="Umsatzwachstum" value={f?.revenueGrowthTTMYoy != null ? formatPct(f.revenueGrowthTTMYoy * 100) : '—'} />
+          {isCrypto ? (
+            <div>
+              <h3 className="text-white font-medium mb-3">Marktdaten</h3>
+              <div className="grid grid-cols-2 gap-x-6">
+                <div>
+                  <KennzahlRow label="Tageshoch" value={formatCurrency(q?.h)} />
+                  <KennzahlRow label="Tagestief" value={formatCurrency(q?.l)} />
+                </div>
+                <div>
+                  <KennzahlRow label="Eröffnung" value={formatCurrency(q?.o)} />
+                  <KennzahlRow label="Vortagesschluss" value={formatCurrency(q?.pc)} />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <h3 className="text-white font-medium mb-3">Kennzahlen</h3>
+              <div className="grid grid-cols-2 gap-x-6">
+                <div>
+                  <KennzahlRow label="Marktkapitalisierung" value={formatMarketCap(p?.marketCapitalization)} />
+                  <KennzahlRow label="KGV (P/E TTM)" value={formatNumber(f?.peBasicExclExtraTTM)} />
+                  <KennzahlRow label="KBV (P/B)" value={formatNumber(f?.pbQuarterly)} />
+                  <KennzahlRow label="KUV (P/S)" value={formatNumber(f?.psTTM)} />
+                  <KennzahlRow label="Dividendenrendite" value={f?.dividendYieldIndicatedAnnual ? formatPct(f.dividendYieldIndicatedAnnual, 2) : '—'} />
+                </div>
+                <div>
+                  <KennzahlRow label="52W Hoch" value={formatCurrency(f?.['52WeekHigh'] ?? q?.h)} />
+                  <KennzahlRow label="52W Tief" value={formatCurrency(f?.['52WeekLow'] ?? q?.l)} />
+                  <KennzahlRow label="ROE" value={f?.roeTTM != null ? formatPct(f.roeTTM * 100) : '—'} />
+                  <KennzahlRow label="Verschuldung (D/E)" value={formatNumber(f?.totalDebt_totalEquityQuarterly)} />
+                  <KennzahlRow label="Umsatzwachstum" value={f?.revenueGrowthTTMYoy != null ? formatPct(f.revenueGrowthTTMYoy * 100) : '—'} />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Analysis */}
           <AnalysisPanel
             ticker={ticker}
             stockData={stockData}
             purchasePrice={position?.purchasePrice}
+            assetType={assetType}
           />
         </div>
       </div>
