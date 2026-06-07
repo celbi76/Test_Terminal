@@ -9,6 +9,7 @@ import {
   formatPct,
 } from '../utils/calculations'
 import AddStockModal from './AddStockModal'
+import BulkImportModal from './BulkImportModal'
 
 function StatCard({ label, value, sub, positive }) {
   const color =
@@ -30,6 +31,7 @@ export default function PortfolioTable({ onSelectTicker }) {
   const positions = usePortfolioStore((s) => s.positions)
   const removePosition = usePortfolioStore((s) => s.removePosition)
   const [showModal, setShowModal] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [sortBy, setSortBy] = useState('value')
 
   const positionRefs = positions.map((p) => ({ ticker: p.ticker, assetType: p.assetType ?? 'stock' }))
@@ -96,6 +98,13 @@ export default function PortfolioTable({ onSelectTicker }) {
               <option value="gainLoss">Sortierung: G/V</option>
               <option value="ticker">Sortierung: Ticker</option>
             </select>
+            <button
+              onClick={() => setShowImport(true)}
+              className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm rounded-lg transition-colors"
+              title="Mehrere Positionen auf einmal importieren"
+            >
+              ↑ Import
+            </button>
             <button
               onClick={() => setShowModal(true)}
               className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors"
@@ -195,7 +204,8 @@ export default function PortfolioTable({ onSelectTicker }) {
         )}
       </div>
 
-      {showModal && <AddStockModal onClose={() => setShowModal(false)} />}
+      {showModal  && <AddStockModal    onClose={() => setShowModal(false)} />}
+      {showImport && <BulkImportModal onClose={() => setShowImport(false)} />}
     </div>
   )
 }

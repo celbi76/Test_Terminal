@@ -52,6 +52,15 @@ const usePortfolioStore = create(
 
       removeMarketIndex: (ticker) =>
         set((state) => ({ marketIndices: state.marketIndices.filter((i) => i.ticker !== ticker) })),
+
+      importPositions: (newPositions) =>
+        set((state) => {
+          const existing = new Set(state.positions.map((p) => p.ticker))
+          const toAdd = newPositions
+            .filter((p) => !existing.has(p.ticker))
+            .map((p) => ({ id: crypto.randomUUID(), addedAt: new Date().toISOString(), assetType: 'stock', ...p }))
+          return { positions: [...state.positions, ...toAdd] }
+        }),
     }),
     { name: 'portfolio-storage' }
   )
