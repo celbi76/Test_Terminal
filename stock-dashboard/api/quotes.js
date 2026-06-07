@@ -1,4 +1,12 @@
-function toYahooSymbol(ticker) {
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+  'Accept': 'application/json',
+}
+
+// Exchange suffix fallback order for European ETFs
+const EU_SUFFIXES = ['.L', '.SW', '.DE', '.PA', '.MI', '.AS']
+
+function toYahooBase(ticker) {
   if (ticker.includes(':')) {
     // BINANCE:BTCUSDT → BTC-USD
     const base = ticker.split(':')[1]?.replace(/USDT?$/, '') ?? ticker
@@ -7,20 +15,13 @@ function toYahooSymbol(ticker) {
   return ticker
 }
 
-const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-  'Accept': 'application/json',
-}
-
-async function fetchOne(originalTicker) {
-  const yahoo = toYahooSymbol(originalTicker)
-  // Same v8 chart endpoint used by candles.js — known to work
+async function fetchYahooChart(yahooSymbol) {
   const url =
-    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}` +
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}` +
     `?interval=1d&range=5d&includePrePost=false`
 
   const res = await fetch(url, { headers: HEADERS })
-  if (!res.ok) throw new Error(`Yahoo ${res.status} for ${yahoo}`)
+  if (!res.ok) return null
 
   const data = await res.json()
   const result = data?.chart?.result?.[0]
@@ -29,13 +30,12 @@ async function fetchOne(originalTicker) {
   const meta   = result.meta ?? {}
   const closes = result.indicators?.quote?.[0]?.close ?? []
 
-  // Use meta.regularMarketPrice as primary, fall back to last valid candle close
   const c  = meta.regularMarketPrice ?? closes.filter(Boolean).at(-1) ?? null
+  if (c == null) return null   // no usable price → signal caller to try next suffix
+
   const pc = meta.previousClose ?? meta.chartPreviousClose ?? closes.filter(Boolean).at(-2) ?? null
-  const d  = c != null && pc != null ? parseFloat((c - pc).toFixed(4)) : null
-  const dp = c != null && pc != null && pc !== 0
-    ? parseFloat(((c - pc) / pc * 100).toFixed(4))
-    : null
+  const d  = pc != null ? parseFloat((c - pc).toFixed(4)) : null
+  const dp = pc != null && pc !== 0 ? parseFloat(((c - pc) / pc * 100).toFixed(4)) : null
 
   return {
     c,
@@ -46,6 +46,24 @@ async function fetchOne(originalTicker) {
     o:  meta.regularMarketOpen    ?? null,
     pc,
   }
+}
+
+async function fetchOne(originalTicker) {
+  const base = toYahooBase(originalTicker)
+
+  // 1. Try as stored (handles US tickers, crypto, and already-suffixed tickers)
+  const direct = await fetchYahooChart(base)
+  if (direct) return direct
+
+  // 2. If plain ticker (no suffix), try European exchange suffixes
+  if (!base.includes('.') && !base.includes('-')) {
+    for (const suffix of EU_SUFFIXES) {
+      const result = await fetchYahooChart(base + suffix)
+      if (result) return result
+    }
+  }
+
+  return null
 }
 
 export default async function handler(req, res) {
