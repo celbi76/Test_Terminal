@@ -7,6 +7,47 @@ function toYahooSymbol(ticker) {
   return ticker
 }
 
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+  'Accept': 'application/json',
+}
+
+async function fetchOne(originalTicker) {
+  const yahoo = toYahooSymbol(originalTicker)
+  // Same v8 chart endpoint used by candles.js — known to work
+  const url =
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahoo)}` +
+    `?interval=1d&range=5d&includePrePost=false`
+
+  const res = await fetch(url, { headers: HEADERS })
+  if (!res.ok) throw new Error(`Yahoo ${res.status} for ${yahoo}`)
+
+  const data = await res.json()
+  const result = data?.chart?.result?.[0]
+  if (!result) return null
+
+  const meta   = result.meta ?? {}
+  const closes = result.indicators?.quote?.[0]?.close ?? []
+
+  // Use meta.regularMarketPrice as primary, fall back to last valid candle close
+  const c  = meta.regularMarketPrice ?? closes.filter(Boolean).at(-1) ?? null
+  const pc = meta.previousClose ?? meta.chartPreviousClose ?? closes.filter(Boolean).at(-2) ?? null
+  const d  = c != null && pc != null ? parseFloat((c - pc).toFixed(4)) : null
+  const dp = c != null && pc != null && pc !== 0
+    ? parseFloat(((c - pc) / pc * 100).toFixed(4))
+    : null
+
+  return {
+    c,
+    d,
+    dp,
+    h:  meta.regularMarketDayHigh ?? null,
+    l:  meta.regularMarketDayLow  ?? null,
+    o:  meta.regularMarketOpen    ?? null,
+    pc,
+  }
+}
+
 export default async function handler(req, res) {
   const { symbols } = req.query
   if (!symbols) return res.status(400).json({ s: 'error', error: 'symbols required' })
@@ -14,43 +55,15 @@ export default async function handler(req, res) {
   const original = symbols.split(',').map((s) => s.trim()).filter(Boolean)
   if (!original.length) return res.status(400).json({ s: 'error', error: 'no symbols' })
 
-  const yahooSymbols = original.map(toYahooSymbol)
-  const url =
-    `https://query1.finance.yahoo.com/v7/finance/quote` +
-    `?symbols=${encodeURIComponent(yahooSymbols.join(','))}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketDayHigh,regularMarketDayLow,regularMarketOpen,regularMarketPreviousClose`
+  const settled = await Promise.allSettled(original.map(fetchOne))
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/json',
-      },
-    })
+  const quotes = {}
+  original.forEach((sym, i) => {
+    if (settled[i].status === 'fulfilled' && settled[i].value) {
+      quotes[sym] = settled[i].value
+    }
+  })
 
-    if (!response.ok) throw new Error(`Yahoo Finance ${response.status}`)
-
-    const data = await response.json()
-    const list = data?.quoteResponse?.result ?? []
-
-    const quotes = {}
-    original.forEach((sym, i) => {
-      const q = list.find((r) => r.symbol === yahooSymbols[i])
-      if (q) {
-        quotes[sym] = {
-          c:  q.regularMarketPrice          ?? null,
-          d:  q.regularMarketChange         ?? null,
-          dp: q.regularMarketChangePercent  ?? null,
-          h:  q.regularMarketDayHigh        ?? null,
-          l:  q.regularMarketDayLow         ?? null,
-          o:  q.regularMarketOpen           ?? null,
-          pc: q.regularMarketPreviousClose  ?? null,
-        }
-      }
-    })
-
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120')
-    return res.json({ s: 'ok', quotes })
-  } catch (e) {
-    return res.status(500).json({ s: 'error', error: e.message })
-  }
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120')
+  return res.json({ s: 'ok', quotes })
 }
