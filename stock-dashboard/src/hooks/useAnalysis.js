@@ -8,7 +8,7 @@ export function useAnalysis() {
   const [loading, setLoading] = useState({})
   const [errors, setErrors] = useState({})
 
-  const analyze = useCallback(async ({ ticker, quote, financials, profile, purchasePrice }) => {
+  const analyze = useCallback(async ({ ticker, quote, financials, profile, purchasePrice, assetType }) => {
     if (analysisCache.has(ticker)) {
       setAnalyses((prev) => ({ ...prev, [ticker]: analysisCache.get(ticker) }))
       return
@@ -18,7 +18,7 @@ export function useAnalysis() {
     setErrors((prev) => ({ ...prev, [ticker]: null }))
 
     try {
-      const result = await analyzeStock({ ticker, quote, financials, profile, purchasePrice })
+      const result = await analyzeStock({ ticker, quote, financials, profile, purchasePrice, assetType })
       analysisCache.set(ticker, result)
       setAnalyses((prev) => ({ ...prev, [ticker]: result }))
     } catch (e) {
