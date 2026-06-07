@@ -92,10 +92,14 @@ export default function AddStockModal({ onClose, mode = 'position' }) {
       return
     }
 
+    const resolvedAssetType = assetTab === 'crypto'
+      ? 'crypto'
+      : (selected?.type === 'ETP' ? 'etf' : 'stock')
+
     addPosition({
       ticker,
       name: assetTab === 'crypto' ? selected?.description : activeName,
-      assetType: assetTab,
+      assetType: resolvedAssetType,
       shares: parseFloat(form.shares),
       purchasePrice: parseFloat(form.purchasePrice),
       purchaseDate: form.purchaseDate || undefined,

@@ -5,12 +5,12 @@ import { formatCurrency } from '../utils/calculations'
 // Positions parsed from the screenshot
 const PRESET_POSITIONS = [
   // ETFs
-  { ticker: 'SEMD',   name: 'SEMD',                    assetType: 'stock',  shares: 5,        purchasePrice: 78.78 },
-  { ticker: 'CANCDA', name: 'CANCDA',                  assetType: 'stock',  shares: 20,       purchasePrice: 65.30 },
-  { ticker: 'VUSA',   name: 'Vanguard S&P 500 ETF',    assetType: 'stock',  shares: 47.3717,  purchasePrice: 99.107 },
-  { ticker: 'VHYL',   name: 'Vanguard High Div Yield', assetType: 'stock',  shares: 4,        purchasePrice: 66.00 },
-  { ticker: 'VEU',    name: 'Vanguard FTSE ex-US',     assetType: 'stock',  shares: 5,        purchasePrice: 78.0599 },
-  { ticker: 'JEPQ',   name: 'JPMorgan Nasdaq Premium', assetType: 'stock',  shares: 15,       purchasePrice: 60.6299 },
+  { ticker: 'SEMD',   name: 'SEMD',                    assetType: 'etf',    shares: 5,        purchasePrice: 78.78 },
+  { ticker: 'CANCDA', name: 'CANCDA',                  assetType: 'etf',    shares: 20,       purchasePrice: 65.30 },
+  { ticker: 'VUSA',   name: 'Vanguard S&P 500 ETF',    assetType: 'etf',    shares: 47.3717,  purchasePrice: 99.107 },
+  { ticker: 'VHYL',   name: 'Vanguard High Div Yield', assetType: 'etf',    shares: 4,        purchasePrice: 66.00 },
+  { ticker: 'VEU',    name: 'Vanguard FTSE ex-US',     assetType: 'etf',    shares: 5,        purchasePrice: 78.0599 },
+  { ticker: 'JEPQ',   name: 'JPMorgan Nasdaq Premium', assetType: 'etf',    shares: 15,       purchasePrice: 60.6299 },
   // Crypto
   { ticker: 'BINANCE:XRPUSDT',    name: 'XRP',      assetType: 'crypto', shares: 36,       purchasePrice: 1.871 },
   { ticker: 'BINANCE:BTCUSDT',    name: 'Bitcoin',  assetType: 'crypto', shares: 0.01375,  purchasePrice: 92019.00 },

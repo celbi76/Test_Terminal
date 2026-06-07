@@ -10,6 +10,14 @@ import {
 } from '../utils/calculations'
 import AddStockModal from './AddStockModal'
 import BulkImportModal from './BulkImportModal'
+import EditPositionModal from './EditPositionModal'
+
+const FILTER_TABS = [
+  { id: 'all',    label: 'Alle' },
+  { id: 'stock',  label: 'Aktien' },
+  { id: 'etf',    label: 'ETFs' },
+  { id: 'crypto', label: 'Krypto' },
+]
 
 function StatCard({ label, value, sub, positive }) {
   const color =
@@ -27,12 +35,30 @@ function StatCard({ label, value, sub, positive }) {
   )
 }
 
+function GroupStatCard({ label, value, sub, positive }) {
+  const color =
+    positive === true
+      ? 'text-emerald-400'
+      : positive === false
+      ? 'text-red-400'
+      : 'text-white'
+  return (
+    <div className="bg-slate-800/60 border border-slate-700/60 rounded-lg p-3">
+      <div className="text-slate-500 text-xs mb-1">{label}</div>
+      <div className={`text-base font-bold ${color}`}>{value}</div>
+      {sub && <div className="text-slate-600 text-xs mt-0.5">{sub}</div>}
+    </div>
+  )
+}
+
 export default function PortfolioTable({ onSelectTicker }) {
   const positions = usePortfolioStore((s) => s.positions)
   const removePosition = usePortfolioStore((s) => s.removePosition)
   const [showModal, setShowModal] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [editPosition, setEditPosition] = useState(null)
   const [sortBy, setSortBy] = useState('value')
+  const [filterTab, setFilterTab] = useState('all')
 
   const positionRefs = positions.map((p) => ({ ticker: p.ticker, assetType: p.assetType ?? 'stock' }))
   const { quotes, loading: quotesLoading } = useMultiQuotes(positionRefs)
@@ -50,16 +76,36 @@ export default function PortfolioTable({ onSelectTicker }) {
     return { ...pos, currentPrice: price, value: price * pos.shares, gainLoss, ret, dayChange: q?.dp }
   })
 
-  const sorted = [...enriched].sort((a, b) => {
-    if (sortBy === 'value') return b.value - a.value
-    if (sortBy === 'return') return b.ret - a.ret
+  // Filter by asset type tab
+  const filtered = filterTab === 'all'
+    ? enriched
+    : enriched.filter((pos) => (pos.assetType ?? 'stock') === filterTab)
+
+  // Group totals for active filter (when not "all")
+  const groupTotals = filterTab !== 'all'
+    ? calcPortfolioTotals(
+        filtered,
+        Object.fromEntries(Object.entries(quotes).map(([t, d]) => [t, d?.quote]))
+      )
+    : null
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'value')   return b.value - a.value
+    if (sortBy === 'return')  return b.ret - a.ret
     if (sortBy === 'gainLoss') return b.gainLoss - a.gainLoss
     return a.ticker.localeCompare(b.ticker)
   })
 
+  // Badge counts for tabs
+  const countByType = positions.reduce((acc, p) => {
+    const t = p.assetType ?? 'stock'
+    acc[t] = (acc[t] ?? 0) + 1
+    return acc
+  }, {})
+
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Summary Cards — always total portfolio */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           label="Portfoliowert"
@@ -83,8 +129,9 @@ export default function PortfolioTable({ onSelectTicker }) {
         />
       </div>
 
-      {/* Table Header */}
+      {/* Table */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+        {/* Table Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
           <h2 className="text-white font-semibold">Portfolio</h2>
           <div className="flex gap-2">
@@ -114,6 +161,54 @@ export default function PortfolioTable({ onSelectTicker }) {
           </div>
         </div>
 
+        {/* Filter tabs */}
+        <div className="flex gap-1 px-4 py-2 border-b border-slate-700/50 bg-slate-800/50">
+          {FILTER_TABS.map((tab) => {
+            const count = tab.id === 'all' ? positions.length : (countByType[tab.id] ?? 0)
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilterTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  filterTab === tab.id
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                }`}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                    filterTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-400'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Group performance strip (visible only when a specific filter is active) */}
+        {groupTotals && filtered.length > 0 && (
+          <div className="grid grid-cols-3 gap-3 px-4 py-3 border-b border-slate-700/50 bg-slate-900/40">
+            <GroupStatCard
+              label="Gruppenwert"
+              value={formatCurrency(groupTotals.totalValue, 0)}
+              sub={`Invested: ${formatCurrency(groupTotals.totalCost, 0)}`}
+            />
+            <GroupStatCard
+              label="Rendite"
+              value={formatPct(groupTotals.totalReturnPct)}
+              positive={groupTotals.totalReturnPct >= 0}
+            />
+            <GroupStatCard
+              label="G / V"
+              value={formatCurrency(groupTotals.totalGainLoss, 0)}
+              positive={groupTotals.totalGainLoss >= 0}
+            />
+          </div>
+        )}
+
         {positions.length === 0 ? (
           <div className="text-center py-16 text-slate-500">
             <div className="text-4xl mb-3">📊</div>
@@ -124,6 +219,10 @@ export default function PortfolioTable({ onSelectTicker }) {
             >
               Erste Position hinzufügen
             </button>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-10 text-slate-500 text-sm">
+            Keine {FILTER_TABS.find((t) => t.id === filterTab)?.label}-Positionen vorhanden
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -151,12 +250,14 @@ export default function PortfolioTable({ onSelectTicker }) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-white">
-                          {pos.assetType === 'crypto' ? pos.ticker.split(':')[1]?.replace('USDT','') ?? pos.ticker : pos.ticker}
+                          {pos.assetType === 'crypto'
+                            ? pos.ticker.split(':')[1]?.replace('USDT', '') ?? pos.ticker
+                            : pos.ticker}
                         </span>
                         {pos.assetType === 'crypto' && (
                           <span className="text-xs bg-orange-900/50 text-orange-400 px-1 py-0.5 rounded font-medium">Crypto</span>
                         )}
-                        {pos.assetType === 'stock' && pos.ticker.startsWith('ETF') && (
+                        {pos.assetType === 'etf' && (
                           <span className="text-xs bg-amber-900/50 text-amber-400 px-1 py-0.5 rounded font-medium">ETF</span>
                         )}
                       </div>
@@ -188,13 +289,22 @@ export default function PortfolioTable({ onSelectTicker }) {
                       {formatPct(pos.ret)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); removePosition(pos.id) }}
-                        className="text-slate-600 hover:text-red-400 transition-colors px-1"
-                        title="Position löschen"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditPosition(pos) }}
+                          className="text-slate-500 hover:text-indigo-400 transition-colors px-1 text-xs"
+                          title="Position bearbeiten"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removePosition(pos.id) }}
+                          className="text-slate-600 hover:text-red-400 transition-colors px-1"
+                          title="Position löschen"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -204,8 +314,14 @@ export default function PortfolioTable({ onSelectTicker }) {
         )}
       </div>
 
-      {showModal  && <AddStockModal    onClose={() => setShowModal(false)} />}
-      {showImport && <BulkImportModal onClose={() => setShowImport(false)} />}
+      {showModal    && <AddStockModal     onClose={() => setShowModal(false)} />}
+      {showImport   && <BulkImportModal   onClose={() => setShowImport(false)} />}
+      {editPosition && (
+        <EditPositionModal
+          position={editPosition}
+          onClose={() => setEditPosition(null)}
+        />
+      )}
     </div>
   )
 }

@@ -15,7 +15,7 @@ function toYahooBase(ticker) {
   return ticker
 }
 
-async function fetchYahooChart(yahooSymbol) {
+async function fetchYahooChart(yahooSymbol, requireExchange) {
   const url =
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}` +
     `?interval=1d&range=5d&includePrePost=false`
@@ -29,6 +29,14 @@ async function fetchYahooChart(yahooSymbol) {
 
   const meta   = result.meta ?? {}
   const closes = result.indicators?.quote?.[0]?.close ?? []
+
+  // If caller wants a real exchange (not OTC/Pink Sheets), reject OTC results
+  // so the EU suffix loop can try exchange-suffixed symbols instead
+  if (requireExchange) {
+    const exchange = (meta.exchange ?? meta.exchangeName ?? '').toUpperCase()
+    const isOTC = exchange === '' || exchange === 'OTC' || exchange === 'PNK' || exchange === 'GREY'
+    if (isOTC) return null
+  }
 
   const c  = meta.regularMarketPrice ?? closes.filter(Boolean).at(-1) ?? null
   if (c == null) return null   // no usable price → signal caller to try next suffix
@@ -51,14 +59,18 @@ async function fetchYahooChart(yahooSymbol) {
 async function fetchOne(originalTicker) {
   const base = toYahooBase(originalTicker)
 
+  // For tickers with no suffix/dash, try with requireExchange=true first to avoid
+  // OTC/Pink Sheet matches (e.g. bare "VUSA" might resolve to an OTC shell)
+  const needsFallback = !base.includes('.') && !base.includes('-')
+
   // 1. Try as stored (handles US tickers, crypto, and already-suffixed tickers)
-  const direct = await fetchYahooChart(base)
+  const direct = await fetchYahooChart(base, needsFallback)
   if (direct) return direct
 
   // 2. If plain ticker (no suffix), try European exchange suffixes
-  if (!base.includes('.') && !base.includes('-')) {
+  if (needsFallback) {
     for (const suffix of EU_SUFFIXES) {
-      const result = await fetchYahooChart(base + suffix)
+      const result = await fetchYahooChart(base + suffix, false)
       if (result) return result
     }
   }
