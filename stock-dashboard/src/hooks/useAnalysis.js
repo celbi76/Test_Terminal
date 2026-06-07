@@ -1,37 +1,34 @@
 import { useState, useCallback } from 'react'
 import { analyzeStock } from '../services/claudeApi'
-
-const analysisCache = new Map()
+import usePortfolioStore from '../store/portfolioStore'
 
 export function useAnalysis() {
-  const [analyses, setAnalyses] = useState({})
+  const analyses = usePortfolioStore((s) => s.analyses)
+  const setAnalysis = usePortfolioStore((s) => s.setAnalysis)
+  const clearAnalysis = usePortfolioStore((s) => s.clearAnalysis)
+
   const [loading, setLoading] = useState({})
   const [errors, setErrors] = useState({})
 
   const analyze = useCallback(async ({ ticker, quote, financials, profile, purchasePrice, assetType }) => {
-    if (analysisCache.has(ticker)) {
-      setAnalyses((prev) => ({ ...prev, [ticker]: analysisCache.get(ticker) }))
-      return
-    }
+    if (usePortfolioStore.getState().analyses[ticker]) return
 
     setLoading((prev) => ({ ...prev, [ticker]: true }))
     setErrors((prev) => ({ ...prev, [ticker]: null }))
 
     try {
       const result = await analyzeStock({ ticker, quote, financials, profile, purchasePrice, assetType })
-      analysisCache.set(ticker, result)
-      setAnalyses((prev) => ({ ...prev, [ticker]: result }))
+      setAnalysis(ticker, result)
     } catch (e) {
       setErrors((prev) => ({ ...prev, [ticker]: e.message }))
     } finally {
       setLoading((prev) => ({ ...prev, [ticker]: false }))
     }
-  }, [])
+  }, [setAnalysis])
 
   const clearCache = useCallback((ticker) => {
-    if (ticker) analysisCache.delete(ticker)
-    else analysisCache.clear()
-  }, [])
+    clearAnalysis(ticker)
+  }, [clearAnalysis])
 
   return { analyses, loading, errors, analyze, clearCache }
 }

@@ -61,6 +61,21 @@ const usePortfolioStore = create(
             .map((p) => ({ id: crypto.randomUUID(), addedAt: new Date().toISOString(), assetType: 'stock', ...p }))
           return { positions: [...state.positions, ...toAdd] }
         }),
+
+      analyses: {},
+
+      setAnalysis: (ticker, text) =>
+        set((state) => ({ analyses: { ...state.analyses, [ticker]: text } })),
+
+      clearAnalysis: (ticker) =>
+        set((state) => {
+          if (ticker) {
+            const next = { ...state.analyses }
+            delete next[ticker]
+            return { analyses: next }
+          }
+          return { analyses: {} }
+        }),
     }),
     { name: 'portfolio-storage' }
   )

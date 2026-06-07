@@ -36,7 +36,6 @@ function TopRecommendation({ rec, rawText, fairValue, currentPrice, onAnalyze, i
   const upside = fairValue && currentPrice ? ((fairValue - currentPrice) / currentPrice) * 100 : null
   const { strengths, risks } = parseSections(rawText)
 
-  // Pick the 3 most relevant key points: top strengths for buy, top risks for sell, mix for hold
   let keyPoints = []
   if (rec === 'Kaufen') keyPoints = strengths.slice(0, 3)
   else if (rec === 'Reduzieren') keyPoints = risks.slice(0, 3)
@@ -44,17 +43,17 @@ function TopRecommendation({ rec, rawText, fairValue, currentPrice, onAnalyze, i
 
   if (!cfg) {
     return (
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex items-center gap-3">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3">
         <div className="text-slate-500 text-xs">
           {isLoading ? (
             <span className="flex items-center gap-2">
-              <span className="w-3 h-3 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin inline-block" />
+              <span className="w-3 h-3 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin inline-block" />
               KI analysiert…
             </span>
           ) : (
             <span>
               Keine KI-Empfehlung ·{' '}
-              <button onClick={onAnalyze} className="text-indigo-400 hover:text-indigo-300 underline">
+              <button onClick={onAnalyze} className="text-indigo-600 hover:text-indigo-500 underline">
                 Jetzt analysieren
               </button>
             </span>
@@ -71,24 +70,24 @@ function TopRecommendation({ rec, rawText, fairValue, currentPrice, onAnalyze, i
         <div className={`text-4xl font-black ${cfg.text} leading-none`}>{cfg.icon}</div>
         <div className="flex-1 min-w-0">
           <div className={`text-xl font-black tracking-wide ${cfg.text}`}>{cfg.label}</div>
-          <div className="text-slate-500 text-xs mt-0.5">KI-Handlungsempfehlung</div>
+          <div className="text-slate-400 text-xs mt-0.5">KI-Handlungsempfehlung</div>
         </div>
         {upside != null && (
           <div className="text-right shrink-0">
-            <div className={`text-sm font-bold ${upside >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className={`text-sm font-bold ${upside >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
               {upside >= 0 ? '+' : ''}{upside.toFixed(1)}%
             </div>
             <div className="text-slate-500 text-xs">zum Fair Value</div>
-            <div className="text-white text-xs font-medium">{formatCurrency(fairValue)}</div>
+            <div className="text-slate-700 text-xs font-medium">{formatCurrency(fairValue)}</div>
           </div>
         )}
       </div>
 
       {/* 3 key bullet points */}
       {keyPoints.length > 0 && (
-        <ul className="space-y-1.5 border-t border-white/10 pt-3">
+        <ul className="space-y-1.5 border-t border-slate-200/60 pt-3">
           {keyPoints.map((pt, i) => (
-            <li key={i} className="flex gap-2 text-xs text-slate-300 leading-snug">
+            <li key={i} className="flex gap-2 text-xs text-slate-600 leading-snug">
               <span className={`${cfg.text} font-bold shrink-0`}>{i + 1}.</span>
               <span>{pt}</span>
             </li>

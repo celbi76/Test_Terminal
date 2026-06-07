@@ -5,8 +5,9 @@ import {
   calcGainLoss, calcReturn, calcPortfolioTotals, formatCurrency, formatPct,
 } from '../utils/calculations'
 import AddStockModal from './AddStockModal'
-import BulkImportModal from './BulkImportModal'
+import ImportModal from './ImportModal'
 import EditPositionModal from './EditPositionModal'
+import { parseRecommendation } from './AnalysisPanel'
 
 const FILTER_TABS = [
   { id: 'all',    label: 'Alle' },
@@ -39,9 +40,16 @@ function GroupStatCard({ label, value, sub, positive }) {
   )
 }
 
+const REC_BADGE = {
+  Kaufen:    { cls: 'bg-emerald-100 text-emerald-700', icon: '↑' },
+  Halten:    { cls: 'bg-amber-100 text-amber-700',     icon: '→' },
+  Reduzieren:{ cls: 'bg-red-100 text-red-600',         icon: '↓' },
+}
+
 export default function PortfolioTable({ onSelectTicker }) {
   const positions      = usePortfolioStore((s) => s.positions)
   const removePosition = usePortfolioStore((s) => s.removePosition)
+  const analyses       = usePortfolioStore((s) => s.analyses)
   const [showModal,    setShowModal]    = useState(false)
   const [showImport,   setShowImport]   = useState(false)
   const [editPosition, setEditPosition] = useState(null)
@@ -206,7 +214,7 @@ export default function PortfolioTable({ onSelectTicker }) {
                     className="border-b border-slate-50 hover:bg-indigo-50/40 cursor-pointer transition-colors group"
                   >
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors">
                           {pos.assetType === 'crypto'
                             ? pos.ticker.split(':')[1]?.replace('USDT', '') ?? pos.ticker
@@ -218,6 +226,13 @@ export default function PortfolioTable({ onSelectTicker }) {
                         {pos.assetType === 'etf' && (
                           <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-semibold">ETF</span>
                         )}
+                        {(() => {
+                          const rec = parseRecommendation(analyses[pos.ticker])
+                          const badge = REC_BADGE[rec]
+                          return badge ? (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-md font-bold ${badge.cls}`}>{badge.icon}</span>
+                          ) : null
+                        })()}
                       </div>
                       <div className="text-slate-400 text-xs truncate max-w-[120px]">{pos.name}</div>
                     </td>
@@ -268,8 +283,8 @@ export default function PortfolioTable({ onSelectTicker }) {
         )}
       </div>
 
-      {showModal    && <AddStockModal     onClose={() => setShowModal(false)} />}
-      {showImport   && <BulkImportModal   onClose={() => setShowImport(false)} />}
+      {showModal    && <AddStockModal onClose={() => setShowModal(false)} />}
+      {showImport   && <ImportModal   onClose={() => setShowImport(false)} />}
       {editPosition && (
         <EditPositionModal position={editPosition} onClose={() => setEditPosition(null)} />
       )}
