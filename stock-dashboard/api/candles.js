@@ -1,6 +1,7 @@
 const PERIOD_MAP = {
   '1M': { range: '1mo', interval: '1d'  },
   '3M': { range: '3mo', interval: '1d'  },
+  '6M': { range: '6mo', interval: '1d'  },
   '1J': { range: '1y',  interval: '1wk' },
   '5J': { range: '5y',  interval: '1mo' },
 }
@@ -21,7 +22,7 @@ function toYahooBase(ticker, assetType) {
   return ticker
 }
 
-async function fetchCandles(yahooSymbol, range, interval) {
+async function fetchCandles(yahooSymbol, range, interval, requireExchange = false) {
   const url =
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}` +
     `?interval=${interval}&range=${range}&includePrePost=false`
@@ -32,6 +33,12 @@ async function fetchCandles(yahooSymbol, range, interval) {
   const data = await res.json()
   const result = data?.chart?.result?.[0]
   if (!result?.timestamp) return null
+
+  // Reject OTC/Pink-Sheet results so the EU suffix loop can try real exchanges
+  if (requireExchange) {
+    const exchange = (result.meta?.exchange ?? result.meta?.exchangeName ?? '').toUpperCase()
+    if (exchange === 'OTC' || exchange === 'PNK' || exchange === 'GREY') return null
+  }
 
   const { timestamp: ts, indicators } = result
   const q = indicators?.quote?.[0] ?? {}
@@ -60,14 +67,15 @@ export default async function handler(req, res) {
   const base = toYahooBase(symbol, assetType)
   const { range, interval } = PERIOD_MAP[period] ?? PERIOD_MAP['1J']
 
-  try {
-    // 1. Try ticker as stored
-    let points = await fetchCandles(base, range, interval)
+  // For plain tickers (no suffix/dash), require a real exchange to avoid OTC shells
+  const needsFallback = !base.includes('.') && !base.includes('-')
 
-    // 2. For plain tickers with no data, try European exchange suffixes
-    if (!points && !base.includes('.') && !base.includes('-')) {
+  try {
+    let points = await fetchCandles(base, range, interval, needsFallback)
+
+    if (!points && needsFallback) {
       for (const suffix of EU_SUFFIXES) {
-        points = await fetchCandles(base + suffix, range, interval)
+        points = await fetchCandles(base + suffix, range, interval, false)
         if (points) break
       }
     }

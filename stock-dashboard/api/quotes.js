@@ -34,8 +34,8 @@ async function fetchYahooChart(yahooSymbol, requireExchange) {
   // so the EU suffix loop can try exchange-suffixed symbols instead
   if (requireExchange) {
     const exchange = (meta.exchange ?? meta.exchangeName ?? '').toUpperCase()
-    const isOTC = exchange === '' || exchange === 'OTC' || exchange === 'PNK' || exchange === 'GREY'
-    if (isOTC) return null
+    // Only reject known OTC/Pink-Sheet designators — not empty strings (indices use empty)
+    if (exchange === 'OTC' || exchange === 'PNK' || exchange === 'GREY') return null
   }
 
   const c  = meta.regularMarketPrice ?? closes.filter(Boolean).at(-1) ?? null

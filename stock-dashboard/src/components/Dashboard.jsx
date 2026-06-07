@@ -3,7 +3,8 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import usePortfolioStore from '../store/portfolioStore'
 import { useMultiQuotes } from '../hooks/useMarketData'
 import PortfolioTable from './PortfolioTable'
-import PortfolioChart from './PortfolioChart'
+import PerformanceView from './PerformanceView'
+import MarketView from './MarketView'
 import StockDetail from './StockDetail'
 import AddStockModal from './AddStockModal'
 import { formatCurrency, formatPct, getSectorColor } from '../utils/calculations'
@@ -144,9 +145,10 @@ export default function Dashboard() {
   }, [])
 
   const TABS = [
-    { id: 'portfolio', label: 'Portfolio' },
+    { id: 'portfolio',   label: 'Portfolio' },
     { id: 'performance', label: 'Performance' },
-    { id: 'sektoren', label: 'Sektoren' },
+    { id: 'markt',       label: 'Markt' },
+    { id: 'allokation',  label: 'Allokation' },
   ]
 
   return (
@@ -240,12 +242,16 @@ export default function Dashboard() {
             )}
 
             {activeTab === 'performance' && (
-              <PortfolioChart positions={positions} quotes={quotes} />
+              <PerformanceView positions={positions} quotes={quotes} />
             )}
 
-            {activeTab === 'sektoren' && (
+            {activeTab === 'markt' && (
+              <MarketView positions={positions} quotes={quotes} />
+            )}
+
+            {activeTab === 'allokation' && (
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-                <h2 className="text-white font-semibold mb-4">Sektorallokation</h2>
+                <h2 className="text-white font-semibold mb-4">Portfolio-Allokation</h2>
                 {sectorData.length === 0 ? (
                   <div className="text-center py-16 text-slate-500">
                     <div className="text-4xl mb-2">🍩</div>
