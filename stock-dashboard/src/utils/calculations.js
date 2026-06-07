@@ -100,6 +100,8 @@ const NAMED_COLORS = {
   'Communications': '#10b981',
   'Real Estate': '#e11d48',
   'Krypto': '#f97316',
+  'ETF': '#10b981',
+  'Aktien': '#6366f1',
   'Unbekannt': '#64748b',
 }
 

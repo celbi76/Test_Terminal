@@ -8,7 +8,7 @@ import usePortfolioStore from '../store/portfolioStore'
 import AnalysisPanel, { parseRecommendation, parseFairValue, parseSections, REC_CONFIG } from './AnalysisPanel'
 import { formatCurrency, formatPct, formatNumber, formatMarketCap, candlesToChartData } from '../utils/calculations'
 
-const PERIODS = ['1M', '3M', '1J', '5J']
+const PERIODS = ['1M', '3M', 'YTD', '1J', '5J']
 
 function KennzahlRow({ label, value }) {
   return (

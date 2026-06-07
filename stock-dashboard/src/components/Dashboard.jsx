@@ -133,7 +133,7 @@ export default function Dashboard() {
   const { quotes } = useMultiQuotes(positionRefs)
 
   const sectorData = positions.reduce((acc, pos) => {
-    const sector = pos.assetType === 'crypto' ? 'Krypto' : pos.sector ?? 'Aktien'
+    const sector = pos.assetType === 'crypto' ? 'Krypto' : pos.assetType === 'etf' ? 'ETF' : 'Aktien'
     const price  = quotes[pos.ticker]?.quote?.c ?? pos.purchasePrice
     const value  = price * pos.shares
     const existing = acc.find((a) => a.name === sector)
