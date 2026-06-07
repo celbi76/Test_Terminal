@@ -134,7 +134,7 @@ export default function Dashboard() {
   const sectorData = positions.reduce((acc, pos) => {
     const sector = pos.assetType === 'crypto'
       ? 'Krypto'
-      : quotes[pos.ticker]?.profile?.finnhubIndustry ?? 'Unbekannt'
+      : pos.sector ?? 'Aktien'
     const price = quotes[pos.ticker]?.quote?.c ?? pos.purchasePrice
     const value = price * pos.shares
     const existing = acc.find((a) => a.name === sector)

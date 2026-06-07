@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { getFullStockData, getCandlesForPeriod } from '../services/marketApi'
+import { getQuote, getFullStockData, getCandlesForPeriod } from '../services/marketApi'
 
 const cache = new Map()
 const CACHE_TTL = 60_000
@@ -64,14 +64,29 @@ export function useMultiQuotes(items) {
     if (key === prevKeyRef.current) return
     prevKeyRef.current = key
 
+    // Only fetch tickers not already in cache
+    const toFetch = normalized.filter((p) => !getCached(`quote:${p.ticker}`))
+    const cached = normalized.filter((p) => getCached(`quote:${p.ticker}`))
+
+    // Hydrate from cache immediately
+    if (cached.length) {
+      setQuotes((prev) => {
+        const next = { ...prev }
+        cached.forEach((p) => { next[p.ticker] = getCached(`quote:${p.ticker}`) })
+        return next
+      })
+    }
+
+    if (!toFetch.length) return
+
     setLoading(true)
-    const toFetch = [...normalized]
-    Promise.allSettled(toFetch.map((p) => getFullStockData(p.ticker, p.assetType))).then((results) => {
+    // Only fetch the quote endpoint (1 call/ticker instead of 3) to stay within rate limits
+    Promise.allSettled(toFetch.map((p) => getQuote(p.ticker))).then((results) => {
       const newQuotes = {}
       toFetch.forEach((p, i) => {
-        if (results[i].status === 'fulfilled') {
-          newQuotes[p.ticker] = results[i].value
-        }
+        const val = results[i].status === 'fulfilled' ? { quote: results[i].value } : { quote: null }
+        cache.set(`quote:${p.ticker}`, { data: val, ts: Date.now() })
+        newQuotes[p.ticker] = val
       })
       setQuotes((prev) => ({ ...prev, ...newQuotes }))
       setLoading(false)
