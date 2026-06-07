@@ -32,7 +32,7 @@ Liefere eine strukturierte Analyse mit:
 1. **Technische Einschätzung** (Score 1-10, kurze Begründung)
 2. **Drei Stärken** (konkret, ohne Hype)
 3. **Drei Risiken** (regulatorisch, technisch, marktbezogen)
-4. **Empfehlung**: Halten / Aufstocken / Reduzieren
+4. **Empfehlung**: Kaufen / Halten / Reduzieren
 5. **Einschätzung**: Wichtigste Preislevels (Support/Resistance)
 
 Sei präzise. Kein Hype, keine Mondpreise. Risiken explizit nennen.`

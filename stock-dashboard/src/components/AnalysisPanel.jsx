@@ -9,11 +9,27 @@ import { formatCurrency, formatPct } from '../utils/calculations'
 
 export function parseRecommendation(text) {
   if (!text) return null
-  const m = text.match(/empfehlung[:\*\s]+(kaufen|halten|reduzieren|verkaufen)/i)
-  if (!m) return null
-  const r = m[1].toLowerCase()
-  if (r === 'kaufen') return 'Kaufen'
-  if (r === 'halten') return 'Halten'
+
+  // Search within 400 chars after the first "Empfehlung" occurrence
+  const lower = text.toLowerCase()
+  const idx = lower.indexOf('empfehlung')
+  if (idx >= 0) {
+    const scope = lower.slice(idx, idx + 400)
+    const m = scope.match(/\b(kaufen|aufstocken|halten|reduzieren|verkaufen)\b/)
+    if (m) {
+      const r = m[1]
+      if (r === 'kaufen' || r === 'aufstocken') return 'Kaufen'
+      if (r === 'halten') return 'Halten'
+      return 'Reduzieren'
+    }
+  }
+
+  // Fallback: bold-formatted keyword anywhere in text
+  const m2 = text.match(/\*\*(kaufen|aufstocken|halten|reduzieren)\*\*/i)
+  if (!m2) return null
+  const r2 = m2[1].toLowerCase()
+  if (r2 === 'kaufen' || r2 === 'aufstocken') return 'Kaufen'
+  if (r2 === 'halten') return 'Halten'
   return 'Reduzieren'
 }
 
@@ -45,7 +61,7 @@ export function parseSections(text) {
     if (/risiken|risks/i.test(clean)) { inRisks = true; inStrengths = false; continue }
     if (/empfehlung|fair.?value|bewertung/i.test(clean)) { inStrengths = false; inRisks = false }
 
-    const isBullet = /^[-•\d]\s/.test(clean) || /^\d+\.\s/.test(clean)
+    const isBullet = /^[-•*\d]\s/.test(clean) || /^\d+\.\s/.test(clean)
     if (inStrengths && isBullet && clean.length > 5)
       strengths.push(clean.replace(/^[-•\d\.]\s*/, ''))
     if (inRisks && isBullet && clean.length > 5)
@@ -452,7 +468,7 @@ export default function AnalysisPanel({
             </button>
             {showFull && (
               <div className="border-t border-slate-100">
-                <div className="px-4 py-4 max-h-96 overflow-y-auto scrollbar-thin">
+                <div className="px-4 py-4">
                   <MarkdownText text={rawText} />
                 </div>
               </div>
