@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { getQuote, getFullStockData, getCandlesForPeriod } from '../services/marketApi'
+import { getBatchQuotes, getFullStockData, getCandlesForPeriod } from '../services/marketApi'
 
 const cache = new Map()
 const CACHE_TTL = 60_000
@@ -80,17 +80,17 @@ export function useMultiQuotes(items) {
     if (!toFetch.length) return
 
     setLoading(true)
-    // Only fetch the quote endpoint (1 call/ticker instead of 3) to stay within rate limits
-    Promise.allSettled(toFetch.map((p) => getQuote(p.ticker))).then((results) => {
+    // Single batch request for all tickers — no rate-limit risk
+    getBatchQuotes(toFetch.map((p) => p.ticker)).then((batchResult) => {
       const newQuotes = {}
-      toFetch.forEach((p, i) => {
-        const val = results[i].status === 'fulfilled' ? { quote: results[i].value } : { quote: null }
+      toFetch.forEach((p) => {
+        const val = { quote: batchResult[p.ticker] ?? null }
         cache.set(`quote:${p.ticker}`, { data: val, ts: Date.now() })
         newQuotes[p.ticker] = val
       })
       setQuotes((prev) => ({ ...prev, ...newQuotes }))
       setLoading(false)
-    })
+    }).catch(() => setLoading(false))
   }, [key])
 
   return { quotes, loading }

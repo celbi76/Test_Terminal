@@ -10,9 +10,23 @@ async function get(path, params = {}) {
   return res.json()
 }
 
-export async function getQuote(ticker) {
-  return get('/quote', { symbol: ticker })
+// ── Quote via Yahoo Finance proxy (no API key, batch-friendly) ────────────────
+
+export async function getBatchQuotes(tickers) {
+  if (!tickers.length) return {}
+  const params = new URLSearchParams({ symbols: tickers.join(',') })
+  const res = await fetch(`/api/quotes?${params}`)
+  if (!res.ok) throw new Error(`Quotes API ${res.status}`)
+  const data = await res.json()
+  return data.quotes ?? {}
 }
+
+export async function getQuote(ticker) {
+  const map = await getBatchQuotes([ticker])
+  return map[ticker] ?? null
+}
+
+// ── Finnhub — profile & financials (only loaded in StockDetail drawer) ────────
 
 export async function getCompanyProfile(ticker) {
   return get('/stock/profile2', { symbol: ticker })
@@ -26,13 +40,16 @@ export async function searchSymbol(query) {
   return get('/search', { q: query })
 }
 
-// Candles go through the serverless proxy (FINNHUB_API_KEY server-side)
+// ── Candles via Yahoo Finance proxy ──────────────────────────────────────────
+
 export async function getCandlesForPeriod(ticker, period = '1J', assetType = 'stock') {
   const params = new URLSearchParams({ symbol: ticker, period, assetType })
   const res = await fetch(`/api/candles?${params}`)
   if (!res.ok) throw new Error(`Candles API ${res.status}`)
   return res.json()
 }
+
+// ── Full data (quote + profile + financials) — used only in StockDetail ──────
 
 export async function getFullStockData(ticker, assetType = 'stock') {
   if (assetType === 'crypto') {
@@ -45,8 +62,8 @@ export async function getFullStockData(ticker, assetType = 'stock') {
     getBasicFinancials(ticker),
   ])
   return {
-    quote: quote.status === 'fulfilled' ? quote.value : null,
-    profile: profile.status === 'fulfilled' ? profile.value : null,
-    financials: financials.status === 'fulfilled' ? financials.value?.metric ?? null : null,
+    quote:      quote.status      === 'fulfilled' ? quote.value              : null,
+    profile:    profile.status    === 'fulfilled' ? profile.value            : null,
+    financials: financials.status === 'fulfilled' ? financials.value?.metric : null,
   }
 }
