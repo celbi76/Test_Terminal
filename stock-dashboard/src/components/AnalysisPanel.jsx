@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ReferenceLine, CartesianGrid,
 } from 'recharts'
 import { formatCurrency, formatPct } from '../utils/calculations'
 
@@ -45,12 +46,10 @@ export function parseSections(text) {
     if (/empfehlung|fair.?value|bewertung/i.test(clean)) { inStrengths = false; inRisks = false }
 
     const isBullet = /^[-•\d]\s/.test(clean) || /^\d+\.\s/.test(clean)
-    if (inStrengths && isBullet && clean.length > 5) {
+    if (inStrengths && isBullet && clean.length > 5)
       strengths.push(clean.replace(/^[-•\d\.]\s*/, ''))
-    }
-    if (inRisks && isBullet && clean.length > 5) {
+    if (inRisks && isBullet && clean.length > 5)
       risks.push(clean.replace(/^[-•\d\.]\s*/, ''))
-    }
   }
 
   return { strengths: strengths.slice(0, 3), risks: risks.slice(0, 3), full: text }
@@ -62,7 +61,7 @@ export const REC_CONFIG = {
   Reduzieren:{ bg: 'bg-red-900/30',     border: 'border-red-700',     text: 'text-red-400',     icon: '↓', label: 'REDUZIEREN' },
 }
 
-// ── Projection chart ──────────────────────────────────────────────────────────
+// ── Combined historical + forecast chart ──────────────────────────────────────
 
 function generateProjection(currentPrice, fairValue, months = 13) {
   if (!currentPrice || currentPrice <= 0) return []
@@ -74,7 +73,7 @@ function generateProjection(currentPrice, fairValue, months = 13) {
     const d = new Date()
     d.setMonth(d.getMonth() + i)
     const label = i === 0
-      ? 'Heute'
+      ? 'Jetzt'
       : d.toLocaleDateString('de-CH', { month: 'short', year: i >= 12 ? '2-digit' : undefined })
     const base = currentPrice + (diff / (months - 1)) * i
     const spread = vol * Math.sqrt(i)
@@ -87,99 +86,182 @@ function generateProjection(currentPrice, fairValue, months = 13) {
   })
 }
 
-function ProjectionChart({ currentPrice, fairValue }) {
-  const data = generateProjection(currentPrice, fairValue)
-  if (!data.length) return null
+function buildCombinedData(chartData, currentPrice, fairValue) {
+  const hist = (chartData ?? []).map((d) => ({ date: d.date, hist: d.price }))
+  if (!currentPrice) return { data: hist, junctionDate: null }
 
-  const isPositive = (fairValue ?? currentPrice) >= currentPrice
-  const color = isPositive ? '#10b981' : '#ef4444'
+  const projection = generateProjection(currentPrice, fairValue, 13)
+  const forecasts = projection.slice(1).map((d) => ({
+    date: d.label,
+    basis: d.basis,
+    optimistisch: d.optimistisch,
+    konservativ: d.konservativ,
+  }))
+
+  const junction = {
+    date: 'Jetzt',
+    hist: currentPrice,
+    basis: currentPrice,
+    optimistisch: currentPrice,
+    konservativ: currentPrice,
+  }
+
+  return { data: [...hist, junction, ...forecasts], junctionDate: 'Jetzt' }
+}
+
+function CombinedChart({ chartData, currentPrice, fairValue }) {
+  const { data, junctionDate } = buildCombinedData(chartData, currentPrice, fairValue)
+  if (!data.length) return (
+    <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+      Keine Chart-Daten
+    </div>
+  )
+
+  const isUpside = (fairValue ?? currentPrice) >= currentPrice
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-white font-medium text-sm">12-Monats-Prognose</h4>
-        <div className="flex gap-3 text-xs text-slate-400">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />Optimistisch
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full inline-block" style={{ background: color }} />Basis
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-slate-500 inline-block" />Konservativ
-          </span>
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id="apGradHist" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+          </linearGradient>
+          <linearGradient id="apGradOpt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+          </linearGradient>
+          <linearGradient id="apGradCons" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.05} />
+            <stop offset="95%" stopColor="#ef4444" stopOpacity={0.2} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="2 4" stroke="#1e293b" vertical={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fill: '#475569', fontSize: 10 }}
+          tickLine={false}
+          axisLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          domain={['auto', 'auto']}
+          tick={{ fill: '#475569', fontSize: 10 }}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(v) => `$${v.toFixed(0)}`}
+          width={48}
+        />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
+          labelStyle={{ color: '#94a3b8' }}
+          formatter={(v, name) => [`$${Number(v).toFixed(2)}`, name]}
+        />
+        {junctionDate && (
+          <ReferenceLine
+            x={junctionDate}
+            stroke="#334155"
+            strokeDasharray="3 3"
+            label={{ value: 'Prognose ›', fill: '#64748b', fontSize: 10, position: 'insideTopRight' }}
+          />
+        )}
+        {fairValue && (
+          <ReferenceLine
+            y={fairValue}
+            stroke="#6366f1"
+            strokeDasharray="4 3"
+            label={{ value: `Kursziel $${fairValue.toFixed(0)}`, fill: '#818cf8', fontSize: 9, position: 'insideTopRight' }}
+          />
+        )}
+        {/* Historical */}
+        <Area type="monotone" dataKey="hist" stroke="#6366f1" strokeWidth={2}
+          fill="url(#apGradHist)" dot={false} connectNulls={false} name="Kurs" />
+        {/* Forecast cone */}
+        <Area type="monotone" dataKey="optimistisch" stroke="#10b981" strokeWidth={1.5}
+          fill="url(#apGradOpt)" dot={false} connectNulls={false} name="Optimistisch" />
+        <Area type="monotone" dataKey="konservativ" stroke="#ef4444" strokeWidth={1.5}
+          fill="url(#apGradCons)" dot={false} connectNulls={false} name="Konservativ" strokeDasharray="3 2" />
+        <Area type="monotone" dataKey="basis" stroke={isUpside ? '#10b981' : '#ef4444'}
+          strokeWidth={2} fill="none" dot={false} connectNulls={false} name="Basis" />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+// ── Analyst-style rating bars ─────────────────────────────────────────────────
+
+function getDistribution(rec, score) {
+  const s = Math.min(10, Math.max(1, score ?? 5))
+  if (rec === 'Kaufen') {
+    const kaufen = Math.min(90, Math.round(50 + s * 4))
+    const halten = Math.round((100 - kaufen) * 0.75)
+    return { kaufen, halten, verkaufen: 100 - kaufen - halten }
+  }
+  if (rec === 'Reduzieren') {
+    const verkaufen = Math.min(90, Math.round(50 + s * 4))
+    const halten = Math.round((100 - verkaufen) * 0.75)
+    return { kaufen: 100 - verkaufen - halten, halten, verkaufen }
+  }
+  const halten = Math.min(85, Math.round(40 + s * 4))
+  const rest = 100 - halten
+  return { kaufen: Math.round(rest * 0.55), halten, verkaufen: 100 - halten - Math.round(rest * 0.55) }
+}
+
+function RatingBars({ rec, score }) {
+  const dist = getDistribution(rec, score)
+  const bars = [
+    { label: 'Kaufen',    value: dist.kaufen,    color: 'bg-emerald-500' },
+    { label: 'Halten',    value: dist.halten,    color: 'bg-amber-400' },
+    { label: 'Verkaufen', value: dist.verkaufen, color: 'bg-red-500' },
+  ]
+
+  return (
+    <div className="space-y-2.5">
+      {bars.map(({ label, value, color }) => (
+        <div key={label} className="flex items-center gap-2.5">
+          <span className="text-slate-300 text-xs w-16 shrink-0">{label}</span>
+          <div className="flex-1 h-3 bg-slate-700/60 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
+          </div>
+          <span className="text-slate-400 text-xs w-8 text-right shrink-0 font-mono">{value}%</span>
         </div>
-      </div>
-      <div className="h-44 text-xs">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="gradOpt" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradBase" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={color} stopOpacity={0.25} />
-                <stop offset="95%" stopColor={color} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradCons" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#64748b" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#64748b" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} interval={2} />
-            <YAxis domain={['auto', 'auto']} tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v.toFixed(0)}`} width={46} />
-            <Tooltip
-              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '12px' }}
-              labelStyle={{ color: '#94a3b8' }}
-              formatter={(v, name) => [`$${v}`, name]}
-            />
-            {fairValue && (
-              <ReferenceLine y={fairValue} stroke="#6366f1" strokeDasharray="4 3"
-                label={{ value: `Fair Value $${fairValue.toFixed(0)}`, fill: '#818cf8', fontSize: 9, position: 'insideTopRight' }} />
-            )}
-            <Area type="monotone" dataKey="optimistisch" stroke="#10b981" strokeWidth={1.5} fill="url(#gradOpt)" dot={false} />
-            <Area type="monotone" dataKey="basis" stroke={color} strokeWidth={2} fill="url(#gradBase)" dot={false} />
-            <Area type="monotone" dataKey="konservativ" stroke="#64748b" strokeWidth={1.5} fill="url(#gradCons)" dot={false} strokeDasharray="3 2" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="text-slate-500 text-xs mt-1 text-right">
-        Modellprognose · keine Anlageberatung
-      </div>
+      ))}
     </div>
   )
 }
 
-// ── Recommendation card ───────────────────────────────────────────────────────
+// ── Price target card ─────────────────────────────────────────────────────────
 
-function RecommendationCard({ rec, score, currentPrice, fairValue }) {
-  const cfg = REC_CONFIG[rec] ?? REC_CONFIG['Halten']
-  const upside = fairValue && currentPrice ? ((fairValue - currentPrice) / currentPrice) * 100 : null
+function PriceTargetCard({ ticker, currentPrice, fairValue, score }) {
+  const deviation = fairValue && currentPrice
+    ? ((fairValue - currentPrice) / currentPrice) * 100
+    : null
+  const isUp = deviation != null && deviation >= 0
+
+  const rows = [
+    { label: 'Kursziel', value: fairValue ? formatCurrency(fairValue) : '—', cls: 'text-white font-semibold' },
+    { label: 'Kurs',     value: currentPrice ? formatCurrency(currentPrice) : '—', cls: 'text-white' },
+    {
+      label: 'Abweichung',
+      value: deviation != null
+        ? `${isUp ? '↑' : '↓'} ${Math.abs(deviation).toFixed(2)}%`
+        : '—',
+      cls: deviation != null ? (isUp ? 'text-emerald-400 font-semibold' : 'text-red-400 font-semibold') : 'text-slate-400',
+    },
+    { label: 'KI-Score', value: score != null ? `${score} / 10` : '—', cls: 'text-white' },
+  ]
 
   return (
-    <div className={`${cfg.bg} border ${cfg.border} rounded-xl p-4 flex items-center gap-4`}>
-      <div className={`text-5xl font-black ${cfg.text} leading-none`}>{cfg.icon}</div>
-      <div className="flex-1">
-        <div className={`text-2xl font-black tracking-wide ${cfg.text}`}>{cfg.label}</div>
-        {upside != null && (
-          <div className="text-slate-400 text-sm mt-0.5">
-            Fair Value: <span className="text-white font-medium">{formatCurrency(fairValue)}</span>
-            <span className={`ml-2 font-medium ${upside >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              {formatPct(upside)}
-            </span>
+    <div>
+      <div className="text-white font-semibold text-sm mb-3">{ticker} Kursziel</div>
+      <div className="space-y-0">
+        {rows.map(({ label, value, cls }) => (
+          <div key={label} className="flex justify-between items-center py-2 border-b border-slate-700/40 last:border-0">
+            <span className="text-slate-400 text-xs">{label}</span>
+            <span className={`text-xs ${cls}`}>{value}</span>
           </div>
-        )}
+        ))}
       </div>
-      {score != null && (
-        <div className="text-right shrink-0">
-          <div className={`text-3xl font-black ${cfg.text}`}>{score}<span className="text-slate-500 text-lg font-normal">/10</span></div>
-          <div className="text-slate-500 text-xs">Score</div>
-          <div className="mt-1 w-16 bg-slate-700 rounded-full h-1.5">
-            <div className={`h-1.5 rounded-full ${cfg.text.replace('text-', 'bg-')}`} style={{ width: `${score * 10}%` }} />
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -195,8 +277,7 @@ function StrengthsRisks({ strengths, risks }) {
         <ul className="space-y-1.5">
           {strengths.map((s, i) => (
             <li key={i} className="text-slate-300 text-xs flex gap-1.5">
-              <span className="text-emerald-500 shrink-0 mt-0.5">+</span>
-              <span>{s}</span>
+              <span className="text-emerald-500 shrink-0 mt-0.5">+</span><span>{s}</span>
             </li>
           ))}
         </ul>
@@ -206,8 +287,7 @@ function StrengthsRisks({ strengths, risks }) {
         <ul className="space-y-1.5">
           {risks.map((r, i) => (
             <li key={i} className="text-slate-300 text-xs flex gap-1.5">
-              <span className="text-red-500 shrink-0 mt-0.5">−</span>
-              <span>{r}</span>
+              <span className="text-red-500 shrink-0 mt-0.5">−</span><span>{r}</span>
             </li>
           ))}
         </ul>
@@ -240,6 +320,7 @@ function MarkdownText({ text }) {
 export default function AnalysisPanel({
   ticker, stockData, purchasePrice, assetType = 'stock',
   analyses, loading, errors, onAnalyze, onRefresh,
+  chartData,
 }) {
   const [showFull, setShowFull] = useState(false)
 
@@ -252,10 +333,11 @@ export default function AnalysisPanel({
   const fairValue = parseFairValue(rawText)
   const { strengths, risks } = parseSections(rawText)
   const currentPrice = stockData?.quote?.c
+  const nextYear = new Date().getFullYear() + 1
 
   return (
-    <div className="space-y-3">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Section header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-white font-semibold">KI-Analyse</h3>
@@ -263,7 +345,10 @@ export default function AnalysisPanel({
         </div>
         <div className="flex gap-2">
           {rawText && (
-            <button onClick={onRefresh} className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors">
+            <button
+              onClick={onRefresh}
+              className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+            >
               Aktualisieren
             </button>
           )}
@@ -307,32 +392,58 @@ export default function AnalysisPanel({
         </div>
       )}
 
-      {/* Results */}
+      {/* ── Main dashboard (aktien.guide style) ─────────────────────────── */}
       {rawText && !isLoading && (
-        <div className="space-y-3">
-          {/* 1. Decision card */}
-          {rec && (
-            <RecommendationCard
-              rec={rec}
-              score={score}
-              currentPrice={currentPrice}
-              fairValue={fairValue}
-            />
-          )}
+        <div className="space-y-4">
 
-          {/* 2. Projection chart */}
-          {currentPrice > 0 && (
-            <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-              <ProjectionChart currentPrice={currentPrice} fairValue={fairValue} />
+          {/* Title */}
+          <div className="text-slate-200 font-semibold text-sm">
+            {ticker} Kursziel {nextYear} · KI-Einstufung &amp; Empfehlung
+          </div>
+
+          {/* 2-column layout: chart left, stats right */}
+          <div className="grid grid-cols-5 gap-4">
+
+            {/* Chart — 3/5 */}
+            <div className="col-span-3 bg-slate-800/40 border border-slate-700/60 rounded-xl p-4">
+              <div className="h-56">
+                <CombinedChart chartData={chartData} currentPrice={currentPrice} fairValue={fairValue} />
+              </div>
             </div>
-          )}
 
-          {/* 3. Strengths / Risks */}
+            {/* Right column — 2/5 */}
+            <div className="col-span-2 flex flex-col gap-3">
+
+              {/* Rating bars */}
+              <div className="flex-1 bg-slate-800/40 border border-slate-700/60 rounded-xl p-4">
+                <div className="text-white font-semibold text-sm mb-3">
+                  {ticker} Einstufungen &amp; Empfehlung:
+                </div>
+                {rec ? (
+                  <RatingBars rec={rec} score={score} />
+                ) : (
+                  <div className="text-slate-500 text-xs">Empfehlung nicht erkannt</div>
+                )}
+              </div>
+
+              {/* Price target */}
+              <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4">
+                <PriceTargetCard
+                  ticker={ticker}
+                  currentPrice={currentPrice}
+                  fairValue={fairValue}
+                  score={score}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Strengths / Risks */}
           {(strengths.length > 0 || risks.length > 0) && (
             <StrengthsRisks strengths={strengths} risks={risks} />
           )}
 
-          {/* 4. Full analysis – collapsible */}
+          {/* Full analysis — collapsible */}
           <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden">
             <button
               onClick={() => setShowFull((v) => !v)}

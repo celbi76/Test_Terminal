@@ -338,6 +338,7 @@ export default function StockDetail({ ticker, onClose }) {
             errors={errors}
             onAnalyze={handleAnalyze}
             onRefresh={handleRefresh}
+            chartData={chartData}
           />
         </div>
       </div>
