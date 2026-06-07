@@ -12,17 +12,21 @@ async function get(path, params = {}) {
 
 // ── Quote via Yahoo Finance proxy (no API key, batch-friendly) ────────────────
 
-export async function getBatchQuotes(tickers) {
-  if (!tickers.length) return {}
-  const params = new URLSearchParams({ symbols: tickers.join(',') })
+// items: array of { ticker, assetType } or plain strings (defaults to 'stock')
+export async function getBatchQuotes(items) {
+  if (!items.length) return {}
+  const symbols = items.map((i) =>
+    typeof i === 'string' ? i : `${i.ticker}:${i.assetType ?? 'stock'}`
+  ).join(',')
+  const params = new URLSearchParams({ symbols })
   const res = await fetch(`/api/quotes?${params}`)
   if (!res.ok) throw new Error(`Quotes API ${res.status}`)
   const data = await res.json()
   return data.quotes ?? {}
 }
 
-export async function getQuote(ticker) {
-  const map = await getBatchQuotes([ticker])
+export async function getQuote(ticker, assetType = 'stock') {
+  const map = await getBatchQuotes([{ ticker, assetType }])
   return map[ticker] ?? null
 }
 
@@ -53,11 +57,11 @@ export async function getCandlesForPeriod(ticker, period = '1J', assetType = 'st
 
 export async function getFullStockData(ticker, assetType = 'stock') {
   if (assetType === 'crypto') {
-    const quote = await getQuote(ticker).catch(() => null)
+    const quote = await getQuote(ticker, 'crypto').catch(() => null)
     return { quote, profile: null, financials: null }
   }
   const [quote, profile, financials] = await Promise.allSettled([
-    getQuote(ticker),
+    getQuote(ticker, assetType),
     getCompanyProfile(ticker),
     getBasicFinancials(ticker),
   ])
