@@ -80,8 +80,8 @@ export function useMultiQuotes(items) {
     if (!toFetch.length) return
 
     setLoading(true)
-    // Single batch request for all tickers — no rate-limit risk
-    getBatchQuotes(toFetch.map((p) => p.ticker)).then((batchResult) => {
+    // Single batch request for all tickers — pass assetType so the API can route EU ETFs correctly
+    getBatchQuotes(toFetch).then((batchResult) => {
       const newQuotes = {}
       toFetch.forEach((p) => {
         const val = { quote: batchResult[p.ticker] ?? null }

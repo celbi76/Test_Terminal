@@ -15,14 +15,13 @@ const HEADERS = {
 
 function toYahooBase(ticker, assetType) {
   if (assetType === 'crypto') {
-    // BINANCE:BTCUSDT → BTC-USD
     const base = ticker.split(':')[1]?.replace(/USDT?$/, '') ?? ticker
     return `${base}-USD`
   }
   return ticker
 }
 
-async function fetchCandles(yahooSymbol, range, interval, requireExchange = false) {
+async function fetchCandles(yahooSymbol, range, interval) {
   const url =
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}` +
     `?interval=${interval}&range=${range}&includePrePost=false`
@@ -33,12 +32,6 @@ async function fetchCandles(yahooSymbol, range, interval, requireExchange = fals
   const data = await res.json()
   const result = data?.chart?.result?.[0]
   if (!result?.timestamp) return null
-
-  // Reject OTC/Pink-Sheet results so the EU suffix loop can try real exchanges
-  if (requireExchange) {
-    const exchange = (result.meta?.exchange ?? result.meta?.exchangeName ?? '').toUpperCase()
-    if (exchange === 'OTC' || exchange === 'PNK' || exchange === 'GREY') return null
-  }
 
   const { timestamp: ts, indicators } = result
   const q = indicators?.quote?.[0] ?? {}
@@ -67,16 +60,27 @@ export default async function handler(req, res) {
   const base = toYahooBase(symbol, assetType)
   const { range, interval } = PERIOD_MAP[period] ?? PERIOD_MAP['1J']
 
-  // For plain tickers (no suffix/dash), require a real exchange to avoid OTC shells
-  const needsFallback = !base.includes('.') && !base.includes('-')
+  const isPlain = !base.startsWith('^') && !base.includes('.') && !base.includes('-')
 
   try {
-    let points = await fetchCandles(base, range, interval, needsFallback)
+    let points = null
 
-    if (!points && needsFallback) {
+    if (assetType === 'etf' && isPlain) {
+      // EU ETFs: skip bare ticker entirely, go straight to exchange suffixes
       for (const suffix of EU_SUFFIXES) {
-        points = await fetchCandles(base + suffix, range, interval, false)
+        points = await fetchCandles(base + suffix, range, interval)
         if (points) break
+      }
+    } else {
+      // Stocks, indices, crypto, already-suffixed: try direct first
+      points = await fetchCandles(base, range, interval)
+
+      // Plain stock tickers may also be EU-listed — try suffixes as fallback
+      if (!points && isPlain && assetType !== 'crypto') {
+        for (const suffix of EU_SUFFIXES) {
+          points = await fetchCandles(base + suffix, range, interval)
+          if (points) break
+        }
       }
     }
 
