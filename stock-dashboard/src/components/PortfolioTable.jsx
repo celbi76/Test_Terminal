@@ -77,7 +77,7 @@ export default function PortfolioTable({ onSelectTicker }) {
         <StatCard
           label="Positionen"
           value={positions.length}
-          sub={`${tickers.length} Titel`}
+          sub={`${positionRefs.length} Titel`}
         />
       </div>
 
