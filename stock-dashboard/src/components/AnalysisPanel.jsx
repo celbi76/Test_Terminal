@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
-import { useAnalysis } from '../hooks/useAnalysis'
 import { formatCurrency, formatPct } from '../utils/calculations'
 
-// ── Parsing helpers ──────────────────────────────────────────────────────────
+// ── Parsing helpers (exported for StockDetail) ────────────────────────────────
 
-function parseRecommendation(text) {
+export function parseRecommendation(text) {
   if (!text) return null
   const m = text.match(/empfehlung[:\*\s]+(kaufen|halten|reduzieren|verkaufen)/i)
   if (!m) return null
@@ -17,13 +16,13 @@ function parseRecommendation(text) {
   return 'Reduzieren'
 }
 
-function parseScore(text) {
+export function parseScore(text) {
   if (!text) return null
   const m = text.match(/(\d+)\s*\/\s*10/)
   return m ? Math.min(10, Math.max(1, parseInt(m[1]))) : null
 }
 
-function parseFairValue(text) {
+export function parseFairValue(text) {
   if (!text) return null
   const m = text.match(/fair[- ]?value[^\d$]*\$?\s*([\d][0-9,\.]*)/i)
     || text.match(/fairer?\s+wert[^\d$]*\$?\s*([\d][0-9,\.]*)/i)
@@ -31,7 +30,7 @@ function parseFairValue(text) {
   return m ? parseFloat(m[1].replace(/,/g, '')) : null
 }
 
-function parseSections(text) {
+export function parseSections(text) {
   if (!text) return { strengths: [], risks: [], full: '' }
   const lines = text.split('\n')
   const strengths = []
@@ -57,13 +56,18 @@ function parseSections(text) {
   return { strengths: strengths.slice(0, 3), risks: risks.slice(0, 3), full: text }
 }
 
-// ── Projection chart ─────────────────────────────────────────────────────────
+export const REC_CONFIG = {
+  Kaufen:    { bg: 'bg-emerald-900/40', border: 'border-emerald-700', text: 'text-emerald-400', icon: '↑', label: 'KAUFEN' },
+  Halten:    { bg: 'bg-amber-900/30',   border: 'border-amber-700',   text: 'text-amber-400',   icon: '→', label: 'HALTEN' },
+  Reduzieren:{ bg: 'bg-red-900/30',     border: 'border-red-700',     text: 'text-red-400',     icon: '↓', label: 'REDUZIEREN' },
+}
+
+// ── Projection chart ──────────────────────────────────────────────────────────
 
 function generateProjection(currentPrice, fairValue, months = 13) {
   if (!currentPrice || currentPrice <= 0) return []
   const target = fairValue ?? currentPrice * 1.08
   const diff = target - currentPrice
-  // monthly volatility ~2.5% of current price
   const vol = currentPrice * 0.025
 
   return Array.from({ length: months }, (_, i) => {
@@ -149,12 +153,6 @@ function ProjectionChart({ currentPrice, fairValue }) {
 
 // ── Recommendation card ───────────────────────────────────────────────────────
 
-const REC_CONFIG = {
-  Kaufen:    { bg: 'bg-emerald-900/40', border: 'border-emerald-700', text: 'text-emerald-400', icon: '↑', label: 'KAUFEN' },
-  Halten:    { bg: 'bg-amber-900/30',   border: 'border-amber-700',   text: 'text-amber-400',   icon: '→', label: 'HALTEN' },
-  Reduzieren:{ bg: 'bg-red-900/30',     border: 'border-red-700',     text: 'text-red-400',     icon: '↓', label: 'REDUZIEREN' },
-}
-
 function RecommendationCard({ rec, score, currentPrice, fairValue }) {
   const cfg = REC_CONFIG[rec] ?? REC_CONFIG['Halten']
   const upside = fairValue && currentPrice ? ((fairValue - currentPrice) / currentPrice) * 100 : null
@@ -239,8 +237,10 @@ function MarkdownText({ text }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function AnalysisPanel({ ticker, stockData, purchasePrice, assetType = 'stock' }) {
-  const { analyses, loading, errors, analyze, clearCache } = useAnalysis()
+export default function AnalysisPanel({
+  ticker, stockData, purchasePrice, assetType = 'stock',
+  analyses, loading, errors, onAnalyze, onRefresh,
+}) {
   const [showFull, setShowFull] = useState(false)
 
   const rawText = analyses[ticker]
@@ -253,22 +253,6 @@ export default function AnalysisPanel({ ticker, stockData, purchasePrice, assetT
   const { strengths, risks } = parseSections(rawText)
   const currentPrice = stockData?.quote?.c
 
-  function handleAnalyze() {
-    analyze({
-      ticker,
-      quote: stockData?.quote,
-      financials: stockData?.financials,
-      profile: stockData?.profile,
-      purchasePrice,
-      assetType,
-    })
-  }
-
-  function handleRefresh() {
-    clearCache(ticker)
-    setTimeout(handleAnalyze, 50)
-  }
-
   return (
     <div className="space-y-3">
       {/* Header */}
@@ -279,12 +263,12 @@ export default function AnalysisPanel({ ticker, stockData, purchasePrice, assetT
         </div>
         <div className="flex gap-2">
           {rawText && (
-            <button onClick={handleRefresh} className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors">
+            <button onClick={onRefresh} className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors">
               Aktualisieren
             </button>
           )}
           <button
-            onClick={rawText ? handleRefresh : handleAnalyze}
+            onClick={rawText ? onRefresh : onAnalyze}
             disabled={isLoading}
             className="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg transition-colors font-medium"
           >
