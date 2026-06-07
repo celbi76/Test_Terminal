@@ -12,24 +12,24 @@ import { formatCurrency, formatPct, getSectorColor } from '../utils/calculations
 // ── Watchlist item ────────────────────────────────────────────────────────────
 
 function WatchlistItem({ ticker, onSelect }) {
-  const { quotes } = useMultiQuotes([ticker])
+  const { quotes } = useMultiQuotes([{ ticker, assetType: 'stock' }])
   const q = quotes[ticker]?.quote
   return (
     <div
       onClick={() => onSelect(ticker)}
-      className="flex items-center justify-between px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors"
+      className="flex items-center justify-between px-3 py-2.5 bg-slate-50 hover:bg-indigo-50 rounded-xl cursor-pointer transition-colors group"
     >
-      <span className="text-white font-medium text-sm">{ticker}</span>
+      <span className="text-slate-800 font-semibold text-sm group-hover:text-indigo-700 transition-colors">{ticker}</span>
       <div className="text-right">
         {q ? (
           <>
-            <div className="text-white text-sm font-mono">{formatCurrency(q.c)}</div>
-            <div className={`text-xs font-mono ${(q.dp ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className="text-slate-900 text-sm font-mono font-medium">{formatCurrency(q.c)}</div>
+            <div className={`text-xs font-mono font-medium ${(q.dp ?? 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
               {formatPct(q.dp ?? 0)}
             </div>
           </>
         ) : (
-          <div className="text-slate-500 text-xs">—</div>
+          <div className="text-slate-300 text-xs">—</div>
         )}
       </div>
     </div>
@@ -39,36 +39,36 @@ function WatchlistItem({ ticker, onSelect }) {
 // ── Market index item ─────────────────────────────────────────────────────────
 
 function MarketIndexItem({ ticker, label, onSelect, onRemove }) {
-  const { quotes } = useMultiQuotes([ticker])
+  const { quotes } = useMultiQuotes([{ ticker, assetType: 'stock' }])
   const q = quotes[ticker]?.quote
   const dp = q?.dp ?? 0
 
   return (
-    <div className="group flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
+    <div className="group flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0">
       <div
         onClick={() => onSelect(ticker)}
-        className="flex-1 flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity"
+        className="flex-1 flex items-center justify-between cursor-pointer hover:opacity-75 transition-opacity"
       >
         <div>
-          <div className="text-slate-300 text-xs font-medium">{label}</div>
-          <div className="text-slate-500 text-xs">{ticker}</div>
+          <div className="text-slate-800 text-xs font-semibold">{label}</div>
+          <div className="text-slate-400 text-xs">{ticker}</div>
         </div>
         <div className="text-right mr-3">
           {q ? (
             <>
-              <div className="text-white text-xs font-mono">{formatCurrency(q.c)}</div>
-              <div className={`text-xs font-mono ${dp >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className="text-slate-900 text-xs font-mono font-semibold">{formatCurrency(q.c)}</div>
+              <div className={`text-xs font-mono font-medium ${dp >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                 {dp >= 0 ? '+' : ''}{dp.toFixed(2)}%
               </div>
             </>
           ) : (
-            <div className="text-slate-600 text-xs">—</div>
+            <div className="text-slate-300 text-xs">—</div>
           )}
         </div>
       </div>
       <button
         onClick={() => onRemove(ticker)}
-        className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all text-xs shrink-0"
+        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 transition-all text-xs shrink-0"
       >
         ✕
       </button>
@@ -91,22 +91,22 @@ function AddIndexForm({ onAdd }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-2 space-y-1.5">
+    <form onSubmit={handleSubmit} className="mt-3 space-y-2">
       <input
         value={val}
         onChange={(e) => setVal(e.target.value)}
         placeholder="Ticker (z.B. BTC-USD)"
-        className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
       />
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         placeholder="Name (optional)"
-        className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-xs placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
       />
       <button
         type="submit"
-        className="w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs rounded transition-colors"
+        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg transition-colors font-semibold"
       >
         Hinzufügen
       </button>
@@ -117,27 +117,25 @@ function AddIndexForm({ onAdd }) {
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const positions = usePortfolioStore((s) => s.positions)
-  const watchlist = usePortfolioStore((s) => s.watchlist)
-  const marketIndices = usePortfolioStore((s) => s.marketIndices)
+  const positions         = usePortfolioStore((s) => s.positions)
+  const watchlist         = usePortfolioStore((s) => s.watchlist)
+  const marketIndices     = usePortfolioStore((s) => s.marketIndices)
   const removeFromWatchlist = usePortfolioStore((s) => s.removeFromWatchlist)
-  const addMarketIndex = usePortfolioStore((s) => s.addMarketIndex)
+  const addMarketIndex    = usePortfolioStore((s) => s.addMarketIndex)
   const removeMarketIndex = usePortfolioStore((s) => s.removeMarketIndex)
 
-  const [selectedTicker, setSelectedTicker] = useState(null)
+  const [selectedTicker,    setSelectedTicker]    = useState(null)
   const [showWatchlistModal, setShowWatchlistModal] = useState(false)
-  const [activeTab, setActiveTab] = useState('portfolio')
-  const [showAddIndex, setShowAddIndex] = useState(false)
+  const [activeTab,          setActiveTab]          = useState('portfolio')
+  const [showAddIndex,       setShowAddIndex]       = useState(false)
 
   const positionRefs = positions.map((p) => ({ ticker: p.ticker, assetType: p.assetType ?? 'stock' }))
   const { quotes } = useMultiQuotes(positionRefs)
 
   const sectorData = positions.reduce((acc, pos) => {
-    const sector = pos.assetType === 'crypto'
-      ? 'Krypto'
-      : pos.sector ?? 'Aktien'
-    const price = quotes[pos.ticker]?.quote?.c ?? pos.purchasePrice
-    const value = price * pos.shares
+    const sector = pos.assetType === 'crypto' ? 'Krypto' : pos.assetType === 'etf' ? 'ETF' : 'Aktien'
+    const price  = quotes[pos.ticker]?.quote?.c ?? pos.purchasePrice
+    const value  = price * pos.shares
     const existing = acc.find((a) => a.name === sector)
     if (existing) existing.value += value
     else acc.push({ name: sector, value })
@@ -152,21 +150,24 @@ export default function Dashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Navbar */}
-      <nav className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-30">
+    <div className="min-h-screen bg-slate-100">
+
+      {/* ── Navbar ── */}
+      <nav className="sticky top-0 z-30 bg-gradient-to-r from-slate-900 to-indigo-950 border-b border-white/10 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">S</div>
-            <span className="text-white font-semibold text-lg">StockAnalyzer</span>
+            <div className="w-8 h-8 bg-indigo-500 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-md">S</div>
+            <span className="text-white font-bold text-lg tracking-tight">StockAnalyzer</span>
           </div>
-          <div className="flex gap-1 bg-slate-800 rounded-lg p-1">
+          <div className="flex gap-1 bg-white/10 rounded-xl p-1">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === tab.id ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+                className={`px-4 py-1.5 text-sm rounded-lg transition-all font-medium ${
+                  activeTab === tab.id
+                    ? 'bg-white text-slate-900 shadow-sm font-semibold'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {tab.label}
@@ -179,19 +180,20 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-          {/* Sidebar */}
+          {/* ── Sidebar ── */}
           <aside className="lg:col-span-1 space-y-4">
 
             {/* Watchlist */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-white font-medium text-sm">Watchlist</h3>
-                <button onClick={() => setShowWatchlistModal(true)} className="text-xs text-indigo-400 hover:text-indigo-300">
+                <h3 className="text-slate-900 font-semibold text-sm">Watchlist</h3>
+                <button onClick={() => setShowWatchlistModal(true)}
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold transition-colors">
                   + Hinzufügen
                 </button>
               </div>
               {watchlist.length === 0 ? (
-                <div className="text-slate-500 text-xs text-center py-3">Leer</div>
+                <div className="text-slate-400 text-xs text-center py-4">Leer</div>
               ) : (
                 <div className="space-y-1">
                   {watchlist.map((t) => (
@@ -199,7 +201,7 @@ export default function Dashboard() {
                       <WatchlistItem ticker={t} onSelect={setSelectedTicker} />
                       <button
                         onClick={() => removeFromWatchlist(t)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-xs"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-xs"
                       >✕</button>
                     </div>
                   ))}
@@ -207,18 +209,18 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Personalizable Market Overview */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            {/* Market Overview */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-white font-medium text-sm">Marktübersicht</h3>
+                <h3 className="text-slate-900 font-semibold text-sm">Marktübersicht</h3>
                 <button
                   onClick={() => setShowAddIndex((v) => !v)}
-                  className="text-xs text-indigo-400 hover:text-indigo-300"
+                  className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
                 >
                   {showAddIndex ? '− Schliessen' : '+ Anpassen'}
                 </button>
               </div>
-              <div className="space-y-0">
+              <div>
                 {marketIndices.map(({ ticker, label }) => (
                   <MarketIndexItem
                     key={ticker}
@@ -235,8 +237,9 @@ export default function Dashboard() {
             </div>
           </aside>
 
-          {/* Main Content */}
+          {/* ── Main Content ── */}
           <main className="lg:col-span-3 space-y-6">
+
             {activeTab === 'portfolio' && (
               <PortfolioTable onSelectTicker={setSelectedTicker} />
             )}
@@ -250,11 +253,11 @@ export default function Dashboard() {
             )}
 
             {activeTab === 'allokation' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-                <h2 className="text-white font-semibold mb-4">Portfolio-Allokation</h2>
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <h2 className="text-slate-900 font-bold text-lg mb-5">Portfolio-Allokation</h2>
                 {sectorData.length === 0 ? (
-                  <div className="text-center py-16 text-slate-500">
-                    <div className="text-4xl mb-2">🍩</div>
+                  <div className="text-center py-16 text-slate-400">
+                    <div className="text-4xl mb-3">🍩</div>
                     <div>Portfolio-Positionen hinzufügen um Sektorverteilung zu sehen.</div>
                   </div>
                 ) : (
@@ -273,21 +276,21 @@ export default function Dashboard() {
                           </Pie>
                           <Tooltip
                             formatter={(value, name) => [formatCurrency(value, 0), name]}
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0', fontSize: '13px' }}
+                            contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#0f172a', fontSize: '13px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}
                           />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="flex flex-col justify-center gap-2 min-w-[200px]">
+                    <div className="flex flex-col justify-center gap-3 min-w-[200px]">
                       {[...sectorData].sort((a, b) => b.value - a.value).map((entry) => {
                         const total = sectorData.reduce((s, e) => s + e.value, 0)
-                        const pct = ((entry.value / total) * 100).toFixed(1)
+                        const pct   = ((entry.value / total) * 100).toFixed(1)
                         return (
                           <div key={entry.name} className="flex items-center gap-3">
                             <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: getSectorColor(entry.name) }} />
                             <div className="flex-1 min-w-0">
-                              <div className="text-slate-300 text-sm truncate">{entry.name}</div>
-                              <div className="text-slate-500 text-xs">{formatCurrency(entry.value, 0)} · {pct}%</div>
+                              <div className="text-slate-700 text-sm font-medium truncate">{entry.name}</div>
+                              <div className="text-slate-400 text-xs">{formatCurrency(entry.value, 0)} · {pct}%</div>
                             </div>
                           </div>
                         )
