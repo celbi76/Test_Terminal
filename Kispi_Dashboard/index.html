@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Universitätskinderspital Zürich</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css?v=20260525a">
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <span>Dashboard wird geladen…</span>
+</div>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+<nav id="sidebar">
+  <button id="sidebar-toggle" title="Sidebar ein-/ausblenden">
+    <i class="bi bi-chevron-left"></i>
+  </button>
+
+  <div id="sidebar-logo">
+    <svg class="logo-icon" viewBox="-1 9 26 26" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#2CB3E3" d="M12.3,10.6C6,10.6,0.8,15.7,0.8,22c0,4.6,2.7,8.5,6.6,10.4l1.9-4.1
+        c-2.4-0.8-4.5-2.6-5.5-4.9c-0.1-0.2-0.2-0.4-0.2-0.6c0-0.9,0.7-1.6,1.6-1.6
+        c0.7,0,1.3,0.4,1.5,1c0.9,2,2.9,3.4,5.3,3.4c0.1,0,0.4,0,0.5,0
+        c2.4,0,4.4-1.4,5.3-3.4c0.2-0.6,0.8-1,1.5-1c0.9,0,1.6,0.7,1.6,1.6
+        c0,0.2,0,0.5-0.2,0.6c-1,2.3-3,4.1-5.5,4.9l1.9,4.1
+        c3.9-1.8,6.7-5.8,6.7-10.4C23.8,15.7,18.7,10.6,12.3,10.6z
+        M12.3,24c-2.2,0-3.9-1.8-3.9-3.9s1.8-3.9,3.9-3.9c2.2,0,3.9,1.8,3.9,3.9S14.5,24,12.3,24z"/>
+    </svg>
+    <div class="logo-text">
+      <span class="brand-small">UNIVERSITÄTS-</span>
+      <span class="brand-main">KINDERSPITAL</span>
+      <span class="brand-main">ZÜRICH</span>
+    </div>
+  </div>
+
+  <nav id="sidebar-nav">
+    <div class="nav-section-label">Navigation</div>
+
+    <div class="nav-item active" data-page="overview">
+      <i class="bi bi-grid-1x2-fill nav-icon"></i>
+      <span class="nav-label">Klinikübersicht</span>
+      <span class="nav-badge" id="nav-alert-badge">0</span>
+    </div>
+
+    <div class="nav-item" data-page="stations">
+      <i class="bi bi-hospital nav-icon"></i>
+      <span class="nav-label">Stationen</span>
+    </div>
+
+    <div class="nav-item" data-page="staffing">
+      <i class="bi bi-people-fill nav-icon"></i>
+      <span class="nav-label">Personal</span>
+    </div>
+
+    <div class="nav-item" data-page="pool">
+      <i class="bi bi-person-workspace nav-icon"></i>
+      <span class="nav-label">Pool</span>
+      <span class="nav-badge" id="nav-bedarf-badge" style="display:none">0</span>
+    </div>
+
+    <div class="nav-item" data-page="or">
+      <i class="bi bi-scissors nav-icon"></i>
+      <span class="nav-label">OP-Planung</span>
+    </div>
+
+    <div class="nav-item" data-page="historical">
+      <i class="bi bi-bar-chart-line-fill nav-icon"></i>
+      <span class="nav-label">Historische Daten</span>
+    </div>
+
+    <div class="nav-item" data-page="forecast">
+      <i class="bi bi-graph-up-arrow nav-icon"></i>
+      <span class="nav-label">Prognose</span>
+    </div>
+
+    <div class="nav-section-label" style="margin-top:12px">Aktionen</div>
+
+    <div class="nav-item entry-btn" id="nav-data-entry">
+      <i class="bi bi-plus-circle-fill nav-icon"></i>
+      <span class="nav-label">Dateneingabe</span>
+    </div>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-item" data-page="info">
+      <i class="bi bi-mortarboard-fill nav-icon"></i>
+      <span class="nav-label">Kompetenzen</span>
+    </div>
+  </nav>
+
+  <div id="sidebar-footer">
+    <div class="user-avatar">PL</div>
+    <div class="user-info">
+      <div class="user-name">Pflegeleitung</div>
+      <div class="user-role">Klinikmanagement</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN CONTENT ──────────────────────────────────────────── -->
+<main id="main-content">
+
+  <!-- Topbar -->
+  <header id="topbar">
+    <div class="page-title">
+      <span id="page-main-title">Klinikübersicht</span>
+      <span id="page-sub-title">Echtzeit-Dashboard</span>
+    </div>
+    <div class="topbar-group">
+      <span class="shift-badge" id="shift-badge"></span>
+      <div>
+        <div class="topbar-clock" id="topbar-clock">--:--:--</div>
+        <div class="topbar-date"  id="topbar-date"></div>
+      </div>
+    </div>
+    <div class="topbar-group">
+      <button class="btn-icon" id="btn-refresh" title="Daten aktualisieren"><i class="bi bi-arrow-clockwise"></i></button>
+      <button class="btn-icon" title="Warnungen">
+        <i class="bi bi-bell-fill"></i>
+        <span class="badge" id="alert-badge" style="display:none">0</span>
+      </button>
+      <button class="btn-primary" id="btn-data-entry"><i class="bi bi-plus-lg"></i> Dateneingabe</button>
+    </div>
+    <div id="refresh-indicator" class="text-sm text-muted"></div>
+  </header>
+
+  <div id="page-content">
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: ÜBERSICHT
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-overview" class="page active">
+
+      <!-- Gesamtbelegung Tabelle + KPI-Zeile -->
+      <div class="two-col mb-20">
+
+        <!-- Gesamtbelegung als Tabelle -->
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-hospital" style="color:var(--kispi-teal)"></i>
+            <h3>Gesamtbelegung — Aktuelle Schicht</h3>
+          </div>
+          <div class="card-body" style="padding:0;overflow-x:auto">
+            <table class="belegung-table">
+              <thead>
+                <tr>
+                  <th>Bezeichnung</th>
+                  <th class="text-center">Gesamt</th>
+                  <th class="text-center">Betrieben</th>
+                  <th class="text-center">Belegt</th>
+                  <th>Auslastung</th>
+                </tr>
+              </thead>
+              <tbody id="belegung-tbody"><!-- JS --></tbody>
+              <tfoot>
+                <tr id="belegung-total-row" class="belegung-total"><!-- JS --></tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- KPI-Karten (rechts) -->
+        <div style="display:flex;flex-direction:column;gap:12px">
+
+          <div class="kpi-card kpi-blue">
+            <span class="kpi-icon"><i class="bi bi-activity"></i></span>
+            <div class="kpi-label">Ø Barthel-Index</div>
+            <div class="kpi-value"><span id="kpi-barthel-val">—</span></div>
+            <div class="kpi-sub" id="kpi-barthel-sub"></div>
+          </div>
+
+          <div class="kpi-card" style="border-left-color:#E63946">
+            <span class="kpi-icon" style="color:#E63946"><i class="bi bi-heart-pulse"></i></span>
+            <div class="kpi-label">Ø NEMS-Score</div>
+            <div style="display:flex;gap:16px;margin-top:4px">
+              <div style="flex:1">
+                <div style="font-size:10px;font-weight:600;color:#E63946;margin-bottom:2px">IPS</div>
+                <div class="kpi-value" style="font-size:26px;color:#E63946" id="kpi-ips-nems">—</div>
+                <div class="kpi-sub" id="kpi-ips-nems-level"></div>
+              </div>
+              <div style="flex:1;border-left:1px solid var(--border);padding-left:16px">
+                <div style="font-size:10px;font-weight:600;color:#F7941D;margin-bottom:2px">IMC</div>
+                <div class="kpi-value" style="font-size:26px;color:#F7941D" id="kpi-imc-nems">—</div>
+                <div class="kpi-sub" id="kpi-imc-nems-level"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-green" id="kpi-card-coverage">
+            <span class="kpi-icon"><i class="bi bi-people-fill"></i></span>
+            <div class="kpi-label">Personelle Abdeckung</div>
+            <div class="kpi-value"><span id="kpi-staff-actual">—</span><span class="kpi-unit">IST</span></div>
+            <div class="kpi-sub" id="kpi-staff-target"></div>
+            <div class="kpi-sub" id="kpi-coverage" style="font-weight:700;font-size:14px"></div>
+          </div>
+
+          <div class="kpi-card kpi-warn">
+            <span class="kpi-icon"><i class="bi bi-person-plus"></i></span>
+            <div class="kpi-label">Pool-Anfragen</div>
+            <div class="kpi-value"><span id="kpi-pool-req">—</span><span class="kpi-unit">Pers.</span></div>
+            <div class="kpi-sub" id="kpi-pool-rel"></div>
+          </div>
+
+          <div class="kpi-card kpi-danger">
+            <span class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></span>
+            <div class="kpi-label">Warnungen</div>
+            <div class="kpi-value"><span id="kpi-alerts">—</span></div>
+            <div class="kpi-sub">Aktuelle Alerts</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Station Grid (grouped) + Alerts -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-hospital" style="color:var(--kispi-teal)"></i>
+            <h3>Stationsbelegung — Aktuelle Schicht</h3>
+            <span class="text-sm text-muted" style="margin-left:auto">Klicken für Details</span>
+          </div>
+          <div class="card-body">
+            <div class="station-group-label">Spezialabteilungen</div>
+            <div class="station-grid" id="station-grid-spezial"><!-- JS --></div>
+            <div class="station-group-label" style="margin-top:16px">Bettenabteilungen</div>
+            <div class="station-grid" id="station-grid-betten"><!-- JS --></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-exclamation-triangle-fill" style="color:var(--warning)"></i>
+            <h3>Aktuelle Warnungen &amp; Alerts</h3>
+          </div>
+          <div class="card-body" id="alerts-panel"><!-- JS --></div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-bar-chart-steps" style="color:var(--kispi-blue-mid)"></i>
+            <h3>Barthel-Index — Klinik gesamt (ohne IPS)</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chart-barthel-distrib"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-heart-pulse" style="color:#E63946"></i>
+            <h3>NEMS-Score — IPS &amp; IMC (Aktuelle Schicht)</h3>
+            <span class="text-sm text-muted" style="margin-left:auto">Nine Equivalents of nursing Manpower use Score</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chart-nems"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Belegungstrend Row -->
+      <div class="mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-graph-up-arrow" style="color:var(--kispi-teal)"></i>
+            <h3>Belegungstrend — Letzte 7 Tage</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chart-occ-trend"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-people" style="color:var(--success)"></i>
+            <h3>Personal IST vs. SOLL — Alle Abteilungen</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap-lg"><canvas id="chart-staff"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-calendar-week" style="color:var(--warning)"></i>
+            <h3>Antizipierte Belegung — Nächste 5 Tage</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap-lg"><canvas id="chart-anticipated"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: STATIONEN
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-stations" class="page">
+      <div class="station-group-header">
+        <i class="bi bi-heart-pulse" style="color:#E63946"></i>
+        <h3>Spezialabteilungen</h3>
+      </div>
+      <div class="station-detail-grid" id="station-detail-spezial"><!-- JS --></div>
+
+      <div class="station-group-header" style="margin-top:28px">
+        <i class="bi bi-hospital" style="color:#2980B9"></i>
+        <h3>Bettenabteilungen</h3>
+      </div>
+      <div class="station-detail-grid" id="station-detail-betten"><!-- JS --></div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: PERSONAL
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-staffing" class="page">
+
+      <div class="card mb-20">
+        <div class="card-header">
+          <i class="bi bi-table" style="color:var(--kispi-teal)"></i>
+          <h3>Personal-Übersicht — Aktuelle Schicht</h3>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="staffing-table">
+            <thead id="staffing-thead"><!-- JS --></thead>
+            <tbody id="staffing-tbody"><!-- JS --></tbody>
+            <tfoot id="staffing-tfoot"><!-- JS --></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-bar-chart-fill" style="color:var(--kispi-teal)"></i>
+            <h3>Skill-Grade-Mix — IST-Verteilung</h3>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:10px;font-size:12px;color:var(--text-light)">
+              Ziel: <strong>Dipl. PFP 60%</strong> · PA 25% · Ausb. 15%
+            </div>
+            <div class="chart-wrap-lg"><canvas id="chart-skill-mix"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-people-fill" style="color:var(--info)"></i>
+            <h3>Nurse-to-Patient Ratio</h3>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:10px;font-size:12px;color:var(--text-light)">
+              Zielwerte: IPS ≤ 1:1.5 · IMC ≤ 1:2.5 · Abt. ≤ 1:5
+            </div>
+            <div class="chart-wrap-lg"><canvas id="chart-nurse-ratio"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: POOL
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-pool" class="page">
+
+      <!-- KPI Row -->
+      <div class="kpi-grid mb-20" style="grid-template-columns: repeat(4, 1fr)">
+        <div class="kpi-card kpi-teal">
+          <div class="kpi-label">Pool gesamt (7 Tage)</div>
+          <div class="kpi-value"><span id="pool-kpi-total">—</span></div>
+          <div class="kpi-sub">verfügbare Personentage</div>
+        </div>
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-label">Ø Frühdienst / Tag</div>
+          <div class="kpi-value"><span id="pool-kpi-f">—</span></div>
+          <div class="kpi-sub">Personen verfügbar</div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #9B59B6">
+          <div class="kpi-label">Ø Spätdienst / Tag</div>
+          <div class="kpi-value"><span id="pool-kpi-s">—</span></div>
+          <div class="kpi-sub">Personen verfügbar</div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #5A67D8">
+          <div class="kpi-label">Ø Nachtdienst / Tag</div>
+          <div class="kpi-value"><span id="pool-kpi-n">—</span></div>
+          <div class="kpi-sub">Personen verfügbar</div>
+        </div>
+      </div>
+
+      <!-- Pool-Ressourcen 7-Tage-Tabelle -->
+      <div class="card mb-20">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px">
+          <i class="bi bi-calendar-week" style="color:var(--kispi-teal)"></i>
+          <h3>Pool-Ressourcen — Verfügbarkeit</h3>
+          <div class="date-filter" id="pool-day-tabs" style="margin-left:16px"><!-- JS --></div>
+          <button class="btn-primary" onclick="openBedarfForm()" style="margin-left:auto">
+            <i class="bi bi-plus-lg"></i> Neue Bedarfsmeldung
+          </button>
+        </div>
+        <div style="padding:6px 18px 0;font-size:11px;color:var(--text-light)">
+          <i class="bi bi-info-circle" style="margin-right:4px"></i>
+          Klicken Sie auf eine verfügbare Zahl, um diese Ressource für eine Station zu reservieren.
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto;padding-top:8px">
+          <table class="staffing-table">
+            <thead id="pool-resources-thead"><!-- JS --></thead>
+            <tbody id="pool-resources-tbody"><!-- JS --></tbody>
+            <tfoot id="pool-resources-tfoot"><!-- JS --></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Aktive Reservationen -->
+      <div class="card mb-20">
+        <div class="card-header" style="border-left:4px solid #E63946">
+          <i class="bi bi-bookmark-check-fill" style="color:#E63946"></i>
+          <h3>Aktive Reservationen</h3>
+          <span style="font-size:11px;color:var(--text-light);margin-left:auto">Freigabe durch Pool-MA oder Pflegedienstleitung</span>
+        </div>
+        <div class="card-body" id="pool-reservations-list"><!-- JS --></div>
+      </div>
+
+      <!-- Pool-Anfragen & Freigaben -->
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header" style="border-left:4px solid var(--danger)">
+            <i class="bi bi-person-plus-fill" style="color:var(--danger)"></i>
+            <h3>Pool-Anfragen</h3>
+          </div>
+          <div class="card-body">
+            <div class="pool-cards" id="pool-requests-container"><!-- JS --></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="border-left:4px solid var(--success)">
+            <i class="bi bi-person-dash-fill" style="color:var(--success)"></i>
+            <h3>Personalfreigaben</h3>
+          </div>
+          <div class="card-body">
+            <div class="pool-cards" id="pool-releases-container"><!-- JS --></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bedarfsmeldungen (eingebettet) -->
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-clipboard2-plus-fill" style="color:var(--kispi-blue-mid)"></i>
+          <h3>Bedarfsmeldungen</h3>
+          <span class="nav-badge" id="pool-bedarf-badge" style="display:none;margin-left:8px">0</span>
+          <button class="btn-primary" onclick="openBedarfForm()" style="margin-left:auto">
+            <i class="bi bi-plus-lg"></i> Neue Bedarfsmeldung
+          </button>
+        </div>
+        <div class="card-body" style="padding:12px 18px 0">
+          <!-- Filter bar -->
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <label style="font-size:12px;font-weight:600;color:var(--text-light)">Status:</label>
+              <select id="pool-bedarf-filter-status" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+                <option value="all">Alle</option>
+                <option value="offen">Offen</option>
+                <option value="bearbeitung">In Bearbeitung</option>
+                <option value="erledigt">Erledigt</option>
+                <option value="abgelehnt">Abgelehnt</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label style="font-size:12px;font-weight:600;color:var(--text-light)">Priorität:</label>
+              <select id="pool-bedarf-filter-prioritaet" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+                <option value="all">Alle Prioritäten</option>
+                <option value="sofort">Sofort</option>
+                <option value="dringlich">Dringlich</option>
+                <option value="normal">Normal</option>
+                <option value="geplant">Geplant</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <label style="font-size:12px;font-weight:600;color:var(--text-light)">Abteilung:</label>
+              <select id="pool-bedarf-filter-dept" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+                <option value="all">Alle Abteilungen</option>
+              </select>
+            </div>
+          </div>
+          <div id="pool-bedarf-list"><!-- JS --></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: OP-PLANUNG
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-or" class="page">
+
+      <!-- KPI Rows -->
+      <div class="kpi-grid mb-12" style="grid-template-columns: repeat(4, 1fr)">
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-label">Eingriffe heute</div>
+          <div class="kpi-value" id="or-today-count">—</div>
+          <div class="kpi-sub">geplant / abgeschlossen</div>
+        </div>
+        <div class="kpi-card kpi-teal">
+          <div class="kpi-label" id="or-tomorrow-label">Morgen</div>
+          <div class="kpi-value" id="or-tomorrow-count">—</div>
+          <div class="kpi-sub">Eingriffe geplant</div>
+        </div>
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-label">Postop → IPS</div>
+          <div class="kpi-value" id="or-ips-count">—</div>
+          <div class="kpi-sub">Nächste 7 Tage (<span id="or-ips-week-label">…</span>)</div>
+        </div>
+        <div class="kpi-card kpi-warn">
+          <div class="kpi-label">Postop → IMC</div>
+          <div class="kpi-value" id="or-imc-count">—</div>
+          <div class="kpi-sub">Nächste 7 Tage (<span id="or-imc-week-label">…</span>)</div>
+        </div>
+      </div>
+
+      <!-- Postop-Verlegungen für das angezeigte Datum -->
+      <div class="kpi-grid mb-20" style="grid-template-columns: repeat(4, 1fr)">
+        <div class="kpi-card" style="border-left:4px solid #E63946">
+          <div class="kpi-label" style="color:#E63946">Postop → IPS</div>
+          <div class="kpi-value" id="or-dest-ips-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-ips-date">…</span></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #F7941D">
+          <div class="kpi-label" style="color:#F7941D">Postop → IMC</div>
+          <div class="kpi-value" id="or-dest-imc-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-imc-date">…</span></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #F0C040">
+          <div class="kpi-label" style="color:#857300">Postop → AWR</div>
+          <div class="kpi-value" id="or-dest-awr-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-awr-date">…</span></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #00A79D">
+          <div class="kpi-label" style="color:#00A79D">Postop → Abteilung</div>
+          <div class="kpi-value" id="or-dest-abt-count">—</div>
+          <div class="kpi-sub">Verlegung am <span id="or-dest-abt-date">…</span></div>
+        </div>
+      </div>
+
+      <!-- Date selector + Timeline Grid -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <i class="bi bi-grid" style="color:var(--kispi-teal)"></i>
+          <h3>OP-Säle — Tagesplan</h3>
+          <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+            <button class="btn-icon" onclick="orPrevDay()"><i class="bi bi-chevron-left"></i></button>
+            <input type="date" id="or-date-picker" style="border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:13px">
+            <button class="btn-icon" onclick="orNextDay()"><i class="bi bi-chevron-right"></i></button>
+            <button class="btn-secondary" onclick="orGoToday()" style="font-size:12px;padding:5px 12px">Heute</button>
+            <button class="btn-danger" onclick="openEmergencyForm()">
+              <i class="bi bi-plus-circle-fill"></i> Notfall anmelden
+            </button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto;overflow-y:auto;max-height:70vh">
+          <div id="or-timeline-grid"><!-- JS --></div>
+        </div>
+        <div style="padding:8px 16px 12px;font-size:11px;color:var(--text-light);background:#FEF3E2;border-top:1px solid var(--border)">
+          <strong>Saal 3:</strong> Notfall-Spur täglich 20:00–07:00.
+          <strong>Säle 5+6:</strong> verlängert Mo–Fr bis 20:00. Planung via IKM.
+          <span style="margin-left:12px">
+            <span style="display:inline-block;width:10px;height:10px;background:#E63946;border-radius:2px"></span> IPS
+            <span style="display:inline-block;width:10px;height:10px;background:#F7941D;border-radius:2px;margin-left:6px"></span> IMC
+            <span style="display:inline-block;width:10px;height:10px;background:#F0C040;border-radius:2px;margin-left:6px"></span> AWR
+            <span style="display:inline-block;width:10px;height:10px;background:#00A79D;border-radius:2px;margin-left:6px"></span> Abteilung
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: HISTORISCHE DATEN
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-historical" class="page">
+
+      <div class="card mb-20">
+        <div class="card-body" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div class="date-filter">
+            <button class="date-filter-btn" data-days="7">7 Tage</button>
+            <button class="date-filter-btn active" data-days="30">30 Tage</button>
+            <button class="date-filter-btn" data-days="60">60 Tage</button>
+            <button class="date-filter-btn" data-days="90">90 Tage</button>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Abteilung:</label>
+            <select id="hist-dept-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle Abteilungen</option>
+            </select>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Kennzahl:</label>
+            <select id="hist-metric-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="occupancy_pct">Belegung %</option>
+              <option value="barthel_avg">Ø Barthel</option>
+              <option value="staff_actual">Personal IST</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col mb-20">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-graph-up" style="color:var(--kispi-teal)"></i>
+            <h3>Verlaufstrend</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap-lg"><canvas id="chart-hist-trend"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-calendar-week" style="color:var(--kispi-blue-mid)"></i>
+            <h3>Abweichung nach Wochentag</h3>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:8px;font-size:12px;color:var(--text-light)">
+              Abweichung vom Gesamtdurchschnitt (rot = über Ø, grün = unter Ø)
+            </div>
+            <div class="chart-wrap-lg"><canvas id="chart-deviation"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-table" style="color:var(--kispi-teal)"></i>
+          <h3>Statistik-Übersicht — Alle Abteilungen (Letzte 7 Tage)</h3>
+        </div>
+        <div class="card-body" style="overflow-x:auto;padding:0">
+          <table class="staffing-table">
+            <thead>
+              <tr>
+                <th>Abteilung</th>
+                <th>Ø Belegung</th>
+                <th>Max. Belegung</th>
+                <th>Ø Barthel / NEMS</th>
+                <th>Ø Personal IST</th>
+                <th>Ø Personal SOLL</th>
+                <th>Pool-Anfragen</th>
+              </tr>
+            </thead>
+            <tbody id="hist-stats-tbody"><!-- JS --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: KOMPETENZEN / INFO
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-info" class="page">
+
+      <div class="card mb-20">
+        <div class="card-header">
+          <i class="bi bi-mortarboard-fill" style="color:var(--kispi-teal)"></i>
+          <h3>Kompetenzprofile — Berufsgruppen im Universitätskinderspital Zürich</h3>
+          <button class="btn-secondary" id="comp-reset-btn" style="margin-left:auto;font-size:11px">
+            <i class="bi bi-arrow-counterclockwise"></i> Standard wiederherstellen
+          </button>
+        </div>
+        <div class="card-body" style="padding:8px 16px">
+          <p style="font-size:12px;color:var(--text-light);margin-bottom:16px">
+            Die Kompetenzprofile beschreiben die Tätigkeitsbereiche der einzelnen Berufsgruppen.
+            Klicken Sie auf eine Berufsgruppe, um die Kompetenzen einzusehen oder anzupassen.
+            Änderungen werden lokal gespeichert.
+          </p>
+          <div id="competency-list"><!-- JS --></div>
+        </div>
+      </div>
+
+      <!-- Barthel-Index Legende -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <i class="bi bi-info-circle" style="color:var(--kispi-blue-mid)"></i>
+          <h3>Barthel-Index — Kategorien &amp; Interpretation</h3>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+            <div style="padding:14px;border-radius:8px;background:#FFF5F5;border-left:4px solid #E63946">
+              <div style="font-weight:700;color:#E63946;margin-bottom:4px">0–30 Punkte</div>
+              <div style="font-weight:600">Vollständig hilfsbedürftig</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Maximaler Pflegebedarf, vollständige Übernahme aller Aktivitäten</div>
+            </div>
+            <div style="padding:14px;border-radius:8px;background:#FFF8EE;border-left:4px solid #F7941D">
+              <div style="font-weight:700;color:#F7941D;margin-bottom:4px">35–80 Punkte</div>
+              <div style="font-weight:600">Überwiegend hilfsbedürftig</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Erhöhter Pflegebedarf, Unterstützung bei den meisten Aktivitäten</div>
+            </div>
+            <div style="padding:14px;border-radius:8px;background:#F0FFF4;border-left:4px solid #7BC67E">
+              <div style="font-weight:700;color:#2D7A35;margin-bottom:4px">85–95 Punkte</div>
+              <div style="font-weight:600">Punktuell hilfsbedürftig</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Geringer Pflegebedarf, Unterstützung bei einzelnen Aktivitäten</div>
+            </div>
+            <div style="padding:14px;border-radius:8px;background:#F0FFF4;border-left:4px solid #2DC653">
+              <div style="font-weight:700;color:#2DC653;margin-bottom:4px">100 Punkte</div>
+              <div style="font-weight:600">Selbständig</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Kein pflegerischer Hilfsbedarf</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEMS-Score Legende -->
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-heart-pulse" style="color:#E63946"></i>
+          <h3>NEMS-Score — Kategorien &amp; Interpretation</h3>
+          <span class="text-sm text-muted" style="margin-left:auto">Nine Equivalents of nursing Manpower use Score · nur IPS &amp; IMC</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px">
+            <div style="padding:14px;border-radius:8px;background:#FFF5F5;border-left:4px solid #E63946">
+              <div style="font-weight:700;color:#E63946;margin-bottom:4px">≥ 25 Punkte</div>
+              <div style="font-weight:600">Hohe Komplexität</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Kritisch kranke Patienten mit maximaler Pflege- und Überwachungsintensität. Erhöhter Nurse-to-Patient-Ratio erforderlich.</div>
+            </div>
+            <div style="padding:14px;border-radius:8px;background:#FFF8EE;border-left:4px solid #F7941D">
+              <div style="font-weight:700;color:#F7941D;margin-bottom:4px">18–24 Punkte</div>
+              <div style="font-weight:600">Mittlere Komplexität</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Intensivüberwachungspflichtige Patienten. Standardmässiger ICU-/IMC-Betrieb, reguläre Personalplanung.</div>
+            </div>
+            <div style="padding:14px;border-radius:8px;background:#F0FFF4;border-left:4px solid #2DC653">
+              <div style="font-weight:700;color:#2DC653;margin-bottom:4px">&lt; 18 Punkte</div>
+              <div style="font-weight:600">Geringe Komplexität</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:4px">Stabile Patienten mit überwachender Betreuung. Tiefer Interventionsbedarf, günstige Personalplanung möglich.</div>
+            </div>
+          </div>
+          <div style="background:#F7F9FC;border-radius:8px;padding:14px">
+            <div style="font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-light);margin-bottom:10px">Bewertete Interventionskategorien (je 0–1 Pkt., max. 40 Pkt. gesamt)</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px 16px">
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Basismonitoring</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Erweit. Monitoring (ZVK/Art.)</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Beatmung / Atemhilfe</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Bronchialtoilette</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Vasoaktive Medikamente</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Intravenöse Medikation</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Spezif. Pflegeinterventionen</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Versorgung von Drainagen</div>
+              <div style="font-size:12px;color:var(--text-dark)"><i class="bi bi-dot" style="color:#2980B9"></i> Mobilisation &amp; Lagerung</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: BEDARFSMELDUNGEN
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-bedarfsmeldungen" class="page">
+
+      <!-- KPI Row -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px" id="bedarf-kpi-row">
+        <!-- JS -->
+      </div>
+
+      <!-- Filter + Action Bar -->
+      <div class="card mb-20">
+        <div class="card-body" style="padding:12px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Status:</label>
+            <select id="bedarf-filter-status" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle</option>
+              <option value="offen">Offen</option>
+              <option value="bearbeitung">In Bearbeitung</option>
+              <option value="erledigt">Erledigt</option>
+              <option value="abgelehnt">Abgelehnt</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Priorität:</label>
+            <select id="bedarf-filter-prioritaet" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle Prioritäten</option>
+              <option value="sofort">Sofort</option>
+              <option value="dringlich">Dringlich</option>
+              <option value="normal">Normal</option>
+              <option value="geplant">Geplant</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-light)">Abteilung:</label>
+            <select id="bedarf-filter-dept" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+              <option value="all">Alle Abteilungen</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="openBedarfForm()" style="margin-left:auto">
+            <i class="bi bi-plus-lg"></i> Neue Bedarfsmeldung
+          </button>
+        </div>
+      </div>
+
+      <!-- List -->
+      <div id="bedarf-list"><!-- JS --></div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SEITE: PROGNOSE
+    ══════════════════════════════════════════════════════ -->
+    <section id="page-forecast" class="page">
+
+      <!-- Controls bar -->
+      <div class="card mb-20">
+        <div class="card-body" style="padding:14px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Baseline-Methode</div>
+            <div class="date-filter">
+              <button class="date-filter-btn active" id="fc-mode-short" onclick="setForecastMode('short')">
+                <i class="bi bi-clock-history"></i> Kurzfristig <span style="opacity:0.7">(30 Tage)</span>
+              </button>
+              <button class="date-filter-btn" id="fc-mode-long" onclick="setForecastMode('long')">
+                <i class="bi bi-calendar4-range"></i> Langfristig <span style="opacity:0.7">(Vorjahr)</span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Zeithorizont</div>
+            <div class="date-filter">
+              <button class="date-filter-btn active" id="fc-hz-7d" onclick="setForecastHorizon('7d')">7 Tage</button>
+              <button class="date-filter-btn" id="fc-hz-3m" onclick="setForecastHorizon('3m')">3 Monate</button>
+            </div>
+          </div>
+          <div style="margin-left:auto;font-size:11px;color:var(--text-muted)" id="fc-baseline-info"></div>
+        </div>
+      </div>
+
+      <!-- KPI row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="kpi-card kpi-blue">
+          <span class="kpi-icon"><i class="bi bi-graph-up"></i></span>
+          <div class="kpi-label">Proj. Ø Auslastung</div>
+          <div class="kpi-value"><span id="fc-kpi-occ">—</span><span class="kpi-unit">%</span></div>
+          <div class="kpi-sub" id="fc-kpi-occ-sub"></div>
+        </div>
+        <div class="kpi-card kpi-warn">
+          <span class="kpi-icon"><i class="bi bi-exclamation-circle"></i></span>
+          <div class="kpi-label">Kritischste Abt.</div>
+          <div class="kpi-value" style="font-size:20px;line-height:1.2" id="fc-kpi-peak-dept">—</div>
+          <div class="kpi-sub" id="fc-kpi-peak-val"></div>
+        </div>
+        <div class="kpi-card kpi-green">
+          <span class="kpi-icon"><i class="bi bi-people-fill"></i></span>
+          <div class="kpi-label">Ø Personalbedarf / Tag</div>
+          <div class="kpi-value"><span id="fc-kpi-nurses">—</span><span class="kpi-unit">Pers.</span></div>
+          <div class="kpi-sub" id="fc-kpi-nurses-sub"></div>
+        </div>
+        <div class="kpi-card" style="border-left:4px solid #8E44AD">
+          <span class="kpi-icon" style="color:#8E44AD"><i class="bi bi-activity"></i></span>
+          <div class="kpi-label">Ø Komplexitätsindex</div>
+          <div class="kpi-value"><span id="fc-kpi-complexity">—</span></div>
+          <div class="kpi-sub" id="fc-kpi-complexity-sub"></div>
+        </div>
+      </div>
+
+      <!-- Forecast chart -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <i class="bi bi-graph-up-arrow" style="color:var(--kispi-teal)"></i>
+          <h3>Belegungsprognose <span id="fc-chart-title">— Nächste 7 Tage</span></h3>
+          <span class="text-sm text-muted" style="margin-left:auto" id="fc-chart-method"></span>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap-lg"><canvas id="chart-forecast-occ"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Staffing needs table -->
+      <div class="card">
+        <div class="card-header">
+          <i class="bi bi-people-fill" style="color:var(--success)"></i>
+          <h3>Personalbedarf-Prognose — Pro Abteilung</h3>
+        </div>
+        <div class="card-body" style="padding:0;overflow-x:auto">
+          <table class="belegung-table">
+            <thead>
+              <tr>
+                <th>Abteilung</th>
+                <th class="text-center">Proj. Auslastung</th>
+                <th class="text-center">Proj. Betten belegt</th>
+                <th class="text-center">Qual. Pflegepersonen</th>
+                <th class="text-center">Komplexität</th>
+                <th class="text-center">Ø NEMS / Barthel</th>
+                <th class="text-center">Trend vs. Heute</th>
+              </tr>
+            </thead>
+            <tbody id="fc-staff-tbody"><!-- JS --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- end page-content -->
+</main>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: DATENEINGABE
+══════════════════════════════════════════════════════════ -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <svg viewBox="-1 9 26 26" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#2CB3E3" d="M12.3,10.6C6,10.6,0.8,15.7,0.8,22c0,4.6,2.7,8.5,6.6,10.4l1.9-4.1
+          c-2.4-0.8-4.5-2.6-5.5-4.9c-0.1-0.2-0.2-0.4-0.2-0.6c0-0.9,0.7-1.6,1.6-1.6
+          c0.7,0,1.3,0.4,1.5,1c0.9,2,2.9,3.4,5.3,3.4c0.1,0,0.4,0,0.5,0
+          c2.4,0,4.4-1.4,5.3-3.4c0.2-0.6,0.8-1,1.5-1c0.9,0,1.6,0.7,1.6,1.6
+          c0,0.2,0,0.5-0.2,0.6c-1,2.3-3,4.1-5.5,4.9l1.9,4.1
+          c3.9-1.8,6.7-5.8,6.7-10.4C23.8,15.7,18.7,10.6,12.3,10.6z
+          M12.3,24c-2.2,0-3.9-1.8-3.9-3.9s1.8-3.9,3.9-3.9c2.2,0,3.9,1.8,3.9,3.9S14.5,24,12.3,24z"/>
+      </svg>
+      <h2>Dateneingabe — Schichtübergabe</h2>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- 0. Datum -->
+      <div class="form-section">
+        <div class="form-section-title">1. Datum der Schicht</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="date" id="entry-date"
+                 style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;font-family:inherit"
+                 onchange="updateEntryDateHint()">
+          <button class="btn-secondary" onclick="setEntryDateToday()"
+                  style="font-size:12px;padding:5px 14px;white-space:nowrap">Heute</button>
+        </div>
+        <div id="entry-date-hint" style="font-size:11px;margin-top:5px;color:var(--text-light)"></div>
+      </div>
+
+      <!-- 1. Schicht -->
+      <div class="form-section">
+        <div class="form-section-title">2. Schicht wählen</div>
+        <div class="shift-select-grid">
+          <div class="shift-option" data-shift-id="F">
+            <span class="shift-icon">🌅</span>
+            <span class="shift-label">Frühdienst</span>
+            <span class="shift-time">07:00–16:00</span>
+          </div>
+          <div class="shift-option" data-shift-id="S">
+            <span class="shift-icon">🌆</span>
+            <span class="shift-label">Spätdienst</span>
+            <span class="shift-time">15:30–23:15</span>
+          </div>
+          <div class="shift-option" data-shift-id="N">
+            <span class="shift-icon">🌙</span>
+            <span class="shift-label">Nachtdienst</span>
+            <span class="shift-time">22:45–07:15</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Abteilung -->
+      <div class="form-section">
+        <div class="form-section-title">3. Abteilung wählen</div>
+        <div class="dept-select-grid" id="dept-select-grid"><!-- JS --></div>
+      </div>
+
+      <!-- 3. Belegung -->
+      <div class="form-section">
+        <div class="form-section-title">4. Belegung</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="entry-beds-total">Betten gesamt</label>
+            <input type="number" id="entry-beds-total" min="0" max="100" placeholder="z.B. 25">
+          </div>
+          <div class="form-group">
+            <label for="entry-beds-operational">Betten betrieben</label>
+            <input type="number" id="entry-beds-operational" min="0" max="100" placeholder="z.B. 23">
+          </div>
+          <div class="form-group">
+            <label for="entry-beds-occupied">Betten belegt</label>
+            <input type="number" id="entry-beds-occupied" min="0" max="100" placeholder="z.B. 20">
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Barthel-Index -->
+      <div class="form-section" id="barthel-section">
+        <div class="form-section-title">5. Barthel-Index — Anzahl Patienten je Kategorie
+          <span style="font-weight:400;font-size:10px;color:var(--text-light);margin-left:6px">(nicht für IPS — NEMS-Scoring)</span>
+        </div>
+        <div class="epa-input-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#E63946"></div>
+            <label>0–30<br><small>Vollständig</small></label>
+            <input type="number" id="entry-b1" min="0" max="50" value="0">
+          </div>
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#F7941D"></div>
+            <label>35–80<br><small>Überwiegend</small></label>
+            <input type="number" id="entry-b2" min="0" max="50" value="0">
+          </div>
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#7BC67E"></div>
+            <label>85–95<br><small>Punktuell</small></label>
+            <input type="number" id="entry-b3" min="0" max="50" value="0">
+          </div>
+          <div class="epa-level-input">
+            <div class="level-dot" style="background:#2DC653"></div>
+            <label>100<br><small>Selbständig</small></label>
+            <input type="number" id="entry-b4" min="0" max="50" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- 4b. NEMS (IPS + IMC) -->
+      <div class="form-section" id="nems-row" style="display:none">
+        <div class="form-section-title">4b. NEMS Score
+          <span style="font-weight:400;font-size:10px;color:var(--text-light);margin-left:6px">IPS &amp; IMC — Nine Equivalents of Nursing Manpower Use Score</span>
+        </div>
+        <div class="form-group" style="max-width:280px">
+          <label for="entry-nems">NEMS Durchschnitt (alle Patienten)</label>
+          <input type="number" id="entry-nems" min="1" max="40" step="0.1" placeholder="z.B. 18.5">
+        </div>
+      </div>
+
+      <!-- 5. Personal IST / SOLL nach Rolle -->
+      <div class="form-section">
+        <div class="form-section-title">6. Personal IST / SOLL nach Berufsgruppe</div>
+        <div id="staff-role-inputs">
+          <div style="color:var(--text-light);font-size:12px;padding:8px 0">Bitte zuerst Abteilung auswählen.</div>
+        </div>
+      </div>
+
+      <!-- 6. Bemerkungen -->
+      <div class="form-section">
+        <div class="form-section-title">7. Bemerkungen</div>
+        <div class="form-group">
+          <label for="entry-notes">Freitext</label>
+          <textarea id="entry-notes" rows="3" placeholder="Besondere Vorkommnisse, Zusatzinfos…"></textarea>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="modal-cancel" onclick="document.getElementById('modal-overlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn-primary" id="btn-submit-entry">
+        <i class="bi bi-check-lg"></i> Dateneingabe speichern
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: KOMPETENZ BEARBEITEN
+══════════════════════════════════════════════════════════ -->
+<div id="comp-modal-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-header">
+      <i class="bi bi-pencil-square" style="font-size:20px;color:var(--kispi-teal)"></i>
+      <h2 id="comp-edit-title">Kompetenzen bearbeiten</h2>
+      <button class="modal-close" onclick="document.getElementById('comp-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="comp-edit-text" style="font-size:12px;color:var(--text-light)">
+          Eine Kompetenz pro Zeile eingeben:
+        </label>
+        <textarea id="comp-edit-text" rows="12" style="font-size:13px;line-height:1.8;width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:inherit"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="comp-cancel-btn">Abbrechen</button>
+      <button class="btn-primary" id="comp-save-btn"><i class="bi bi-check-lg"></i> Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: EINGRIFF BEARBEITEN
+══════════════════════════════════════════════════════════ -->
+<div id="or-edit-modal-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px">
+    <div class="modal-header">
+      <i class="bi bi-pencil-square" style="font-size:20px;color:var(--kispi-teal)"></i>
+      <h2>Eingriff bearbeiten</h2>
+      <button class="modal-close" onclick="document.getElementById('or-edit-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Datum</label><input type="date" id="oredit-date"></div>
+        <div class="form-group"><label>Uhrzeit</label><input type="time" id="oredit-time"></div>
+        <div class="form-group"><label>Saal</label>
+          <select id="oredit-room">
+            <option value="1">Saal 1</option><option value="2">Saal 2</option>
+            <option value="3">Saal 3</option><option value="4">Saal 4</option>
+            <option value="5">Saal 5</option><option value="6">Saal 6</option>
+          </select>
+        </div>
+        <div class="form-group"><label>OP-Dauer (Min.)</label><input type="number" id="oredit-duration" min="5" max="600"></div>
+        <div class="form-group"><label>Name Patient</label><input type="text" id="oredit-patient" placeholder="Nachname, Vorname"></div>
+        <div class="form-group"><label>Geburtsdatum</label><input type="date" id="oredit-birthdate"></div>
+        <div class="form-group"><label>Geschlecht</label>
+          <select id="oredit-gender"><option value="M">Männlich</option><option value="F">Weiblich</option><option value="D">Divers</option></select>
+        </div>
+        <div class="form-group"><label>Gewicht (kg)</label><input type="number" id="oredit-weight" min="0" max="200" step="0.1"></div>
+        <div class="form-group"><label>Grösse (cm)</label><input type="number" id="oredit-height" min="30" max="220"></div>
+        <div class="form-group"><label>ASA-Klasse</label>
+          <select id="oredit-asa"><option>I</option><option>II</option><option>III</option><option>IV</option><option>V</option></select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geplanter Eingriff</label><input type="text" id="oredit-procedure"></div>
+        <div class="form-group"><label>Operateur</label><input type="text" id="oredit-surgeon"></div>
+        <div class="form-group"><label>Anästhesieform</label>
+          <select id="oredit-anesthesia">
+            <option>Allgemeinanästhesie</option><option>Regionalanästhesie</option>
+            <option>Lokalanästhesie</option><option>Kombiniert</option><option>Spinalanästhesie</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Postop. Verlegung</label>
+          <select id="oredit-postop">
+            <option>IPS</option><option>IMC</option><option>AWR</option><option>Abteilung</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Dringlichkeit</label>
+          <select id="oredit-dringlichkeit">
+            <option>Elektiv</option><option>Dringlich</option><option>Notfall</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Instrumentarium</label><input type="text" id="oredit-instruments" placeholder="Spezialinstrumente, Sets..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geräte</label><input type="text" id="oredit-equipment" placeholder="C-Bogen, Mikroskop, Laser..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Bemerkungen</label><textarea id="oredit-notes" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('or-edit-modal-overlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn-danger" onclick="deleteEditProcedure()" style="margin-right:auto"><i class="bi bi-trash"></i> Löschen</button>
+      <button class="btn-primary" onclick="submitEditProcedure()"><i class="bi bi-check-lg"></i> Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: NOTFALL ANMELDEN
+══════════════════════════════════════════════════════════ -->
+<div id="or-emergency-modal-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:680px">
+    <div class="modal-header">
+      <i class="bi bi-plus-circle-fill" style="font-size:20px;color:var(--danger)"></i>
+      <h2>Notfall anmelden</h2>
+      <button class="modal-close" onclick="document.getElementById('or-emergency-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Datum</label><input type="date" id="emerg-date"></div>
+        <div class="form-group"><label>Uhrzeit</label><input type="time" id="emerg-time"></div>
+        <div class="form-group"><label>Saal</label>
+          <select id="emerg-room">
+            <option value="1">Saal 1</option><option value="2">Saal 2</option>
+            <option value="3" selected>Saal 3</option><option value="4">Saal 4</option>
+            <option value="5">Saal 5</option><option value="6">Saal 6</option>
+          </select>
+        </div>
+        <div class="form-group"><label>OP-Dauer (Min.)</label><input type="number" id="emerg-duration" min="5" max="600" placeholder="z.B. 60"></div>
+        <div class="form-group"><label>Name Patient</label><input type="text" id="emerg-patient" placeholder="Nachname, Vorname"></div>
+        <div class="form-group"><label>Geburtsdatum</label><input type="date" id="emerg-birthdate"></div>
+        <div class="form-group"><label>Geschlecht</label>
+          <select id="emerg-gender"><option value="M">Männlich</option><option value="F">Weiblich</option><option value="D">Divers</option></select>
+        </div>
+        <div class="form-group"><label>Gewicht (kg)</label><input type="number" id="emerg-weight" min="0" max="200" step="0.1"></div>
+        <div class="form-group"><label>Grösse (cm)</label><input type="number" id="emerg-height" min="30" max="220"></div>
+        <div class="form-group"><label>ASA-Klasse</label>
+          <select id="emerg-asa"><option>I</option><option>II</option><option selected>III</option><option>IV</option><option>V</option></select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geplanter Eingriff</label><input type="text" id="emerg-procedure" placeholder="Diagnose / Operationsbezeichnung"></div>
+        <div class="form-group"><label>Operateur</label><input type="text" id="emerg-surgeon"></div>
+        <div class="form-group"><label>Anästhesieform</label>
+          <select id="emerg-anesthesia">
+            <option>Allgemeinanästhesie</option><option>Regionalanästhesie</option>
+            <option>Lokalanästhesie</option><option>Kombiniert</option><option>Spinalanästhesie</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Anästhesieform — Freitext</label><input type="text" id="emerg-anesthesia-notes" placeholder="Ergänzende Angaben zur Anästhesie..."></div>
+        <div class="form-group"><label>Postop. Verlegung</label>
+          <select id="emerg-postop">
+            <option selected>IPS</option><option>IMC</option><option>AWR</option><option>Abteilung</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Notfallstufe</label>
+          <select id="emerg-level">
+            <option>Sofort (S0)</option><option selected>Dringlich (S1)</option><option>Nicht-dringlich (S2)</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label>Instrumentarium</label><input type="text" id="emerg-instruments" placeholder="Spezialinstrumente, Sets..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Geräte</label><input type="text" id="emerg-equipment" placeholder="C-Bogen, Mikroskop, Laser..."></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Bemerkungen</label><textarea id="emerg-notes" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="document.getElementById('or-emergency-modal-overlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn-danger" onclick="submitEmergencyProcedure()"><i class="bi bi-plus-circle-fill"></i> Notfall anmelden</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: BEDARFSMELDUNG ERFASSEN / BEARBEITEN
+══════════════════════════════════════════════════════════ -->
+<div id="bedarf-modal-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-header">
+      <i class="bi bi-clipboard2-plus-fill" style="font-size:20px;color:var(--kispi-teal)"></i>
+      <h2 id="bedarf-modal-title">Neue Bedarfsmeldung</h2>
+      <button class="modal-close" onclick="closeBedarfForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+
+        <!-- Abteilung -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="bedarf-dept">Abteilung</label>
+          <select id="bedarf-dept"></select>
+        </div>
+        <input type="hidden" id="bedarf-kategorie" value="personal">
+
+        <!-- Priorität + Gewünschtes Datum -->
+        <div class="form-group">
+          <label for="bedarf-prioritaet">Priorität</label>
+          <select id="bedarf-prioritaet">
+            <option value="sofort">Sofort</option>
+            <option value="dringlich">Dringlich</option>
+            <option value="normal" selected>Normal</option>
+            <option value="geplant">Geplant</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="bedarf-datum">Gewünschtes Datum</label>
+          <input type="date" id="bedarf-datum">
+        </div>
+
+        <!-- Ausbildung / Berufsgruppe -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="bedarf-titel">Ausbildung</label>
+          <select id="bedarf-titel">
+            <option value="">— Berufsgruppe wählen —</option>
+            <optgroup label="Experten / Spezialisten">
+              <option value="Dipl. Experte/in NDS HF Intensiv">Dipl. Experte/in NDS HF Intensiv</option>
+              <option value="Dipl. Experte/in NDS HF Notfall">Dipl. Experte/in NDS HF Notfall</option>
+            </optgroup>
+            <optgroup label="Pflegefachpersonen">
+              <option value="Dipl. Pflegefachperson HF">Dipl. Pflegefachperson HF</option>
+            </optgroup>
+            <optgroup label="Studierende">
+              <option value="Student·in NDS Intensiv">Student·in NDS Intensiv</option>
+              <option value="Student·in NDS Notfall">Student·in NDS Notfall</option>
+              <option value="Student·in HF 3. Jahr">Student·in HF 3. Jahr</option>
+              <option value="Student·in HF 2. Jahr">Student·in HF 2. Jahr</option>
+              <option value="Student·in HF 1. Jahr">Student·in HF 1. Jahr</option>
+            </optgroup>
+            <optgroup label="Lernende &amp; Assistenzen">
+              <option value="FaGe EFZ">FaGe EFZ</option>
+              <option value="Lernende FaGe 2. Jahr">Lernende FaGe 2. Jahr</option>
+              <option value="Lernende FaGe 1. Jahr">Lernende FaGe 1. Jahr</option>
+              <option value="Pflegehilfe / AGS">Pflegehilfe / AGS</option>
+            </optgroup>
+            <optgroup label="Administration">
+              <option value="Disponent / MPA">Disponent / MPA</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Beschreibung -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="bedarf-beschreibung">Beschreibung</label>
+          <textarea id="bedarf-beschreibung" rows="3" placeholder="Detaillierte Angaben zum Bedarf, Hintergrund, Dringlichkeit…"></textarea>
+        </div>
+
+        <!-- Menge + Status (bei Bearbeitung) -->
+        <div class="form-group">
+          <label for="bedarf-menge">Menge / Anzahl</label>
+          <input type="text" id="bedarf-menge" placeholder="z.B. 2 Pflegepersonen oder 5 Kartons">
+        </div>
+        <div class="form-group">
+          <label for="bedarf-status">Status</label>
+          <select id="bedarf-status">
+            <option value="offen">Offen</option>
+            <option value="bearbeitung">In Bearbeitung</option>
+            <option value="erledigt">Erledigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+          </select>
+        </div>
+
+        <!-- Notizen -->
+        <div class="form-group" style="grid-column:1/-1">
+          <label for="bedarf-notizen">Interne Notizen (optional)</label>
+          <textarea id="bedarf-notizen" rows="2" placeholder="Massnahmen, Rückmeldungen, nächste Schritte…"></textarea>
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeBedarfForm()">Abbrechen</button>
+      <button class="btn-danger" id="bedarf-delete-btn" onclick="deleteBedarfEntry()" style="margin-right:auto;display:none">
+        <i class="bi bi-trash"></i> Löschen
+      </button>
+      <button class="btn-primary" id="bedarf-submit-btn" onclick="submitBedarfForm()">
+        <i class="bi bi-check-lg"></i> Speichern
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Pool Reservation Modal -->
+<div id="pool-reserve-overlay" class="modal-overlay">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-header">
+      <i class="bi bi-person-workspace" style="font-size:22px;color:var(--kispi-teal)"></i>
+      <h2>Pool-Ressource reservieren</h2>
+      <button class="modal-close" onclick="closePoolReserve()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Info Banner -->
+      <div style="background:#F0FAFB;border-left:4px solid var(--kispi-teal);border-radius:6px;padding:12px 14px;margin-bottom:20px">
+        <div style="font-size:12px;color:var(--text-light);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Ressource</div>
+        <div style="font-weight:700;font-size:15px" id="pool-reserve-info-role">—</div>
+        <div style="font-size:12px;color:var(--text-light);margin-top:4px" id="pool-reserve-info-shift">—</div>
+        <div style="font-size:11px;color:var(--kispi-teal);margin-top:4px;font-weight:600" id="pool-reserve-info-free">—</div>
+      </div>
+      <!-- Station -->
+      <div class="form-group">
+        <label class="form-label">Station / Abteilung <span style="color:#E63946">*</span></label>
+        <select id="pool-reserve-dept" class="form-control">
+          <option value="">— Abteilung wählen —</option>
+        </select>
+      </div>
+      <!-- Notiz -->
+      <div class="form-group">
+        <label class="form-label">Notiz / Begründung <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+        <input id="pool-reserve-note" class="form-control" type="text" placeholder="z.B. Ausfall Frühdienst, erhöhte Belegung…">
+      </div>
+      <div style="font-size:11px;color:var(--text-light);margin-top:4px;padding:8px 12px;background:#FFF8EE;border-radius:6px;border-left:3px solid #F7941D">
+        <i class="bi bi-shield-check" style="margin-right:4px;color:#F7941D"></i>
+        Freigabe erfolgt durch <strong>Pool-MA</strong> oder <strong>Pflegedienstleitung</strong>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closePoolReserve()">Abbrechen</button>
+      <button class="btn-primary" onclick="confirmPoolReservation()">
+        <i class="bi bi-bookmark-check-fill"></i> Reservieren
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/data.js?v=20260525e"></script>
+<script src="js/charts.js?v=20260524j"></script>
+<script src="js/app.js?v=20260525e"></script>
+
+</body>
+</html>
