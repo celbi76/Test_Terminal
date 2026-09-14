@@ -1078,12 +1078,11 @@ const AppState = {
     localStorage.setItem('kispi_bedarfsmeldungen', JSON.stringify(list));
   },
 
-  updateBedarfsmeldungStatus(id, status) {
+  updateBedarfsmeldungStatus(id, status, meta = {}) {
     const list = this.getBedarfsmeldungen();
     const i = list.findIndex(e => e.id === id);
     if (i >= 0) {
-      list[i].status = status;
-      list[i].updated_at = new Date().toISOString();
+      list[i] = { ...list[i], status, updated_at: new Date().toISOString(), ...meta };
       localStorage.setItem('kispi_bedarfsmeldungen', JSON.stringify(list));
     }
   },

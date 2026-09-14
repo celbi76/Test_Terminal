@@ -1882,3 +1882,29 @@ input:focus, select:focus, textarea:focus {
   margin-left: auto;
 }
 .bedarf-action-reject:hover { background: #E2E8F0; }
+
+/* ── Bedarfsmeldung Process Modal Choice Cards ── */
+.choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 16px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+  user-select: none;
+}
+.choice-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+.choice-card-red   { background: #FFF5F5; border-color: #FDBEBE; }
+.choice-card-red:hover   { background: #FFE8E8; border-color: #E63946; }
+.choice-card-green { background: #F0FFF4; border-color: #B2EEC8; }
+.choice-card-green:hover { background: #D4F8E0; border-color: #27AE60; }
+.choice-card-teal  { background: #E8FAF8; border-color: #A8DDD9; }
+.choice-card-teal:hover  { background: #C7F0EC; border-color: var(--kispi-teal); }
+.choice-card-orange { background: #FFF8EE; border-color: #F9D8A0; }
+.choice-card-orange:hover { background: #FEE8C2; border-color: #F7941D; }

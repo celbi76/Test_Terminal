@@ -2365,18 +2365,16 @@ function buildBedarfItemHtml(e) {
 
       ${!isDone ? `
       <div class="bedarf-item-actions">
-        ${e.status === 'offen' ? `
-          <button class="bedarf-action-btn bedarf-action-process" onclick="quickStatusBedarf('${e.id}','bearbeitung')">
-            <i class="bi bi-arrow-repeat"></i> In Bearbeitung nehmen
+        ${(e.status === 'offen' || e.status === 'bearbeitung') ? `
+          <button class="bedarf-action-btn bedarf-action-process" onclick="openBedarfProcess('${e.id}')">
+            <i class="bi bi-arrow-repeat"></i> ${e.status === 'offen' ? 'In Bearbeitung nehmen' : 'Bearbeitung fortsetzen'}
           </button>` : ''}
-        ${e.status === 'bearbeitung' ? `
-          <button class="bedarf-action-btn bedarf-action-done" onclick="quickStatusBedarf('${e.id}','erledigt')">
-            <i class="bi bi-check-lg"></i> Als erledigt markieren
-          </button>` : ''}
-        <button class="bedarf-action-btn bedarf-action-reject" onclick="quickStatusBedarf('${e.id}','abgelehnt')">
+        <button class="bedarf-action-btn bedarf-action-reject" onclick="openBedarfProcess('${e.id}','ablehnen')">
           <i class="bi bi-x-lg"></i> Ablehnen
         </button>
       </div>` : ''}
+      ${e.reject_reason ? `<div style="font-size:11px;color:#718096;padding:6px 10px;background:#F0F4F8;border-radius:6px;margin:6px 16px 10px;border-left:3px solid #718096"><i class="bi bi-chat-left-text" style="margin-right:4px"></i><em>${e.reject_reason}</em></div>` : ''}
+      ${e.resolution_type ? `<div style="font-size:11px;color:#27AE60;padding:6px 10px;background:#E8F8EE;border-radius:6px;margin:6px 16px 10px;border-left:3px solid #27AE60"><i class="bi bi-check-circle" style="margin-right:4px"></i>${e.resolution_type}</div>` : ''}
     </div>`;
 }
 
@@ -2489,6 +2487,380 @@ function deleteBedarfEntry() {
   renderBedarfsmeldungenPage();
   renderPoolBedarfList();
   showToast('Bedarfsmeldung gelöscht.');
+}
+
+// ── Bedarfsmeldung Multi-Step Workflow ──────────────────────────
+
+let bedarfProcessId              = null;
+let bedarfProcessStep            = 'choose'; // 'choose' | 'ablehnen' | 'annehmen' | 'pool' | 'freigabe'
+let bedarfProcessSelectedRelease = null;     // dept_id of the chosen pool release
+
+function openBedarfProcess(id, preStep) {
+  const e = AppState.getBedarfsmeldungen().find(x => x.id === id);
+  if (!e) return;
+  bedarfProcessId   = id;
+  bedarfProcessStep = preStep || 'choose';
+  renderBedarfProcessContent();
+  document.getElementById('bedarf-process-overlay')?.classList.add('open');
+}
+
+function closeBedarfProcess() {
+  document.getElementById('bedarf-process-overlay')?.classList.remove('open');
+  bedarfProcessId              = null;
+  bedarfProcessStep            = 'choose';
+  bedarfProcessSelectedRelease = null;
+}
+
+function renderBedarfProcessContent() {
+  const body       = document.getElementById('bedarf-process-body');
+  const backBtn    = document.getElementById('bedarf-process-back-btn');
+  const confirmBtn = document.getElementById('bedarf-process-confirm-btn');
+  if (!body) return;
+
+  const e    = AppState.getBedarfsmeldungen().find(x => x.id === bedarfProcessId);
+  const dept = DEPARTMENTS.find(d => d.id === e?.department_id);
+
+  const infoPill = e ? `
+    <div style="background:#F0F4F8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#4A5568;display:flex;gap:8px;align-items:flex-start">
+      <i class="bi bi-clipboard2-pulse" style="color:var(--kispi-teal);font-size:16px;margin-top:1px"></i>
+      <div>
+        <strong style="font-size:13px;color:#2D3748">${e.titel}</strong><br>
+        <span style="color:${dept?.color||'#718096'}">${dept?.name||e.department_id}</span> · ${e.id}
+        ${e.beschreibung ? `<br><span style="color:#718096;font-size:11px">${e.beschreibung}</span>` : ''}
+      </div>
+    </div>` : '';
+
+  // Reset confirm button styles
+  confirmBtn.style.background   = '';
+  confirmBtn.style.borderColor  = '';
+
+  if (bedarfProcessStep === 'choose') {
+    backBtn.style.display    = 'none';
+    confirmBtn.style.display = 'none';
+    body.innerHTML = `
+      ${infoPill}
+      <p style="font-size:13px;color:#4A5568;margin-bottom:14px">Wie soll diese Bedarfsmeldung bearbeitet werden?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="choice-card choice-card-red" onclick="setBedarfAction('ablehnen')">
+          <i class="bi bi-x-circle-fill" style="font-size:28px;margin-bottom:8px;color:#E63946"></i>
+          <div style="font-weight:600;color:#C0392B;font-size:14px">Ablehnen</div>
+          <div style="font-size:11px;color:#718096;margin-top:4px">Meldung abweisen mit Begründung</div>
+        </div>
+        <div class="choice-card choice-card-green" onclick="setBedarfAction('annehmen')">
+          <i class="bi bi-check-circle-fill" style="font-size:28px;margin-bottom:8px;color:#27AE60"></i>
+          <div style="font-weight:600;color:#1E8449;font-size:14px">Annehmen</div>
+          <div style="font-size:11px;color:#718096;margin-top:4px">Meldung bearbeiten und lösen</div>
+        </div>
+      </div>`;
+  }
+
+  else if (bedarfProcessStep === 'ablehnen') {
+    backBtn.style.display      = '';
+    confirmBtn.style.display   = '';
+    confirmBtn.textContent     = 'Ablehnen bestätigen';
+    confirmBtn.style.background  = '#E63946';
+    confirmBtn.style.borderColor = '#E63946';
+    body.innerHTML = `
+      ${infoPill}
+      <label style="display:block;font-size:13px;font-weight:600;color:#2D3748;margin-bottom:6px">
+        Begründung der Ablehnung <span style="color:#E63946">*</span>
+      </label>
+      <textarea id="bedarf-reject-reason" rows="4"
+        placeholder="Warum wird diese Bedarfsmeldung abgelehnt? (Pflichtfeld)"
+        style="width:100%;box-sizing:border-box;border:1.5px solid #CBD5E0;border-radius:8px;padding:10px;font-size:13px;resize:vertical;font-family:inherit"
+        oninput="validateBedarfProcessConfirm()"></textarea>
+      <div id="bedarf-reject-err" style="color:#E63946;font-size:11px;margin-top:4px;display:none">
+        <i class="bi bi-exclamation-circle"></i> Begründung ist erforderlich.
+      </div>`;
+  }
+
+  else if (bedarfProcessStep === 'annehmen') {
+    backBtn.style.display    = '';
+    confirmBtn.style.display = 'none';
+    body.innerHTML = `
+      ${infoPill}
+      <p style="font-size:13px;color:#4A5568;margin-bottom:14px">Wie soll die Bedarfsmeldung gelöst werden?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="choice-card choice-card-teal" onclick="setBedarfAnnehmenType('pool')">
+          <i class="bi bi-send-fill" style="font-size:28px;margin-bottom:8px;color:var(--kispi-teal)"></i>
+          <div style="font-weight:600;color:var(--kispi-teal);font-size:14px">Weiterleiten an Pool</div>
+          <div style="font-size:11px;color:#718096;margin-top:4px">Per E-Mail an Personalpool weiterleiten</div>
+        </div>
+        <div class="choice-card choice-card-orange" onclick="setBedarfAnnehmenType('freigabe')">
+          <i class="bi bi-people-fill" style="font-size:28px;margin-bottom:8px;color:#F7941D"></i>
+          <div style="font-weight:600;color:#D4790E;font-size:14px">Übernahme aus Personalfreigabe</div>
+          <div style="font-size:11px;color:#718096;margin-top:4px">Ressource aus Freigabe zuweisen</div>
+        </div>
+      </div>`;
+  }
+
+  else if (bedarfProcessStep === 'pool') {
+    backBtn.style.display      = '';
+    confirmBtn.style.display   = '';
+    confirmBtn.textContent     = 'Weiterleiten';
+    confirmBtn.style.background  = 'var(--kispi-teal)';
+    confirmBtn.style.borderColor = 'var(--kispi-teal)';
+    body.innerHTML = `
+      ${infoPill}
+      <label style="display:block;font-size:13px;font-weight:600;color:#2D3748;margin-bottom:6px">
+        Zusätzliche Notiz an Pool (optional)
+      </label>
+      <textarea id="bedarf-pool-note" rows="3"
+        placeholder="Ergänzende Informationen für den Pool…"
+        style="width:100%;box-sizing:border-box;border:1.5px solid #CBD5E0;border-radius:8px;padding:10px;font-size:13px;resize:vertical;font-family:inherit"
+        oninput="updateBedarfEmailPreview()"></textarea>
+      <div style="margin-top:14px">
+        <div style="font-size:12px;font-weight:600;color:#4A5568;margin-bottom:6px">
+          <i class="bi bi-envelope" style="margin-right:4px;color:var(--kispi-teal)"></i>E-Mail Vorschau
+        </div>
+        <div id="bedarf-email-preview"
+          style="background:#F7FAFC;border:1px solid #CBD5E0;border-radius:8px;padding:12px;font-size:11px;color:#2D3748;font-family:monospace;white-space:pre-wrap;line-height:1.5"
+        >${_bedarfPoolEmailText(e, dept, '')}</div>
+      </div>`;
+  }
+
+  else if (bedarfProcessStep === 'freigabe') {
+    bedarfProcessSelectedRelease = null;
+    backBtn.style.display      = '';
+    confirmBtn.style.display   = '';
+    confirmBtn.textContent     = 'Zuweisung bestätigen';
+    confirmBtn.style.background  = '#27AE60';
+    confirmBtn.style.borderColor = '#27AE60';
+    confirmBtn.disabled        = true;
+    confirmBtn.style.opacity   = '0.5';
+    confirmBtn.style.cursor    = 'not-allowed';
+
+    // Gather available releases (not yet handled this session)
+    const available = AppState.currentShiftData.filter(
+      d => d.pool_release && !_handledPoolActions.has(`rel-${d.department_id}`)
+    );
+
+    let releaseListHtml;
+    if (!available.length) {
+      releaseListHtml = `
+        <div style="background:#FFF8EE;border:1px solid #F9D8A0;border-radius:8px;padding:14px;text-align:center;color:#B45309;font-size:13px">
+          <i class="bi bi-exclamation-triangle" style="display:block;font-size:24px;margin-bottom:6px"></i>
+          Aktuell keine Personalfreigaben verfügbar.<br>
+          <span style="font-size:11px;color:#718096">Bitte die Option «Weiterleiten an Pool» nutzen.</span>
+        </div>`;
+    } else {
+      releaseListHtml = available.map(d => {
+        const relDept  = DEPARTMENTS.find(x => x.id === d.department_id);
+        const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === d.shift) || POOL_SHIFTS_CFG[0];
+        return `
+          <div id="bm-rel-card-${d.department_id}" class="bm-release-card"
+            onclick="selectBedarfRelease('${d.department_id}')"
+            style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:8px;border:2px solid #E2E8F0;cursor:pointer;transition:all 0.15s;margin-bottom:8px;background:#fff">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${relDept?.color||'#718096'};flex-shrink:0"></span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:#2D3748">${relDept?.name || d.department_id}
+                <span style="font-weight:400;color:#718096;font-size:11px"> — ${relDept?.fullName || ''}</span>
+              </div>
+              <div style="font-size:11px;color:#4A5568;margin-top:2px">
+                <span style="background:${shiftCfg.bg};color:${shiftCfg.color};border-radius:4px;padding:1px 6px;font-weight:600;margin-right:6px">${shiftCfg.label}</span>
+                ${d.pool_release_count} Person${d.pool_release_count > 1 ? 'en' : ''} verfügbar · Belegung ${d.occupancy_pct}% · Abdeckung ${d.staff_coverage_pct}%
+              </div>
+            </div>
+            <i class="bi bi-circle" style="font-size:18px;color:#CBD5E0;flex-shrink:0" id="bm-rel-icon-${d.department_id}"></i>
+          </div>`;
+      }).join('');
+    }
+
+    body.innerHTML = `
+      ${infoPill}
+      <p style="font-size:13px;font-weight:600;color:#2D3748;margin-bottom:10px">
+        Verfügbare Personalressourcen (Personalfreigaben):
+      </p>
+      ${releaseListHtml}
+      <div id="bm-rel-no-selection" style="color:#E63946;font-size:11px;margin-top:4px;display:none">
+        <i class="bi bi-exclamation-circle"></i> Bitte eine Ressource auswählen.
+      </div>
+      <div id="bm-rel-email-section" style="margin-top:14px;display:none">
+        <div style="font-size:12px;font-weight:600;color:#4A5568;margin-bottom:6px">
+          <i class="bi bi-envelope" style="margin-right:4px;color:#27AE60"></i>Benachrichtigung an fregebende Abteilung
+        </div>
+        <div id="bedarf-email-preview"
+          style="background:#F7FAFC;border:1px solid #CBD5E0;border-radius:8px;padding:12px;font-size:11px;color:#2D3748;font-family:monospace;white-space:pre-wrap;line-height:1.5"></div>
+      </div>`;
+  }
+}
+
+function _bedarfPoolEmailText(e, dept, note) {
+  return `An: Personalpool / Pool-Koordination\nBetreff: Bedarfsmeldung ${e?.id} — ${e?.titel}\n\n` +
+    `Abteilung: ${dept?.name || ''} (${dept?.fullName || e?.department_id || ''})\n` +
+    `Priorität: ${e?.prioritaet || ''}\n` +
+    `Wunschdatum: ${e?.gewuenschtes_datum || '—'}\n` +
+    `Beschreibung: ${e?.beschreibung || '—'}\n` +
+    (note ? `\nNotiz: ${note}` : '') +
+    `\n\nBitte Verfügbarkeit prüfen und Rückmeldung geben.\n\nKISPI Pflegeleitung`;
+}
+
+function _bedarfAssignEmailText(e, bmDept, relData, relDept) {
+  const shiftCfg = POOL_SHIFTS_CFG.find(x => x.id === relData?.shift) || POOL_SHIFTS_CFG[0];
+  return `An: ${relDept?.name || ''} / Pflegeleitung\nBetreff: Personalzuweisung — Bedarfsmeldung ${e?.id}\n\n` +
+    `Die freigegebene Ressource (${relData?.pool_release_count || 1} Person${(relData?.pool_release_count||1) > 1 ? 'en' : ''}, ${shiftCfg.label}) ` +
+    `aus Ihrer Abteilung wird für folgende Bedarfsmeldung eingesetzt:\n\n` +
+    `Abteilung: ${bmDept?.name || ''} (${bmDept?.fullName || e?.department_id || ''})\n` +
+    `Meldung: ${e?.titel || ''}\n` +
+    `Beschreibung: ${e?.beschreibung || '—'}\n\n` +
+    `Bitte informieren Sie die betreffende Person über die Zuweisung.\n\nKISPI Pflegeleitung`;
+}
+
+function selectBedarfRelease(relDeptId) {
+  bedarfProcessSelectedRelease = relDeptId;
+
+  // Highlight selected card, deselect others
+  document.querySelectorAll('.bm-release-card').forEach(card => {
+    const isSelected = card.id === `bm-rel-card-${relDeptId}`;
+    card.style.borderColor = isSelected ? '#27AE60' : '#E2E8F0';
+    card.style.background  = isSelected ? '#F0FFF4' : '#fff';
+    const icon = card.querySelector('[id^="bm-rel-icon-"]');
+    if (icon) {
+      icon.className = isSelected ? 'bi bi-check-circle-fill' : 'bi bi-circle';
+      icon.style.color = isSelected ? '#27AE60' : '#CBD5E0';
+    }
+  });
+
+  // Show / update email preview
+  const section = document.getElementById('bm-rel-email-section');
+  if (section) section.style.display = '';
+
+  const e       = AppState.getBedarfsmeldungen().find(x => x.id === bedarfProcessId);
+  const bmDept  = DEPARTMENTS.find(d => d.id === e?.department_id);
+  const relData = AppState.currentShiftData.find(d => d.department_id === relDeptId);
+  const relDept = DEPARTMENTS.find(d => d.id === relDeptId);
+  const preview = document.getElementById('bedarf-email-preview');
+  if (preview) preview.textContent = _bedarfAssignEmailText(e, bmDept, relData, relDept);
+
+  // Enable confirm button
+  const confirmBtn = document.getElementById('bedarf-process-confirm-btn');
+  if (confirmBtn) {
+    confirmBtn.disabled      = false;
+    confirmBtn.style.opacity = '1';
+    confirmBtn.style.cursor  = 'pointer';
+  }
+  // Hide "please select" error if shown
+  const noSelErr = document.getElementById('bm-rel-no-selection');
+  if (noSelErr) noSelErr.style.display = 'none';
+}
+
+function setBedarfAction(action) {
+  bedarfProcessStep = action; // 'ablehnen' | 'annehmen'
+  renderBedarfProcessContent();
+}
+
+function setBedarfAnnehmenType(type) {
+  bedarfProcessStep = type; // 'pool' | 'freigabe'
+  renderBedarfProcessContent();
+}
+
+function bedarfProcessBack() {
+  if (bedarfProcessStep === 'ablehnen' || bedarfProcessStep === 'annehmen') {
+    bedarfProcessStep = 'choose';
+  } else if (bedarfProcessStep === 'pool' || bedarfProcessStep === 'freigabe') {
+    bedarfProcessStep = 'annehmen';
+  }
+  renderBedarfProcessContent();
+}
+
+function validateBedarfProcessConfirm() {
+  if (bedarfProcessStep === 'ablehnen') {
+    const val = (document.getElementById('bedarf-reject-reason')?.value || '').trim();
+    const err = document.getElementById('bedarf-reject-err');
+    if (err) err.style.display = val ? 'none' : '';
+  }
+}
+
+function updateBedarfEmailPreview() {
+  const e       = AppState.getBedarfsmeldungen().find(x => x.id === bedarfProcessId);
+  const dept    = DEPARTMENTS.find(d => d.id === e?.department_id);
+  const preview = document.getElementById('bedarf-email-preview');
+  if (!preview) return;
+  if (bedarfProcessStep === 'pool') {
+    const note = (document.getElementById('bedarf-pool-note')?.value || '').trim();
+    preview.textContent = _bedarfPoolEmailText(e, dept, note);
+  }
+}
+
+function confirmBedarfProcess() {
+  if (bedarfProcessStep === 'ablehnen') {
+    const reason = (document.getElementById('bedarf-reject-reason')?.value || '').trim();
+    if (!reason) {
+      const err = document.getElementById('bedarf-reject-err');
+      if (err) err.style.display = '';
+      return;
+    }
+    AppState.updateBedarfsmeldungStatus(bedarfProcessId, 'abgelehnt', { reject_reason: reason });
+    closeBedarfProcess();
+    renderBedarfsmeldungenPage();
+    renderPoolBedarfList();
+    showToast('Bedarfsmeldung abgelehnt.');
+    return;
+  }
+
+  if (bedarfProcessStep === 'pool') {
+    const note = (document.getElementById('bedarf-pool-note')?.value || '').trim();
+    AppState.updateBedarfsmeldungStatus(bedarfProcessId, 'bearbeitung', {
+      resolution_type: 'Pool-Weiterleitung',
+      pool_note: note,
+    });
+    closeBedarfProcess();
+    renderBedarfsmeldungenPage();
+    renderPoolBedarfList();
+    showToast('Bedarfsmeldung an Pool weitergeleitet.');
+    return;
+  }
+
+  if (bedarfProcessStep === 'freigabe') {
+    if (!bedarfProcessSelectedRelease) {
+      const err = document.getElementById('bm-rel-no-selection');
+      if (err) err.style.display = '';
+      return;
+    }
+    const relDeptId = bedarfProcessSelectedRelease;
+    const relData   = AppState.currentShiftData.find(d => d.department_id === relDeptId);
+    const relDept   = DEPARTMENTS.find(d => d.id === relDeptId);
+    const e         = AppState.getBedarfsmeldungen().find(x => x.id === bedarfProcessId);
+    const bmDept    = DEPARTMENTS.find(d => d.id === e?.department_id);
+    const shiftCfg  = POOL_SHIFTS_CFG.find(x => x.id === relData?.shift) || POOL_SHIFTS_CFG[0];
+
+    // Save the transfer: freigabe resource → requesting department
+    AppState.saveStaffTransfer({
+      id:               `transfer_bm_${Date.now()}`,
+      type:             'transfer',
+      dept_id:          e.department_id,
+      dept_name:        bmDept?.name || e.department_id,
+      count:            relData?.pool_release_count || 1,
+      shift:            relData?.shift || 'F',
+      shiftLabel:       shiftCfg.label,
+      source_dept_id:   relDeptId,
+      source_dept_name: relDept?.name || relDeptId,
+      notes:            `Via Bedarfsmeldung ${e.id}: ${e.titel}`,
+      assigned_at:      new Date().toISOString(),
+    });
+
+    // Consume the release from the pool view
+    _handledPoolActions.add(`rel-${relDeptId}`);
+    const relCard = document.getElementById(`pool-rel-card-${relDeptId}`);
+    if (relCard) relCard.remove();
+    const relEl = document.getElementById('pool-releases-container');
+    if (relEl && !relEl.querySelector('.pool-card')) {
+      relEl.innerHTML = '<div class="empty-state"><span class="empty-icon">✅</span><p>Keine Freigaben</p></div>';
+    }
+
+    // Mark BM as erledigt
+    AppState.updateBedarfsmeldungStatus(bedarfProcessId, 'erledigt', {
+      resolution_type: `Personalfreigabe: ${relDept?.name || relDeptId} → ${bmDept?.name || e.department_id}`,
+    });
+
+    closeBedarfProcess();
+    renderBedarfsmeldungenPage();
+    renderPoolBedarfList();
+    renderStationGrid();
+    renderStationsPage();
+    showToast(`Bedarfsmeldung erledigt — Ressource von ${relDept?.name || relDeptId} zugewiesen.`);
+    return;
+  }
 }
 
 // ── Toast ─────────────────────────────────────────────────────
