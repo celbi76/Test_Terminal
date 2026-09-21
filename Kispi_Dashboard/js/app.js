@@ -1206,7 +1206,7 @@ function updateReleaseEmailPreview() {
 
   const previewEl = document.getElementById('pool-release-email-preview');
   if (previewEl) previewEl.innerHTML =
-    `<em>Betreff: Personalfreigabe Kinderspital Zürich — ${today}</em><br><br>` +
+    `<em>Betreff: Personalfreigabe — ${today}</em><br><br>` +
     `Guten Tag,<br><br>` +
     `Du wirst von der Abteilung <strong>${deptName}</strong> freigestellt.<br>${actionText}` +
     (note ? `<br><br>Notiz: <em>${note}</em>` : '') +
@@ -2692,7 +2692,7 @@ function _bedarfPoolEmailText(e, dept, note) {
     `Wunschdatum: ${e?.gewuenschtes_datum || '—'}\n` +
     `Beschreibung: ${e?.beschreibung || '—'}\n` +
     (note ? `\nNotiz: ${note}` : '') +
-    `\n\nBitte Verfügbarkeit prüfen und Rückmeldung geben.\n\nKISPI Pflegeleitung`;
+    `\n\nBitte Verfügbarkeit prüfen und Rückmeldung geben.\n\nPflegeleitung`;
 }
 
 function _bedarfAssignEmailText(e, bmDept, relData, relDept) {
@@ -2703,7 +2703,7 @@ function _bedarfAssignEmailText(e, bmDept, relData, relDept) {
     `Abteilung: ${bmDept?.name || ''} (${bmDept?.fullName || e?.department_id || ''})\n` +
     `Meldung: ${e?.titel || ''}\n` +
     `Beschreibung: ${e?.beschreibung || '—'}\n\n` +
-    `Bitte informieren Sie die betreffende Person über die Zuweisung.\n\nKISPI Pflegeleitung`;
+    `Bitte informieren Sie die betreffende Person über die Zuweisung.\n\nPflegeleitung`;
 }
 
 function selectBedarfRelease(relDeptId) {
