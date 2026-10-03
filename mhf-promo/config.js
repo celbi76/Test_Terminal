@@ -204,7 +204,7 @@ module.exports = {
   variants: {
     foto: {
       output: 'mhf-promo-foto',
-      video: { crf: 19, maxrate: '9M', bufsize: '18M' },   // Filmkorn braucht sonst über 300 MB
+      video: { crf: 21, maxrate: '4M', bufsize: '8M' },     // Filmkorn braucht sonst über 300 MB
       colors: { dim: '#E8EADF' },               // hellere Nebentexte auf dem Foto
       mosaic: {
         image: 'assets/flyer_clean.png',        // Flyer-Foto ohne Schrift (tools/clean_flyer.py)

@@ -80,7 +80,7 @@ async function openPage(browser, port) {
   const r = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', path.join(dir, '%05d.png'),
     '-i', path.join(ROOT, 'build/audio.wav'),
     '-vf', 'scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int+bicubic,format=yuv420p',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', String(CFG.video.crf), ...(CFG.video.maxrate ? ['-maxrate', CFG.video.maxrate, '-bufsize', CFG.video.bufsize] : []), '-profile:v', 'high', '-level', '4.2',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', String(CFG.video.crf), ...(CFG.video.maxrate ? ['-maxrate', CFG.video.maxrate, '-bufsize', CFG.video.bufsize] : []), '-profile:v', 'high', '-level', '4.0',
     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
     '-c:a', 'aac', '-b:a', '256k', '-ar', '48000', '-shortest', '-movflags', '+faststart', out], { stdio: 'inherit' });
   if (r.status !== 0) process.exit(r.status);

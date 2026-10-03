@@ -42,7 +42,7 @@ Befunde aus Kontaktbogen und Prüfbericht:
 - Das Mosaik löst sich bei "Dialog." in zehn Stufen auf und geht in das scharfe Foto über. Danach Zoom 12 % und Drift, Filmkorn, weicher Textschatten.
 - Befund beim ersten Test: Nebentexte (grau) auf hellem Fensterbereich schwer lesbar. Änderung: hellere Nebenfarbe, Abdunklung 0,30, Textschatten 30 px.
 - Einschränkung: Das Foto hat 1240 x 1748 Pixel und ist selbst unscharf. Mehr Schärfe geht damit nicht. Für echten Fotorealismus bräuchte es ein hochauflösendes Foto von dir.
-- Rendern dauert wegen des Korns länger (rund 8 Minuten). Erste Kodierung mit crf 14 ergab 341 MB. Änderung: crf 19 und Bitratengrenze 9 Mbit/s, Ergebnis 43 MB bei gleichem Technik-Check (1080 x 1920, bt709, -16,0 LUFS, True Peak -2,2 dBFS, QR lesbar).
+- Rendern dauert wegen des Korns länger (rund 8 Minuten). Erste Kodierung mit crf 14 ergab 341 MB. Änderung: crf 21 und Bitratengrenze 4 Mbit/s, Ergebnis 19 MB (die 43-MB-Datei liess sich nicht in den Chat hochladen) bei gleichem Technik-Check (1080 x 1920, bt709, -16,0 LUFS, True Peak -2,2 dBFS, QR lesbar).
 
 ## Offen, nur von dir prüfbar
 - Ton anhören: Musik, Klicks, Schlag auf "Burnout." und Einsatz bei "Dialog.". Ich habe keine Möglichkeit zu hören und prüfe nur Pegel.
