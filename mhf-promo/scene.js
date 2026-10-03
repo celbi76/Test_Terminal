@@ -23,6 +23,7 @@
 
   let flyer = null;
   const mosaics = [];
+  let grain = null;
 
   async function init() {
     for (const w of Object.keys(CFG.fonts.files)) {
@@ -55,6 +56,18 @@
       cx.putImageData(img, 0, 0);
       mosaics.push({ B, cv, sw, sh });
     }
+    // Filmkorn: feste Textur, pro Bild anders verschoben
+    if (CFG.mosaic.grain > 0) {
+      grain = document.createElement('canvas'); grain.width = 512; grain.height = 512;
+      const gx = grain.getContext('2d'), gi = gx.createImageData(512, 512);
+      let seed = 1234567;
+      const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      for (let i = 0; i < 512 * 512; i++) {
+        const v = Math.max(0, Math.min(255, 128 + (rnd() + rnd() + rnd() - 1.5) * 90));
+        gi.data[i * 4] = gi.data[i * 4 + 1] = gi.data[i * 4 + 2] = v; gi.data[i * 4 + 3] = 255;
+      }
+      gx.putImageData(gi, 0, 0);
+    }
     window.__ready = true;
   }
 
@@ -73,7 +86,9 @@
     g.fillStyle = color;
     g.textAlign = opt.align || 'left';
     g.textBaseline = 'alphabetic';
+    if (CFG.mosaic.textShadow) { g.shadowColor = 'rgba(0,0,0,0.55)'; g.shadowBlur = CFG.mosaic.textShadow; g.shadowOffsetY = 2; }
     g.fillText(str, x, y);
+    g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
     return { w: g.measureText(str).width, size: fs };
   }
   // Schrift löst sich aus Pixelblöcken auf (Bildidee: Stille = verpixelt, Dialog = klar)
@@ -107,21 +122,50 @@
   function reveal(start, t, draw, extraAlpha = 1) { withPix(pixAt(start, t), extraAlpha, draw); }
 
   // ---------- Hintergrund ----------
+  function drawPhoto(t, tStart) {
+    // Foto mit langsamem Zoom und Drift, startet nach dem Auflösen des Mosaiks
+    const M = CFG.mosaic;
+    const p = clamp((t - tStart) / Math.max(0.1, T.total - tStart), 0, 1);
+    const zoom = 1 + M.kenBurns * p;
+    const sc = Math.max(W / flyer.width, H / flyer.height);
+    const vw = W / sc / zoom, vh = H / sc / zoom;
+    const cx = flyer.width / 2 + M.drift * p, cy = flyer.height / 2;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(flyer, cx - vw / 2, cy - vh / 2, vw, vh, 0, 0, W, H);
+  }
+
   function drawBackground(t) {
     ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
     const M = CFG.mosaic;
     const tb = ch('v3.c');
-    let idx = M.startStep;
-    if (t >= tb) idx = Math.min(mosaics.length - 1, M.startStep + 1 + Math.floor((t - tb) / M.stepDuration));
+    let idx = M.startStep, clear = false;
+    if (t >= tb) {
+      idx = M.startStep + 1 + Math.floor((t - tb) / M.stepDuration);
+      if (idx >= mosaics.length) { if (M.clear) clear = true; idx = mosaics.length - 1; }
+    }
     const a = M.alphaStart + (M.alpha - M.alphaStart) * easeOut(clamp(t / M.fadeIn, 0, 1));
-    const m = mosaics[idx];
     ctx.save();
     ctx.globalAlpha = a;
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(m.cv, 0, 0, m.sw, m.sh, 0, 0, m.sw * m.B, m.sh * m.B);
+    if (clear) {
+      const tClear = tb + (mosaics.length - M.startStep - 1) * M.stepDuration;
+      drawPhoto(t, tClear);
+    } else {
+      const m = mosaics[idx];
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(m.cv, 0, 0, m.sw, m.sh, 0, 0, m.sw * m.B, m.sh * m.B);
+    }
     ctx.restore();
     ctx.fillStyle = `rgba(0,0,0,${M.dim})`;
     ctx.fillRect(0, 0, W, H);
+    if (grain) {
+      const f = Math.floor(t * CFG.format.fps);
+      const ox = (f * 197) % 512, oy = (f * 131) % 512;
+      ctx.save();
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = M.grain;
+      for (let y = -oy; y < H; y += 512) for (let x = -ox; x < W; x += 512) ctx.drawImage(grain, x, y);
+      ctx.restore();
+    }
   }
 
   // ---------- Szenen ----------

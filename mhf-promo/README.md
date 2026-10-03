@@ -3,6 +3,10 @@
 Ergebnis: `out/mhf-promo.mp4` (1080 x 1920, 30 fps, H.264, bt709, rund 38 s, -16 LUFS). Ton: nur Musik und Effekte, keine Stimme.
 Alles ist im Code gezeichnet. Einziges Foto: dein Flyer, verpixelt und farbreduziert (Hintergrund).
 
+## Zwei Versionen
+- Standard: `./build.sh` erzeugt `out/mhf-promo.mp4` (verpixelter Flyer als Hintergrund, Mosaik wird bei "Dialog." feiner).
+- Foto: `./build.sh foto` erzeugt `out/mhf-promo-foto.mp4`. Gleicher Ton und gleiche Texte. Hintergrund ist das Flyer-Foto (Schrift und QR-Code retuschiert, `tools/clean_flyer.py`). Es löst sich bei "Dialog." aus dem Mosaik auf und läuft danach mit langsamem Zoom, leichter Drift und Filmkorn. Einstellungen: `variants.foto` in config.js.
+
 ## Neu rendern
 Voraussetzungen: ffmpeg, Node 22 mit Playwright und Chromium, Python 3 mit numpy, pillow, qrcode, opencv-python-headless, espeak-ng mit MBROLA-Stimmen (mbrola-de2 u. a.).
 

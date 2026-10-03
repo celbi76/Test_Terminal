@@ -4,8 +4,10 @@ import json, os, re, subprocess, sys
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MP4 = os.path.join(ROOT, 'out', 'mhf-promo.mp4')
+VARIANT = sys.argv[1] if len(sys.argv) > 1 else None
 cfg = json.loads(subprocess.check_output(['node', '-e', "console.log(JSON.stringify(require('./config.js')))"], cwd=ROOT))
+NAME = (cfg['variants'][VARIANT].get('output') if VARIANT else None) or 'mhf-promo'
+MP4 = os.path.join(ROOT, 'out', NAME + '.mp4')
 T = json.load(open(os.path.join(ROOT, 'build', 'timings.json')))
 report = []
 
@@ -30,7 +32,7 @@ ok = abs(I - cfg['audio']['loudnessLUFS']) <= 1.0 and TP < -1.0 and v['width'] =
 say('Technik-Check: ' + ('bestanden' if ok else 'NICHT bestanden'))
 
 # Kontaktbogen: ein Bild pro 2 s
-out = os.path.join(ROOT, 'out', 'kontaktbogen.png')
+out = os.path.join(ROOT, 'out', 'kontaktbogen' + ('-' + VARIANT if VARIANT else '') + '.png')
 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', MP4, '-vf', 'fps=1/2,scale=216:-1,tile=10x2:padding=6:color=0x222222', '-frames:v', '1', out], check=True)
 say(f'Kontaktbogen: {out}')
 
@@ -64,7 +66,7 @@ for a_, b_ in runs: say(f'  {a_:5.1f} s bis {b_:5.1f} s')
 try:
     import cv2
     t = T['total'] - 1.2
-    png = os.path.join(ROOT, 'build', 'qr_check.png')
+    png = os.path.join(ROOT, 'build', 'qr_check_' + NAME + '.png')
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', str(t), '-i', MP4, '-frames:v', '1', png], check=True)
     img = cv2.imread(png)
     txt, _, _ = cv2.QRCodeDetector().detectAndDecode(img)
@@ -72,4 +74,4 @@ try:
 except ImportError:
     say('\nQR-Check übersprungen (opencv fehlt)')
 
-open(os.path.join(ROOT, 'out', 'pruefbericht.txt'), 'w').write('\n'.join(report) + '\n')
+open(os.path.join(ROOT, 'out', 'pruefbericht' + ('-' + VARIANT if VARIANT else '') + '.txt'), 'w').write('\n'.join(report) + '\n')

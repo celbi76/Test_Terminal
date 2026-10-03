@@ -17,6 +17,12 @@ module.exports = {
     marginX: 84,
   },
 
+  video: {
+    crf: 14,            // Qualität (kleiner = besser, grösser = kleinere Datei)
+    maxrate: null,      // z. B. '10M' begrenzt die Bitrate (nötig bei Filmkorn)
+    bufsize: null,
+  },
+
   colors: {
     bg: '#070806',
     text: '#F4F2EA',
@@ -49,6 +55,11 @@ module.exports = {
     alpha: 1.0,                           // Deckkraft der Mosaik-Fläche
     gain: 0.5,                            // Helligkeit der Mosaik-Farben (Lesbarkeit der Schrift)
     dim: 0.2,                             // schwarze Abdunklung über dem Mosaik
+    clear: false,                         // true: nach der letzten Stufe erscheint das Foto scharf
+    kenBurns: 0,                          // Zoom über die Restdauer (0.10 = 10 %)
+    drift: 0,                             // seitliche Drift in Bildpixeln
+    grain: 0,                             // Filmkorn (0 bis 1)
+    textShadow: 0,                        // weicher dunkler Schatten hinter der Schrift (Blur in px)
   },
 
   // Sichtbare Texte
@@ -186,5 +197,27 @@ module.exports = {
       { type: 'hit', ref: 'v6.a', edge: 'start' },
     ],
     musicStart: { ref: 'v3.c', edge: 'start', offset: 0 },   // Musik setzt bei "Dialog." ein
+  },
+
+  // Zweitversion: echtes Foto statt Mosaik-Look. Überschreibt Werte oben.
+  // Aufruf: ./build.sh foto   (Ausgabe out/mhf-promo-foto.mp4, gleicher Ton)
+  variants: {
+    foto: {
+      output: 'mhf-promo-foto',
+      video: { crf: 19, maxrate: '9M', bufsize: '18M' },   // Filmkorn braucht sonst über 300 MB
+      colors: { dim: '#E8EADF' },               // hellere Nebentexte auf dem Foto
+      mosaic: {
+        image: 'assets/flyer_clean.png',        // Flyer-Foto ohne Schrift (tools/clean_flyer.py)
+        steps: [200, 150, 112, 84, 64, 48, 34, 22, 14, 8],
+        stepDuration: 0.17,
+        gain: 1.0,
+        dim: 0.3,
+        clear: true,
+        kenBurns: 0.12,
+        drift: -110,
+        grain: 0.16,
+        textShadow: 30,
+      },
+    },
   },
 };

@@ -37,6 +37,13 @@ Befunde aus Kontaktbogen und Prüfbericht:
 - Befund: loudnorm lieferte -15,5 LUFS und True Peak -0,9 dBFS nach AAC. Änderung: Regelschleife in `tools/audio.py` misst nach der AAC-Kodierung und stellt nach. Ergebnis -16,0 LUFS, True Peak -2,2 dBFS.
 - Der Hinweis zur Stimme weiter oben gilt nur noch für `voice.enabled: true`.
 
+## Zweitversion "foto" (Auftrag: mehr Fotorealismus)
+- Hintergrund war zu abstrakt. Neu: `assets/flyer_clean.png` aus deinem Flyer. Die weisse Schrift und der QR-Code sind per Inpainting (OpenCV, Top-Hat-Maske) entfernt, es wird nichts erzeugt. Das Foto ist eine Unterführung mit Bewegungsunschärfe, keine Gesichter.
+- Das Mosaik löst sich bei "Dialog." in zehn Stufen auf und geht in das scharfe Foto über. Danach Zoom 12 % und Drift, Filmkorn, weicher Textschatten.
+- Befund beim ersten Test: Nebentexte (grau) auf hellem Fensterbereich schwer lesbar. Änderung: hellere Nebenfarbe, Abdunklung 0,30, Textschatten 30 px.
+- Einschränkung: Das Foto hat 1240 x 1748 Pixel und ist selbst unscharf. Mehr Schärfe geht damit nicht. Für echten Fotorealismus bräuchte es ein hochauflösendes Foto von dir.
+- Rendern dauert wegen des Korns länger (rund 8 Minuten). Erste Kodierung mit crf 14 ergab 341 MB. Änderung: crf 19 und Bitratengrenze 9 Mbit/s, Ergebnis 43 MB bei gleichem Technik-Check (1080 x 1920, bt709, -16,0 LUFS, True Peak -2,2 dBFS, QR lesbar).
+
 ## Offen, nur von dir prüfbar
 - Ton anhören: Musik, Klicks, Schlag auf "Burnout." und Einsatz bei "Dialog.". Ich habe keine Möglichkeit zu hören und prüfe nur Pegel.
 - Michel Bamert und Melanie Sudan sind genannt, wie auf dem Flyer.

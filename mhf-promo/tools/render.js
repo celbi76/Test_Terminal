@@ -10,7 +10,11 @@ const { spawnSync } = require('child_process');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
 const ROOT = path.resolve(__dirname, '..');
-const CFG = require(path.join(ROOT, 'config.js'));
+const BASECFG = require(path.join(ROOT, 'config.js'));
+const argv0 = process.argv.slice(2);
+const VARIANT = (argv0.indexOf('--variant') >= 0 ? argv0[argv0.indexOf('--variant') + 1] : null);
+const merge = (a, b) => { const o = Array.isArray(a) ? a.slice() : { ...a }; for (const k of Object.keys(b)) o[k] = (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k]) ? merge(a[k], b[k]) : b[k]; return o; };
+const CFG = VARIANT ? merge(BASECFG, BASECFG.variants[VARIANT]) : BASECFG;
 const TIM = JSON.parse(fs.readFileSync(path.join(ROOT, 'build/timings.json'), 'utf8'));
 const QR = JSON.parse(fs.readFileSync(path.join(ROOT, 'build/qr.json'), 'utf8'));
 const args = process.argv.slice(2);
@@ -45,7 +49,7 @@ async function openPage(browser, port) {
   const safe = !!opt('safe');
   const stills = opt('stills');
   if (stills && stills !== true) {
-    const dir = path.join(ROOT, 'build/stills'); fs.mkdirSync(dir, { recursive: true });
+    const dir = path.join(ROOT, VARIANT ? 'build/stills_' + VARIANT : 'build/stills'); fs.mkdirSync(dir, { recursive: true });
     const page = await openPage(browser, port);
     for (const s of stills.split(',')) {
       await page.evaluate(([t, sf]) => window.renderFrame(t, { safe: sf }), [Number(s), safe]);
@@ -55,9 +59,10 @@ async function openPage(browser, port) {
   }
   const fps = CFG.format.fps;
   const total = Math.round(TIM.total * fps);
-  const dir = path.join(ROOT, 'build/frames');
-  fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-  const pages = await Promise.all(Array.from({ length: WORKERS }, () => openPage(browser, port)));
+  const dir = path.join(ROOT, VARIANT ? 'build/frames_' + VARIANT : 'build/frames');
+  const encodeOnly = !!opt('encode-only');   // vorhandene Bilder nur neu kodieren
+  if (!encodeOnly) { fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true }); }
+  const pages = encodeOnly ? [] : await Promise.all(Array.from({ length: WORKERS }, () => openPage(browser, port)));
   let next = 0, done = 0;
   const t0 = Date.now();
   await Promise.all(pages.map(async page => {
@@ -70,12 +75,12 @@ async function openPage(browser, port) {
   }));
   await browser.close(); srv.close();
 
-  const out = path.join(ROOT, 'out/mhf-promo.mp4');
+  const out = path.join(ROOT, 'out', (CFG.output || 'mhf-promo') + '.mp4');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   const r = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', path.join(dir, '%05d.png'),
     '-i', path.join(ROOT, 'build/audio.wav'),
     '-vf', 'scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int+bicubic,format=yuv420p',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-profile:v', 'high', '-level', '4.2',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', String(CFG.video.crf), ...(CFG.video.maxrate ? ['-maxrate', CFG.video.maxrate, '-bufsize', CFG.video.bufsize] : []), '-profile:v', 'high', '-level', '4.2',
     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
     '-c:a', 'aac', '-b:a', '256k', '-ar', '48000', '-shortest', '-movflags', '+faststart', out], { stdio: 'inherit' });
   if (r.status !== 0) process.exit(r.status);
