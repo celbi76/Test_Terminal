@@ -31,7 +31,12 @@ Befunde aus Kontaktbogen und Prüfbericht:
 - QR-Code im Schlussbild mit OpenCV gelesen, stimmt mit der Event-URL überein.
 - Wichtige Inhalte im Rahmen 15 % bis 85 % der Höhe (Rahmen in Stills mit `--safe` geprüft). Nur Farbstreifen und Mosaik laufen darüber hinaus.
 
+## Iteration 3: Stimme entfernt (Auftrag: Stimme ist nicht brauchbar)
+- `voice.enabled: false`. Die Sprachtexte bleiben für die Zeiten der Bildwechsel, sie werden nicht mehr gemischt. Bild unverändert.
+- Neu: Spur "tension" (tiefer Ton und Rauschen steigen ab 0,5 s bis "Dialog." an, klingen danach aus), damit die ersten 10 s ohne Stimme nicht leer wirken. Klicks begleiten weiterhin jeden neuen Text, Musik setzt bei "Dialog." ein.
+- Befund: loudnorm lieferte -15,5 LUFS und True Peak -0,9 dBFS nach AAC. Änderung: Regelschleife in `tools/audio.py` misst nach der AAC-Kodierung und stellt nach. Ergebnis -16,0 LUFS, True Peak -2,2 dBFS.
+- Der Hinweis zur Stimme weiter oben gilt nur noch für `voice.enabled: true`.
+
 ## Offen, nur von dir prüfbar
-- Ton anhören: Aussprache von "Stäfa", "Hellraum Galerie", "Mentalhelth Forum Punkt C H", "Stop Silence" (englische Stimme).
-- Stimmprobe vergleichen und `voice.voice` ändern, falls eine andere besser klingt, oder eigene Aufnahme einsetzen.
+- Ton anhören: Musik, Klicks, Schlag auf "Burnout." und Einsatz bei "Dialog.". Ich habe keine Möglichkeit zu hören und prüfe nur Pegel.
 - Michel Bamert und Melanie Sudan sind genannt, wie auf dem Flyer.

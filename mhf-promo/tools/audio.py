@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Erzeugt Sprache (espeak-ng + MBROLA), Musik und Effekte lokal, mischt und normalisiert.
 Schreibt build/timings.json (Zeiten für die Animation) und build/audio.wav."""
-import json, os, subprocess, sys, wave, math, shutil
+import json, os, re, subprocess, sys, wave, math, shutil
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -342,6 +342,24 @@ def build_music(total, t0, T, names0):
     return out
 
 
+def build_tension(total, t_end):
+    # leise Spannung vor "Dialog.": tiefer Ton und Rauschen steigen an, klingen nach dem Einsatz aus
+    n = int(total * SR)
+    out = np.zeros((2, n), np.float32)
+    s0, e0 = int(0.5 * SR), int(t_end * SR)
+    e1 = e0 + int(0.8 * SR)
+    L = e1 - s0
+    t = np.arange(L) / SR
+    env = np.concatenate([np.linspace(0, 1, e0 - s0) ** 2.2, np.linspace(1, 0, e1 - e0)]).astype(np.float32)
+    drone = (np.sin(2 * np.pi * 55 * t) + 0.5 * np.sin(2 * np.pi * 55.4 * t) + 0.25 * np.sin(2 * np.pi * 110 * t)
+             + 0.12 * np.sin(2 * np.pi * 164.81 * t)).astype(np.float32) * 0.35
+    nz = fft_band(rng.standard_normal(L).astype(np.float32), 300, 2500) * 0.35
+    sig = (drone + nz) * env
+    out[0, s0:e1] += sig
+    out[1, s0:e1] += sig * 0.97
+    return out
+
+
 def duck_envelope(voice_mix, n):
     a = np.abs(voice_mix.mean(axis=0))
     win = int(0.03 * SR)
@@ -381,9 +399,10 @@ def main():
         if s < n:
             voice[0, s:e] += au[:e - s]
             voice[1, s:e] += au[:e - s]
-    voice *= db(a['tracks']['voice'])
+    voice *= db(a['tracks']['voice']) if V.get('enabled', True) else 0.0   # Stimme aus: Zeiten bleiben, Ton fällt weg
 
     music = build_music(total, t_music, T, T['cues']['names0'])
+    music += build_tension(total, t_music) * db(a['tracks']['tension'])
     env = duck_envelope(voice, n)
     music *= (1 - env * (1 - db(a['duckDb'])))[None, :]
 
@@ -425,14 +444,33 @@ def main():
 
     # Lautheit in zwei Durchgängen auf -16 LUFS, True Peak begrenzen
     I, TP = a['loudnessLUFS'], a['truePeakDb']
-    r = run(['ffmpeg', '-hide_banner', '-nostats', '-i', pre, '-af', f'loudnorm=I={I}:TP={TP}:LRA=11:print_format=json', '-f', 'null', '-'])
+    r = run(['ffmpeg', '-hide_banner', '-nostats', '-i', pre, '-af', f'loudnorm=I={I}:TP={TP}:LRA=20:print_format=json', '-f', 'null', '-'])
     txt = r.stderr.decode()
     j = json.loads(txt[txt.rindex('{'):txt.rindex('}') + 1])
-    flt = (f"loudnorm=I={I}:TP={TP}:LRA=11:measured_I={j['input_i']}:measured_TP={j['input_tp']}:"
+    flt = (f"loudnorm=I={I}:TP={TP}:LRA=20:measured_I={j['input_i']}:measured_TP={j['input_tp']}:"
            f"measured_LRA={j['input_lra']}:measured_thresh={j['input_thresh']}:offset={j['target_offset']}:linear=true,"
            f"alimiter=limit={db(TP - 0.3):.4f}:level=disabled")
     final = os.path.join(BUILD, 'audio.wav')
     run(['ffmpeg', '-y', '-loglevel', 'error', '-i', pre, '-af', flt, '-ar', str(SR), '-c:a', 'pcm_s24le', final])
+
+    # Regelschleife: Lautheit und True Peak nach AAC-Kodierung messen und nachstellen
+    def measure(path):
+        tmp = os.path.join(BUILD, 'measure.m4a')
+        run(['ffmpeg', '-y', '-loglevel', 'error', '-i', path, '-c:a', 'aac', '-b:a', '256k', tmp])
+        r = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', tmp, '-af', 'ebur128=peak=true', '-f', 'null', '-'], capture_output=True, text=True).stderr
+        sm = r[r.rindex('Summary:'):]
+        return float(re.search(r'I:\s+(-?[\d.]+) LUFS', sm).group(1)), float(re.search(r'Peak:\s+(-?[\d.]+) dBFS', sm).group(1))
+    for _ in range(4):
+        li, tp = measure(final)
+        print(f'  Regelschleife: {li:.2f} LUFS, True Peak {tp:.2f} dBFS')
+        gain = I - li
+        if abs(gain) <= 0.15 and tp <= -1.2:
+            break
+        # Pegel nachstellen, Spitzen mit Limiter unterhalb der Grenze halten
+        gain = min(gain, -1.2 - tp) if tp + gain > -1.2 and False else gain
+        adj = os.path.join(BUILD, 'audio_adj.wav')
+        run(['ffmpeg', '-y', '-loglevel', 'error', '-i', final, '-af', f'volume={gain:.3f}dB,alimiter=limit={db(-1.8):.4f}:level=disabled:attack=2:release=60', '-c:a', 'pcm_s24le', adj])
+        os.replace(adj, final)
 
     json.dump(T, open(os.path.join(BUILD, 'timings.json'), 'w'), indent=1, ensure_ascii=False)
     # QR-Matrix

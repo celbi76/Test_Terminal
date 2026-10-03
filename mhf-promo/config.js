@@ -96,6 +96,7 @@ module.exports = {
   // Gesprochener Text. "say" darf anders geschrieben sein als der Text im Bild (Aussprache).
   // lang 'en' liest das Teilstück mit englischer Stimme.
   voice: {
+    enabled: false,              // false = ohne Stimme (Texte und Zeiten bleiben, Ton fällt weg)
     engine: 'espeak-mbrola',
     voice: 'mb-de2',             // Vergleichsstimmen: mb-de4, mb-de6, mb-de8 (siehe out/stimmen/)
     samplesVoices: ['mb-de2', 'mb-de4', 'mb-de6'],
@@ -155,6 +156,7 @@ module.exports = {
       bass: -15,
       bells: -22,
       hat: -30,
+      tension: -22,        // leises Ansteigen vor "Dialog."
       roomtone: -80,       // -80 = aus. Absichtlich echte Stille am Anfang.
     },
     duckDb: -9,            // Musik unter der Sprache

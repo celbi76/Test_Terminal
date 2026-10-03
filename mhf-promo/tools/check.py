@@ -38,9 +38,9 @@ say(f'Kontaktbogen: {out}')
 raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', MP4, '-f', 's16le', '-ac', '1', '-ar', '16000', '-'], capture_output=True).stdout
 x = np.frombuffer(raw, dtype='<i2').astype(np.float32) / 32768
 sr = 16000
-say('\nSprach-Zeitplan (Soll-Text) und Pegel in der fertigen Tonspur')
+say('\nSprach-Zeitplan (Soll-Text) und Pegel in der fertigen Tonspur' + ('' if cfg['voice'].get('enabled', True) else ' (Stimme ist aus, kein Sprachpegel)'))
 say('Hinweis: Es gibt lokal keine deutsche Spracherkennung. Der Text stammt aus config.js, der Pegel zeigt, ob die Zeile hörbar ist.')
-for line in cfg['voice']['lines']:
+for line in (cfg['voice']['lines'] if cfg['voice'].get('enabled', True) else []):
     for c in line['chunks']:
         k = f"{line['id']}.{c['id']}"
         s, e = T['chunks'][k]['start'], T['chunks'][k]['end']
