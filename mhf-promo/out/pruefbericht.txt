@@ -1,0 +1,28 @@
+Video: 1080x1920 h264 yuv420p 30/1 fps, Farbmatrix bt709, Primaries bt709, Transfer bt709, Range tv
+Audio: aac 48000 Hz 2 Kanäle, Dauer 38.03 s
+Lautheit: -16.0 LUFS (Ziel -16), True Peak -1.60 dBFS (Grenze -1.0), LRA 4.2 LU
+Technik-Check: bestanden
+Kontaktbogen: /home/user/Test_Terminal/mhf-promo/out/kontaktbogen.png
+
+Sprach-Zeitplan (Soll-Text) und Pegel in der fertigen Tonspur
+Hinweis: Es gibt lokal keine deutsche Spracherkennung. Der Text stammt aus config.js, der Pegel zeigt, ob die Zeile hörbar ist.
+    1.10-  2.36 s   -16.7 dBFS  Psychische Gesundheit
+    2.50-  3.90 s   -18.1 dBFS  wird oft verdrängt.
+    5.40-  5.90 s   -11.7 dBFS  Burnout.
+    7.40-  9.04 s   -18.1 dBFS  Wenn Arbeit krank macht,
+    9.18-  9.99 s   -17.9 dBFS  braucht es
+   10.68- 11.25 s   -13.0 dBFS  Dialog.
+   12.45- 13.99 s   -17.8 dBFS  Ein Podiumsgespräch
+   14.13- 15.15 s   -17.8 dBFS  mit Betroffenen,
+   15.29- 16.09 s   -17.7 dBFS  Experten
+   16.23- 17.70 s   -17.8 dBFS  und Führungskräften.
+   23.00- 25.50 s   -17.2 dBFS  Donnerstag, 5. November.
+   25.64- 28.30 s   -17.4 dBFS  19 bis 21 Uhr.
+   28.44- 30.51 s   -17.2 dBFS  Hellraum Galerie, Stäfa.
+   31.31- 32.45 s   -15.6 dBFS  Stop Silence.
+   32.59- 36.23 s   -17.5 dBFS  Ticket sichern auf Mentalhelth Forum Punkt C H.
+
+Bewusste Stille (Pegel unter -50 dBFS):
+    0.0 s bis   1.1 s
+
+QR-Code im Video gelesen: 'https://www.mentalhealth-forum.ch/event-details/3-mentalhealth-forum-stafa' (stimmt)
