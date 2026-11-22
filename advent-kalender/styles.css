@@ -39,7 +39,7 @@ p { margin: 0 0 12px; }
 .meter { margin-top: 18px; --p: 0; }
 .meter span { display: block; font: 600 13px var(--body); margin-bottom: 8px; font-variant-numeric: tabular-nums; }
 .meter i { display: block; height: 3px; background: var(--line); position: relative; }
-.meter i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 1%); background: var(--blue); transition: width .6s var(--ease); }
+.meter i::after { content: ""; position: absolute; inset: 0; background: var(--blue); transform-origin: left; transform: scaleX(calc(var(--p) / 100)); transition: transform .6s var(--ease); }
 
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
 .seg button {
