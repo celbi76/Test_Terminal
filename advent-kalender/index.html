@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Klartext Advent</title>
+<meta name="description" content="24 Türchen für dein Liebesleben. Jeden Morgen ein ehrlicher Impuls, ein Fakt, eine Frage und ein kleiner Schritt.">
+<meta name="theme-color" content="#f5f2ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141317" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div>
+      <p class="eyebrow" id="eyebrow">Klartext Advent</p>
+      <h1 id="greeting">Hallo</h1>
+    </div>
+    <div class="ring" id="ring" aria-label="Fortschritt"><span id="ringText">0/24</span></div>
+  </header>
+
+  <main>
+    <section id="view-calendar" class="view" aria-label="Kalender">
+      <div class="seg" id="situations" role="tablist" aria-label="Deine Situation"></div>
+      <p class="hint" id="situationHint"></p>
+      <div class="grid" id="grid"></div>
+      <p class="hint small" id="gridHint"></p>
+    </section>
+
+    <section id="view-review" class="view" hidden aria-label="Rückblick">
+      <div id="reviewBody"></div>
+    </section>
+
+    <section id="view-settings" class="view" hidden aria-label="Einstellungen">
+      <div class="card">
+        <label class="field"><span>Dein Name</span><input id="setName" type="text" autocomplete="given-name" placeholder="Vorname"></label>
+        <label class="field"><span>Erinnerung am Morgen</span><input id="setTime" type="time" value="08:00"></label>
+        <button class="btn ghost" id="btnIcs">Erinnerung in den Kalender legen</button>
+        <p class="hint small">Lädt eine Kalenderdatei mit 24 Terminen vom 1. bis 24. Dezember. Funktioniert mit Apple, Google und Outlook.</p>
+      </div>
+      <div class="card">
+        <label class="toggle"><input id="setPreview" type="checkbox"><span>Testmodus: alle Türchen öffnen</span></label>
+        <p class="hint small">Zum Ausprobieren vor dem 1. Dezember. Im Normalbetrieb öffnet sich jedes Türchen an seinem Tag.</p>
+      </div>
+      <div class="card">
+        <h2>Deine Daten</h2>
+        <p class="hint small">Notizen liegen nur auf diesem Gerät. Sie verlassen es nicht und niemand sonst kann sie lesen.</p>
+        <div class="row">
+          <button class="btn ghost" id="btnExport">Als Datei sichern</button>
+          <button class="btn danger" id="btnWipe">Alles löschen</button>
+        </div>
+      </div>
+      <div class="card help">
+        <h2>Wenn es dir richtig schlecht geht</h2>
+        <p>Dieser Kalender ersetzt keine Therapie. In der Schweiz hört dir die Dargebotene Hand rund um die Uhr zu: 143. In Deutschland: Telefonseelsorge 0800 111 0 111. In Österreich: 142.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Navigation">
+    <button data-view="calendar" class="on">Kalender</button>
+    <button data-view="review">Rückblick</button>
+    <button data-view="settings">Einstellungen</button>
+  </nav>
+</div>
+
+<dialog id="door" aria-label="Türchen"></dialog>
+<dialog id="welcome" aria-label="Willkommen"></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="content.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
