@@ -83,7 +83,7 @@
     else hint.textContent = "Alle Türchen sind offen. Dein Rückblick wartet.";
   }
 
-  function renderCalendar() { renderHeader(); renderSituations(); renderGrid(); renderReview(); }
+  function renderCalendar() { document.documentElement.dataset.sit = state.situation; renderHeader(); renderSituations(); renderGrid(); renderReview(); }
 
   // ---------- Door ----------
   const dlg = $("#door");
