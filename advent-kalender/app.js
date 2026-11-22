@@ -38,9 +38,9 @@
     const h = new Date().getHours();
     const hello = h < 11 ? "Guten Morgen" : h < 18 ? "Hallo" : "Guten Abend";
     $("#greeting").textContent = state.name ? `${hello}, ${state.name}` : hello;
-    const pct = Math.round((doneCount() / 24) * 100);
+    const pct = (doneCount() / 24) * 100;
     $("#ring").style.setProperty("--p", pct);
-    $("#ringText").textContent = `${doneCount()}/24`;
+    $("#ringText").textContent = `${doneCount()} von 24 Schritten`;
     $("#ring").setAttribute("aria-label", `${doneCount()} von 24 Schritten erledigt`);
   }
 
@@ -93,22 +93,22 @@
     dlg.innerHTML = `
       <div class="sheet">
         <header>
-          <div><div class="num">Türchen ${d} · ${esc(day.theme)}</div></div>
+          <div><div class="num">${d}. Dezember</div><div class="theme">${esc(day.theme)}</div></div>
           <button class="close" aria-label="Schließen" data-close>×</button>
         </header>
         <div class="take"><small>Der Take</small>${esc(take)}</div>
-        <div class="block"><div class="card"><div class="label">💌 Für dich · ${esc(sit().label)}</div><p style="margin:0">${esc(tip)}</p></div></div>
-        <div class="block"><div class="card"><div class="label">🧠 Fakt übers Leben</div><p style="margin:0">${esc(day.fact)}</p></div></div>
-        <div class="block"><div class="card">
-          <div class="label">✍️ Schreib's auf</div>
+        <div class="block"><div class="label">Für dich · ${esc(sit().label)}</div><p style="margin:0">${esc(tip)}</p></div>
+        <div class="block"><div class="label">Fakt übers Leben</div><p style="margin:0">${esc(day.fact)}</p></div>
+        <div class="block">
+          <div class="label">Schreib's auf</div>
           <div class="q">${esc(day.q)}</div>
           <textarea id="note" placeholder="Nur für dich. Bleibt auf diesem Gerät." aria-label="Deine Notiz">${esc(note)}</textarea>
           <div class="saved" id="saved" aria-live="polite"></div>
-        </div></div>
-        <div class="block"><div class="card">
-          <div class="label">✅ Mach's heute</div>
+        </div>
+        <div class="block">
+          <div class="label">Mach's heute</div>
           <label class="check"><input type="checkbox" id="chk" ${state.done[d] ? "checked" : ""}><span class="box">✓</span><span>${esc(day.a)}</span></label>
-        </div></div>
+        </div>
         <div class="actions">
           <button class="btn" id="btnShare">Take als Story-Kachel teilen</button>
           <button class="btn ghost" data-close>Fertig</button>
@@ -181,10 +181,10 @@
     const notes = Object.entries(state.notes).map(([d, t]) => [Number(d), t]).sort((x, y) => x[0] - y[0]);
     const ready = unlockedDay() >= 24;
     if (!ready) {
-      box.innerHTML = `<div class="empty"><div class="big">🍵</div><p><b>Dein Rückblick öffnet sich am 24. Dezember.</b></p><p>Bis dahin sammelst du hier ${noteCount()} Notizen. Alles, was du aufschreibst, kommt dann zusammen zurück.</p></div>`;
+      box.innerHTML = `<div class="empty"><p><b>Dein Rückblick öffnet sich am 24. Dezember.</b></p><p>Bis dahin sammelst du hier ${noteCount()} Notizen. Alles, was du aufschreibst, kommt dann zusammen zurück.</p></div>`;
       return;
     }
-    if (!notes.length) { box.innerHTML = `<div class="empty"><div class="big">✍️</div><p>Du hast noch nichts aufgeschrieben. Öffne ein Türchen und beantworte die Frage.</p></div>`; return; }
+    if (!notes.length) { box.innerHTML = `<div class="empty"><p>Du hast noch nichts aufgeschrieben. Öffne ein Türchen und beantworte die Frage.</p></div>`; return; }
     const fav = state.fav && state.notes[state.fav] ? state.notes[state.fav] : null;
     box.innerHTML = `
       <div class="letter">
